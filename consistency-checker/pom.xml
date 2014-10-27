@@ -89,7 +89,7 @@
               <transformers>
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.redhat.lightblue.migrator.consistency.LogsToDBCLI</mainClass>
+                  <mainClass>com.redhat.lightblue.migrator.consistency.CompareLightblueToLegacyCLI</mainClass>
                 </transformer>
               </transformers>
               <shadedArtifactAttached>true</shadedArtifactAttached>
