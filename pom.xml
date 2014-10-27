@@ -35,6 +35,7 @@
     <modules>
         <module>core</module>
         <module>web</module>
+        <module>consistency-checker</module>
     </modules>
     <properties>
         <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
@@ -44,8 +45,7 @@
         <sonar.host.url>http://127.0.0.1:8080</sonar.host.url>
         <sonar.projectName>lightblue-migrator</sonar.projectName>
         <rpm.install.basedir>/usr/share/jbossas/standalone/deployments</rpm.install.basedir>
-        <lightblue-core.version>0.9.1-SNAPSHOT</lightblue-core.version>
-        <lightblue-mongo.version>0.9.1-SNAPSHOT</lightblue-mongo.version>
+        <lightblue-client.version>1.1.0-SNAPSHOT</lightblue-client.version>
     </properties>
     <build>
         <plugins>
