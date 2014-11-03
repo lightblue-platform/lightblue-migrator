@@ -21,16 +21,6 @@
       <version>${lightblue-client.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.redhat.lightblue.rest</groupId>
-      <artifactId>rest-crud</artifactId>
-      <version>${lightblue-rest.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.redhat.lightblue.rest</groupId>
-      <artifactId>rest-metadata</artifactId>
-      <version>${lightblue-rest.version}</version>
-    </dependency>
-    <dependency>
       <groupId>commons-cli</groupId>
       <artifactId>commons-cli</artifactId>
       <version>1.2</version>
@@ -72,31 +62,9 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>de.flapdoodle.embed</groupId>
-      <artifactId>de.flapdoodle.embed.mongo</artifactId>
-      <version>1.46.0</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.junit</groupId>
-      <artifactId>arquillian-junit-container</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.arquillian.container</groupId>
-      <artifactId>arquillian-weld-ee-embedded-1.1</artifactId>
-      <version>1.0.0.CR8</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.weld</groupId>
-      <artifactId>weld-core</artifactId>
-      <version>1.1.5.AS71.Final</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.jboss.shrinkwrap.resolver</groupId>
-      <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
+      <groupId>com.redhat.lightblue</groupId>
+      <artifactId>util</artifactId>
+      <version>${lightblue-util.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
