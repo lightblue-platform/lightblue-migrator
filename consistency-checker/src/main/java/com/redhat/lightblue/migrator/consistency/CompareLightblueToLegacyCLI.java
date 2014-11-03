@@ -82,7 +82,6 @@ public final class CompareLightblueToLegacyCLI {
 			CompareLightblueToLegacyCommand.LOG.info("The number of inconsistent documents was " + c.getInconsistentDocuments());
 			CompareLightblueToLegacyCommand.LOG.info("The number of documents compared was " + c.getDocumentsCompared());
 			CompareLightblueToLegacyCommand.LOG.info("The number of lightblue documented that were updated/overwritten was " + c.getLightblueDocumentsUpdated());
-						
 		}
 	}
 	

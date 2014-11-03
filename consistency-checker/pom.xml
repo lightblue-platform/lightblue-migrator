@@ -10,8 +10,6 @@
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <spring.context.version>3.2.4.RELEASE</spring.context.version>
-    <spring.test.version>3.2.4.RELEASE</spring.test.version>
     <apache.commons-io.version>2.4</apache.commons-io.version>
     <log4j.version>1.2.17</log4j.version>
     <junit.version>4.11</junit.version>
@@ -21,6 +19,16 @@
       <groupId>com.redhat.lightblue.client</groupId>
       <artifactId>http</artifactId>
       <version>${lightblue-client.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.redhat.lightblue.rest</groupId>
+      <artifactId>rest-crud</artifactId>
+      <version>${lightblue-rest.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.redhat.lightblue.rest</groupId>
+      <artifactId>rest-metadata</artifactId>
+      <version>${lightblue-rest.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -61,6 +69,34 @@
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>de.flapdoodle.embed</groupId>
+      <artifactId>de.flapdoodle.embed.mongo</artifactId>
+      <version>1.46.0</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.junit</groupId>
+      <artifactId>arquillian-junit-container</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.container</groupId>
+      <artifactId>arquillian-weld-ee-embedded-1.1</artifactId>
+      <version>1.0.0.CR8</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.weld</groupId>
+      <artifactId>weld-core</artifactId>
+      <version>1.1.5.AS71.Final</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.shrinkwrap.resolver</groupId>
+      <artifactId>shrinkwrap-resolver-impl-maven</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

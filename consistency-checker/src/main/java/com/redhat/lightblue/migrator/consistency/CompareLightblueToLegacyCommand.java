@@ -1,6 +1,5 @@
 package com.redhat.lightblue.migrator.consistency;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
@@ -154,10 +153,6 @@ public class CompareLightblueToLegacyCommand {
 		return overwriteLightblueDocuments;
 	}
 
-	public boolean getOverwriteLightblueDocuments() {
-		return this.overwriteLightblueDocuments;
-	}
-
 	public void execute() {
 
 		LOG.info("CompareLightblueToLegacyCommand started");
@@ -168,37 +163,48 @@ public class CompareLightblueToLegacyCommand {
 		LOG.info("CompareLightblueToLegacyCommand completed");
 	}
 
-	private List<JsonNode> getLegacyDocuments() {
-		List<JsonNode> documents = new ArrayList<JsonNode>();
+	protected List<JsonNode> getLegacyDocuments() {
 		LightblueRequest legacyRequest = new DataFindRequest(legacyEntityName, legacyEntityVersion);
 		legacyRequest.setBody(legacyFindJsonExpression);
-		documents = getClient().data(legacyRequest).getJson().findValues("processed");
-		return documents;
+		return getLegacyData(legacyRequest);
 	}
 
-	private void compareLegacyToLightblue(List<JsonNode> legacyDocuments) {
+	protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+		return getClient().data(dataRequest).getJson().findValues("processed");
+	}
 
-		for (JsonNode node : legacyDocuments) {
+	protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+		return getClient().data(dataRequest).getJson().findValues("processed");
+	}
+
+	protected void compareLegacyToLightblue(List<JsonNode> legacyDocuments) {
+
+		for (JsonNode legacyNode : legacyDocuments) {
 			LightblueRequest lightblueRequest = new DataFindRequest(lightblueEntityName, lightblueEntityVersion);
 			lightblueRequest.setBody(legacyFindJsonExpression);
-			LightblueResponse response = getClient().data(lightblueRequest);
-			if (!node.equals(response.getJson())) {
-				hasFailures = true;
-				LOG.error("lightblue document: " + response.getJson().toString() + " doesn't equal legacy document: " + node.toString());
-				if (shouldOverwriteLightblueDocuments()) {
-					overwriteLightblueDocument(node);
+			for (JsonNode lightblueNode : getLightblueData(lightblueRequest)) {
+				if (!legacyNode.equals(lightblueNode)) {
+					hasFailures = true;
+					LOG.error("lightblue document: " + lightblueNode.toString() + " doesn't equal legacy document: " + legacyNode.toString());
+					if (shouldOverwriteLightblueDocuments()) {
+						overwriteLightblueDocument(legacyNode);
+					}
+					inconsistentDocuments++;
 				}
-				inconsistentDocuments++;
 			}
 			documentsCompared++;
 		}
 	}
 
-	private void overwriteLightblueDocument(JsonNode node) {
+	protected LightblueResponse updateLightblueData(LightblueRequest updateRequest) {
+		return getClient().data(updateRequest);
+	}
+
+	protected void overwriteLightblueDocument(JsonNode node) {
 		LightblueRequest updateRequest = new DataSaveRequest(lightblueEntityName, lightblueEntityVersion);
 		updateRequest.setBody(lightblueUpdateJsonExpression.replace("$nodeData", node.toString()));
 		LOG.info("lightblue being updated with legacy document document: " + node.toString());
-		LightblueResponse response = getClient().data(updateRequest);
+		LightblueResponse response = updateLightblueData(updateRequest);
 		LOG.info("updateResponse: " + response.getText());
 		lightblueDocumentsUpdated++;
 	}
