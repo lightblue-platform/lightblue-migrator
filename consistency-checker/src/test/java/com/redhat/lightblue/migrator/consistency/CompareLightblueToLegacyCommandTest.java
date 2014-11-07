@@ -213,13 +213,4 @@ public class CompareLightblueToLegacyCommandTest {
 		Assert.assertEquals(true, command.shouldOverwriteLightblueDocuments());
 	}
 
-	@Test
-	public void testExecute() {
-		command.setLightblueEntityVersion("1.0.0");
-		command.setLightblueEntityName("country");
-		command.setLegacyEntityVersion("1.0.0");
-		command.setLegacyEntityVersion("country");
-		command.execute();
-	}
-
 }
