@@ -18,19 +18,17 @@ public final class CompareLightblueToLegacyCLI {
 	public static void main(String[] args) {
 		Options options = new Options();
 		
-		options.addOption(OptionBuilder.withArgName("lbentity").withLongOpt("lightblueentityname").hasArg(true).withDescription("lightblue Entity Name").isRequired().create('l'));
-		options.addOption(OptionBuilder.withArgName("lbversion").withLongOpt("lightblueentityversion").hasArg(true).withDescription("lightblue Entity Version").isRequired().create('v'));
-		options.addOption(OptionBuilder.withArgName("legentity").withLongOpt("legacyentityname").hasArg(true).withDescription("User DN").isRequired().create('g'));
-		options.addOption(OptionBuilder.withArgName("legversion").withLongOpt("legacyentityversion").hasArg(true).withDescription("LDAP Password").isRequired().create('s'));
-
-		options.addOption(OptionBuilder.withArgName("lburi").withLongOpt("lightblueserviceuri").hasArg(true).withDescription("lightblue Service URI").isRequired().create('u'));
-		options.addOption(OptionBuilder.withArgName("lguri").withLongOpt("legacyserviceuri").hasArg(true).withDescription("Legacy Service URI").isRequired().create('i'));
-		options.addOption(OptionBuilder.withArgName("lgfjson").withLongOpt("legacyfindjson").hasArg(true).withDescription("Legacy JSON Find Expression").isRequired().create('j'));
-		options.addOption(OptionBuilder.withArgName("lbfjson").withLongOpt("lightbluefindjson").hasArg(true).withDescription("lightblue JSON Find Expression").isRequired().create('s'));
-		options.addOption(OptionBuilder.withArgName("lbsjson").withLongOpt("lightbluesavejson").hasArg(true).withDescription("lightblue JSON Save Expression").isRequired().create('n'));
-				
-		options.addOption(OptionBuilder.withArgName("ov").withLongOpt("overwritelightblue").hasArg(true).withDescription("Overwrite lightblue documents").isRequired().create('o'));
-		
+		options.addOption(OptionBuilder.withArgName("lightblue-entity-name").withLongOpt("lightblue-entity-name").hasArg(true).withDescription("lightblue Entity Name").isRequired().create('l'));
+		options.addOption(OptionBuilder.withArgName("lightblue-entity-version").withLongOpt("lightblue-entity-version").hasArg(true).withDescription("lightblue Entity Version").isRequired().create('v'));
+		options.addOption(OptionBuilder.withArgName("legacy-entity-name").withLongOpt("legacy-entity-name").hasArg(true).withDescription("User DN").isRequired().create('g'));
+		options.addOption(OptionBuilder.withArgName("legacy-entity-version").withLongOpt("legacy-entity-version").hasArg(true).withDescription("LDAP Password").isRequired().create('s'));
+		options.addOption(OptionBuilder.withArgName("lightblue-service-uri").withLongOpt("lightblue-service-uri").hasArg(true).withDescription("lightblue Service URI").isRequired().create('u'));
+		options.addOption(OptionBuilder.withArgName("legacy-service-uri").withLongOpt("legacy-service-uri").hasArg(true).withDescription("Legacy Service URI").isRequired().create('i'));
+		options.addOption(OptionBuilder.withArgName("legacy-find-json").withLongOpt("legacy-find-json").hasArg(true).withDescription("Legacy JSON Find Expression").isRequired().create('j'));
+		options.addOption(OptionBuilder.withArgName("lightblue-find-json").withLongOpt("lightblue-find-json").hasArg(true).withDescription("lightblue JSON Find Expression").isRequired().create('s'));
+		options.addOption(OptionBuilder.withArgName("lightblue-save-json").withLongOpt("lightblue-save-json").hasArg(true).withDescription("lightblue JSON Save Expression").isRequired().create('n'));
+		options.addOption(OptionBuilder.withArgName("overwrite-lightblue").withLongOpt("overwrite-lightblue").hasArg(true).withDescription("Overwrite lightblue documents").isRequired().create('o'));
+	
 		CompareLightblueToLegacyCommand command = new CompareLightblueToLegacyCommand();
 		PosixParser parser = new PosixParser();
 		try {
@@ -41,17 +39,17 @@ public final class CompareLightblueToLegacyCLI {
 				System.setProperty(opt.getLongOpt(), opt.getValue() == null ? "true" : opt.getValue());
 			}
 
-			command.setLightblueEntityName(System.getProperty("lightblueentityname"));
-			command.setLightblueEntityVersion(System.getProperty("lightblueentityversion"));
-			command.setLegacyEntityName(System.getProperty("legacyentityname"));
-			command.setLegacyEntityVersion(System.getProperty("legacyentityversion"));
-			command.setLightblueServiceURI(System.getProperty("lburi"));
-			command.setLegacyServiceURI(System.getProperty("lguri"));
-			command.setLegacyFindJsonExpression(System.getProperty("legacyfindjson"));
-			command.setLightblueFindJsonExpression(System.getProperty("lightbluefindjson"));
-			command.setLightblueSaveJsonExpression(System.getProperty("lightbluesavejson"));
+			command.setLightblueEntityName(System.getProperty("lightblue-entity-name"));
+			command.setLightblueEntityVersion(System.getProperty("lightblue-entity-version"));
+			command.setLegacyEntityName(System.getProperty("legacy-entity-name"));
+			command.setLegacyEntityVersion(System.getProperty("legacy-entity-version"));
+			command.setLightblueServiceURI(System.getProperty("lightblue-service-uri"));
+			command.setLegacyServiceURI(System.getProperty("legacy-service-uri"));
+			command.setLegacyFindJsonExpression(System.getProperty("legacy-find-json"));
+			command.setLightblueFindJsonExpression(System.getProperty("lightblue-find-json"));
+			command.setLightblueSaveJsonExpression(System.getProperty("lightblue-save-json"));
 			
-			command.setOverwriteLightblueDocuments("true".equals(System.getProperty("overwritelightblue")) ? true : false);
+			command.setOverwriteLightblueDocuments("true".equals(System.getProperty("overwrite-lightblue")) ? true : false);
 			
 			CompareLightblueToLegacyCommand.LOG.info("Starting CompareLightblueToLegacyCommand");
 			command.execute();
