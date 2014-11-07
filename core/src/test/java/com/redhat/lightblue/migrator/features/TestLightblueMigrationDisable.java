@@ -16,37 +16,37 @@ public class TestLightblueMigrationDisable {
 	@Test
 	public void testReadLegacyEntityFeature() {
 		togglzRule.disable(LightblueMigrationFeatures.READ_LEGACY_ENTITY);
-		Assert.assertFalse(LightblueMigration.readLegacyEntity());
+		Assert.assertFalse(LightblueMigration.shouldReadLegacyEntity());
 	}
 
 	@Test
 	public void testWriteLegacyEntityFeature() {
 		togglzRule.disable(LightblueMigrationFeatures.WRITE_LEGACY_ENTITY);
-		Assert.assertFalse(LightblueMigration.writeLegacyEntity());
+		Assert.assertFalse(LightblueMigration.shouldWriteLegacyEntity());
 	}
 
 	@Test
 	public void testReadLightblueEntityFeature() {
 		togglzRule.disable(LightblueMigrationFeatures.READ_LIGHTBLUE_ENTITY);
-		Assert.assertFalse(LightblueMigration.readLightblueEntity());
+		Assert.assertFalse(LightblueMigration.shouldReadLightblueEntity());
 	}
 
 	@Test
 	public void testWriteLightblueEntityFeature() {
 		togglzRule.disable(LightblueMigrationFeatures.WRITE_LIGHTBLUE_ENTITY);
-		Assert.assertFalse(LightblueMigration.writeLightblueEntity());
+		Assert.assertFalse(LightblueMigration.shouldWriteLightblueEntity());
 	}
 
 	@Test
 	public void testReadConsistencyEntityFeature() {
 		togglzRule.disable(LightblueMigrationFeatures.READ_CONSISTENCY_ENTITY);
-		Assert.assertFalse(LightblueMigration.readConsistencyEntity());
+		Assert.assertFalse(LightblueMigration.shouldReadConsistencyEntity());
 	}
 
 	@Test
 	public void testWriteConsistencyEntityFeature() {
 		togglzRule.disable(LightblueMigrationFeatures.WRITE_CONSISTENCY_ENTITY);
-		Assert.assertFalse(LightblueMigration.writeConsistencyEntity());
+		Assert.assertFalse(LightblueMigration.shouldWriteConsistencyEntity());
 	}
 
 }
