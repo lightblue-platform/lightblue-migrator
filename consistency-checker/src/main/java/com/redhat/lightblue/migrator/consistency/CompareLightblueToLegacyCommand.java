@@ -181,7 +181,7 @@ public class CompareLightblueToLegacyCommand {
 
 		for (JsonNode legacyNode : legacyDocuments) {
 			LightblueRequest lightblueRequest = new DataFindRequest(lightblueEntityName, lightblueEntityVersion);
-			lightblueRequest.setBody(legacyFindJsonExpression);
+			lightblueRequest.setBody(lightblueFindJsonExpression);
 			for (JsonNode lightblueNode : getLightblueData(lightblueRequest)) {
 				if (!legacyNode.equals(lightblueNode)) {
 					hasFailures = true;
