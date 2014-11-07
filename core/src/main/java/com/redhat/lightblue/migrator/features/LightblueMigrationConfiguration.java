@@ -32,7 +32,7 @@ public class LightblueMigrationConfiguration implements TogglzConfig {
 		this.configFilePath = configFilePath;
 	}
 		
-	private String stateRepositoryFilePath() {    	
+	private String getStateRepositoryFilePath() {    	
 		try {
 			Properties properties = new Properties();
 			properties.load(getClass().getClassLoader().getResourceAsStream(getConfigFilePath()));
@@ -50,7 +50,7 @@ public class LightblueMigrationConfiguration implements TogglzConfig {
 
 	@Override
 	public StateRepository getStateRepository() {
-		return new FileBasedStateRepository(new File(stateRepositoryFilePath()));
+		return new FileBasedStateRepository(new File(getStateRepositoryFilePath()));
 
 	}
 
