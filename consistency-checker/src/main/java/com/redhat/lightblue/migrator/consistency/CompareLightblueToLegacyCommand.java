@@ -29,7 +29,7 @@ public class CompareLightblueToLegacyCommand {
 	private String legacyServiceURI;
 	private String legacyFindJsonExpression;
 	private String lightblueFindJsonExpression;
-	private String lightblueUpdateJsonExpression;
+	private String lightblueSaveJsonExpression;
 	private boolean hasFailures = false;
 	private boolean overwriteLightblueDocuments = false;
 
@@ -105,12 +105,12 @@ public class CompareLightblueToLegacyCommand {
 		this.lightblueFindJsonExpression = lightblueFindJsonExpression;
 	}
 
-	public String getLightblueUpdateJsonExpression() {
-		return lightblueUpdateJsonExpression;
+	public String getLightblueSaveJsonExpression() {
+		return lightblueSaveJsonExpression;
 	}
 
-	public void setLightblueUpdateJsonExpression(String lightblueUpdateJsonExpression) {
-		this.lightblueUpdateJsonExpression = lightblueUpdateJsonExpression;
+	public void setLightblueSaveJsonExpression(String lightblueSaveJsonExpression) {
+		this.lightblueSaveJsonExpression = lightblueSaveJsonExpression;
 	}
 
 	public boolean hasFailures() {
@@ -202,7 +202,8 @@ public class CompareLightblueToLegacyCommand {
 
 	protected void overwriteLightblueDocument(JsonNode node) {
 		LightblueRequest updateRequest = new DataSaveRequest(lightblueEntityName, lightblueEntityVersion);
-		updateRequest.setBody(lightblueUpdateJsonExpression.replace("$nodeData", node.toString()));
+		
+		updateRequest.setBody(lightblueSaveJsonExpression.replace("$nodeData", node.toString()));
 		LOG.info("lightblue being updated with legacy document document: " + node.toString());
 		LightblueResponse response = updateLightblueData(updateRequest);
 		LOG.info("updateResponse: " + response.getText());

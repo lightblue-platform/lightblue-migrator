@@ -40,7 +40,7 @@ public class CompareLightblueToLegacyCommandTest {
 		command.setLightblueServiceURI(lightblueServiceURI);
 		command.setLegacyFindJsonExpression(legacyFindJsonExpression);
 		command.setLightblueFindJsonExpression(lightblueFindJsonExpression);
-		command.setLightblueUpdateJsonExpression(lightblueUpdateJsonExpression);
+		command.setLightblueSaveJsonExpression(lightblueUpdateJsonExpression);
 		command.setOverwriteLightblueDocuments(true);
 		command.setHasFailures(true);
 		client = new LightblueHttpClient();
@@ -148,13 +148,13 @@ public class CompareLightblueToLegacyCommandTest {
 
 	@Test
 	public void testGetLightblueUpdateJsonExpression() {
-		Assert.assertEquals(lightblueUpdateJsonExpression, command.getLightblueUpdateJsonExpression());
+		Assert.assertEquals(lightblueUpdateJsonExpression, command.getLightblueSaveJsonExpression());
 	}
 
 	@Test
 	public void testSetLightblueUpdateJsonExpression() {
-		command.setLightblueUpdateJsonExpression(legacyFindJsonExpression);
-		Assert.assertEquals(legacyFindJsonExpression, command.getLightblueUpdateJsonExpression());
+		command.setLightblueSaveJsonExpression(legacyFindJsonExpression);
+		Assert.assertEquals(legacyFindJsonExpression, command.getLightblueSaveJsonExpression());
 	}
 
 	@Test

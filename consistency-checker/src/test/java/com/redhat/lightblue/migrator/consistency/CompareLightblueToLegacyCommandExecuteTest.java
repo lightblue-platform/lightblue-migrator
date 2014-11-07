@@ -191,7 +191,7 @@ public class CompareLightblueToLegacyCommandExecuteTest {
 
 	private void configureCommand(CompareLightblueToLegacyCommand command) {
 		command.setOverwriteLightblueDocuments(true);
-		command.setLightblueUpdateJsonExpression("{$nodeData}");
+		command.setLightblueSaveJsonExpression("{$nodeData}");
 		LightblueClient client = new LightblueHttpClient();
 		command.setClient(client);
 	}

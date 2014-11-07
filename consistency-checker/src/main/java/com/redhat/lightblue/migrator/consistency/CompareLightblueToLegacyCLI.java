@@ -27,7 +27,7 @@ public final class CompareLightblueToLegacyCLI {
 		options.addOption(OptionBuilder.withArgName("lguri").withLongOpt("legacyserviceuri").hasArg(true).withDescription("Legacy Service URI").isRequired().create('i'));
 		options.addOption(OptionBuilder.withArgName("lgfjson").withLongOpt("legacyfindjson").hasArg(true).withDescription("Legacy JSON Find Expression").isRequired().create('j'));
 		options.addOption(OptionBuilder.withArgName("lbfjson").withLongOpt("lightbluefindjson").hasArg(true).withDescription("lightblue JSON Find Expression").isRequired().create('s'));
-		options.addOption(OptionBuilder.withArgName("lbujson").withLongOpt("lightblueupdatejson").hasArg(true).withDescription("lightblue JSON Update Expression").isRequired().create('n'));
+		options.addOption(OptionBuilder.withArgName("lbsjson").withLongOpt("lightbluesavejson").hasArg(true).withDescription("lightblue JSON Save Expression").isRequired().create('n'));
 				
 		options.addOption(OptionBuilder.withArgName("ov").withLongOpt("overwritelightblue").hasArg(true).withDescription("Overwrite lightblue documents").isRequired().create('o'));
 		
@@ -49,7 +49,7 @@ public final class CompareLightblueToLegacyCLI {
 			command.setLegacyServiceURI(System.getProperty("lguri"));
 			command.setLegacyFindJsonExpression(System.getProperty("legacyfindjson"));
 			command.setLightblueFindJsonExpression(System.getProperty("lightbluefindjson"));
-			command.setLightblueUpdateJsonExpression(System.getProperty("lightblueupdatejson"));
+			command.setLightblueSaveJsonExpression(System.getProperty("lightbluesavejson"));
 			
 			command.setOverwriteLightblueDocuments("true".equals(System.getProperty("overwritelightblue")) ? true : false);
 			
