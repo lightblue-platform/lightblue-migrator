@@ -15,38 +15,38 @@ public class TestLightblueMigrationEnable {
 		
 	@Test
 	public void testReadLegacyEntityFeature() {
-		togglzRule.disable(LightblueMigrationFeatures.READ_LEGACY_ENTITY);
-		Assert.assertFalse(LightblueMigration.readLegacyEntity());
+		togglzRule.enable(LightblueMigrationFeatures.READ_LEGACY_ENTITY);
+		Assert.assertTrue(LightblueMigration.readLegacyEntity());
 	}
 	
 	@Test
 	public void testWriteLegacyEntityFeature() {
-		togglzRule.disable(LightblueMigrationFeatures.WRITE_LEGACY_ENTITY);
-		Assert.assertFalse(LightblueMigration.writeLegacyEntity());
+		togglzRule.enable(LightblueMigrationFeatures.WRITE_LEGACY_ENTITY);
+		Assert.assertTrue(LightblueMigration.writeLegacyEntity());
 	}
 	
 	@Test
 	public void testReadLightblueEntityFeature() {
-		togglzRule.disable(LightblueMigrationFeatures.READ_LIGHTBLUE_ENTITY);
-		Assert.assertFalse(LightblueMigration.readLightblueEntity());
+		togglzRule.enable(LightblueMigrationFeatures.READ_LIGHTBLUE_ENTITY);
+		Assert.assertTrue(LightblueMigration.readLightblueEntity());
 	}
 	
 	@Test
 	public void testWriteLightblueEntityFeature() {
-		togglzRule.disable(LightblueMigrationFeatures.WRITE_LIGHTBLUE_ENTITY);
-		Assert.assertFalse(LightblueMigration.writeLightblueEntity());
+		togglzRule.enable(LightblueMigrationFeatures.WRITE_LIGHTBLUE_ENTITY);
+		Assert.assertTrue(LightblueMigration.writeLightblueEntity());
 	}
 	
 	@Test
 	public void testReadConsistencyEntityFeature() {
-		togglzRule.disable(LightblueMigrationFeatures.READ_CONSISTENCY_ENTITY);
-		Assert.assertFalse(LightblueMigration.readConsistencyEntity());
+		togglzRule.enable(LightblueMigrationFeatures.READ_CONSISTENCY_ENTITY);
+		Assert.assertTrue(LightblueMigration.readConsistencyEntity());
 	}
 	
 	@Test
 	public void testWriteConsistencyEntityFeature() {
-		togglzRule.disable(LightblueMigrationFeatures.WRITE_CONSISTENCY_ENTITY);
-		Assert.assertFalse(LightblueMigration.writeConsistencyEntity());
+		togglzRule.enable(LightblueMigrationFeatures.WRITE_CONSISTENCY_ENTITY);
+		Assert.assertTrue(LightblueMigration.writeConsistencyEntity());
 	}
 
 }
