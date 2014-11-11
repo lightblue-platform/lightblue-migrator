@@ -1,4 +1,4 @@
 <?xml version="1.0"?>
 <jboss-web>
-  <context-root>/lbmigrator</context-root>
+  <context-root>/migrator</context-root>
 </jboss-web>
