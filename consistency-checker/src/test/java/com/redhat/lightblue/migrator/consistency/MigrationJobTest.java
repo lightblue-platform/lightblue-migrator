@@ -45,12 +45,15 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
+			}
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				return new LightblueResponse();
 			}
 
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertFalse(migrationJob.hasFailures());
 	}
@@ -64,7 +67,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("emptyFindResponse.json").findValues("processed");
 			}
 
@@ -73,7 +76,7 @@ public class MigrationJobTest {
 				return new LightblueResponse();
 			}
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertTrue(migrationJob.hasFailures());
 	}
@@ -87,11 +90,16 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("emptyFindResponse.json").findValues("processed");
 			}
+			
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				return new LightblueResponse();
+			}
+			
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.setOverwriteLightblueDocuments(false);
 		migrationJob.run();
 		Assert.assertTrue(migrationJob.hasFailures());
@@ -106,7 +114,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
 			}
 
@@ -115,7 +123,7 @@ public class MigrationJobTest {
 				return new LightblueResponse();
 			}
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertTrue(migrationJob.hasFailures());
 	}
@@ -129,11 +137,16 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("multipleFindResponse.json").findValues("processed");
 			}
+			
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				return new LightblueResponse();
+			}
+			
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertFalse(migrationJob.hasFailures());
 	}
@@ -147,7 +160,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("emptyFindResponse.json").findValues("processed");
 			}
 
@@ -156,7 +169,7 @@ public class MigrationJobTest {
 				return new LightblueResponse();
 			}
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertTrue(migrationJob.hasFailures());
 	}
@@ -170,7 +183,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("multipleFindResponse.json").findValues("processed");
 			}
 
@@ -179,7 +192,7 @@ public class MigrationJobTest {
 				return new LightblueResponse();
 			}
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertTrue(migrationJob.hasFailures());
 	}
@@ -193,7 +206,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("multipleFindResponse.json").findValues("processed");
 			}
 
@@ -202,19 +215,20 @@ public class MigrationJobTest {
 				return new LightblueResponse();
 			}
 		};
-		configureCommand(migrationJob);
+		configureMigrationJob(migrationJob);
 		migrationJob.run();
 		Assert.assertTrue(migrationJob.hasFailures());
 	}
 
-	private void configureCommand(MigrationJob migrationJob) {
+	private void configureMigrationJob(MigrationJob migrationJob) {
 		JobConfiguration jobConfiguration = new JobConfiguration();
 		jobConfiguration.setLegacyEntityKeyFields(new ArrayList<String>());
 		migrationJob.setJobConfiguration(jobConfiguration);
-		migrationJob.setOverwriteLightblueDocuments(true);
 		
+		migrationJob.setOverwriteLightblueDocuments(true);
+
 		LightblueClient client = new LightblueHttpClient();
-		migrationJob.setClient(client);
+		migrationJob.setLegacyClient(client);
 	}
 
 	private static JsonNode fromFileToJsonNode(String fileName) {

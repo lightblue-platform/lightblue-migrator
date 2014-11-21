@@ -1,6 +1,7 @@
 package com.redhat.lightblue.migrator.consistency;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,34 +15,37 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 
 public class ConsistencyChecker {
 
-	LightblueClient client = new LightblueHttpClient();
+	LightblueClient client;
 
-	public static final Log LOG = LogFactory.getLog("CompareLightblueToLegacyCommand");
+	public static final Log LOG = LogFactory.getLog("ConsistencyChecker");
 
-	private String checkerName;
+	private String name;
 	private String hostname;
 	private String ipAddress;
-	private String serviceURI;
+	private String configPath;
 
-	private boolean hasFailures = false;
+	private boolean run = true;
 
-	public boolean hasFailures() {
-		return hasFailures;
+	public void setRun(boolean run) {
+		this.run = run;
 	}
 
-	public String getCheckerName() {
-		return checkerName;
+	public String getName() {
+		return name;
 	}
 
-	public void setCheckerName(String name) {
-		this.checkerName = name;
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public LightblueClient getClient() {
+		return client;
 	}
 
 	public void setClient(LightblueClient client) {
 		this.client = client;
 	}
 
-	
 	public String getHostname() {
 		return hostname;
 	}
@@ -58,50 +62,60 @@ public class ConsistencyChecker {
 		this.ipAddress = ipAddress;
 	}
 
-	public String getServiceURI() {
-		return serviceURI;
+	public String getConfigPath() {
+		return configPath;
 	}
 
-	public void setServiceURI(String serviceURI) {
-		this.serviceURI = serviceURI;
+	public void setConfigPath(String configPath) {
+		this.configPath = configPath;
 	}
 
-	public void execute() throws InterruptedException {
-		List<ExecutorService> executors = new ArrayList<>();
+	public void execute() throws Exception {
 
-		LOG.info("From CLI - name: " + getCheckerName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
-		// client = LightblueHttpClient(String dataServiceURI, String
-		// metadataServiceURI, false);
-		// TODO make client usage less painful
-		while (true) {
-			List<JobConfiguration> configurations = getJobConfigurations(checkerName);
+		LOG.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
+
+		if(configPath != null) {
+			client = new LightblueHttpClient(configPath);	
+		} else {
+			client = new LightblueHttpClient();
+		}
+		
+		while (run) {
+			List<ExecutorService> executors = new ArrayList<>();
+			List<JobConfiguration> configurations = getJobConfigurations(name);
 
 			for (JobConfiguration configuration : configurations) {
-				ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
-				executors.add(jobExecutor);
-				List<MigrationJob> jobs = getJobs(configuration);
-				for (int i = 0; i < jobs.size(); i++) {
-					MigrationJob migrationJob = new MigrationJob();
-					jobExecutor.execute(migrationJob);
+				configuration.setConfigFilePath(configPath);
+				List<MigrationJob> jobs = getMigrationJobs(configuration);
+
+				if (!jobs.isEmpty()) {
+					ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
+					executors.add(jobExecutor);
+					for (MigrationJob job : jobs) {
+						jobExecutor.execute(job);
+					}
 				}
 			}
-			for (ExecutorService executor : executors) {
-				executor.shutdown();
-			}			
-			
-//			if()
-			//Thread.sleep(10);
+
+			if (executors.isEmpty()) {
+				MigrationJob nextJob = getNextAvailableJob();
+				long timeToWait = nextJob.getWhenAvailable().getTime() - new Date().getTime();
+				Thread.sleep(timeToWait);
+			} else {
+				for (ExecutorService executor : executors) {
+					executor.shutdown();
+				}
+			}
 		}
 
 	}
 
-	protected List<MigrationJob> getJobs(JobConfiguration configuration) {
+	protected List<MigrationJob> getMigrationJobs(JobConfiguration configuration) {
 		ArrayList<MigrationJob> jobs = new ArrayList<>();
-		// get jobs from lightblue for this configuration
 		DataFindRequest findRequest = new DataFindRequest();
 		// TODO set up stuff to find by checkerName
-		//client.data(findRequest);
-				
+		getClient().data(findRequest);
+		// TODO convert response into MigrationJob
 		return jobs;
 	}
 
@@ -111,9 +125,17 @@ public class ConsistencyChecker {
 		// checker
 		DataFindRequest findRequest = new DataFindRequest();
 		// TODO set up stuff to find by checkerName
-		//client.data(findRequest);
-		
+		getClient().data(findRequest);
+		// TODO convert response into JobConfiguration
 		return configurations;
+	}
+
+	protected MigrationJob getNextAvailableJob() {
+		MigrationJob job = new MigrationJob();
+		DataFindRequest findRequest = new DataFindRequest();
+		// TODO populate request here
+		getClient().data(findRequest);
+		return job;
 	}
 
 }

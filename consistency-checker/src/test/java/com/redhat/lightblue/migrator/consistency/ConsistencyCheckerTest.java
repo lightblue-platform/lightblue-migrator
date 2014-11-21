@@ -1,5 +1,10 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+
+import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -12,20 +17,7 @@ public class ConsistencyCheckerTest {
 	private String checkerName = "testChecker";
 	private String hostname = "http://lightblue.io";
 	private String ipAddress = "127.0.0.1";
-	private String serviceURI = "http://demo.lightblue.io/rest/data/";
-	
-	private static final int documentsUpdated = 42;
-	private static final int inconsistentDocuments = 42;
-	private static final int documentsCompared = 63;
-	private static final String legacyServiceURI = "http://demo.lightblue.io/rest/data/";
-	private static final String lightblueServiceURI = "http://demo.lightblue.io/rest/data/";
-	private static final String lightblueEntityVersion = "lightblueEntityVersion";
-	private static final String lightblueEntityName = "lightblueEntityName";
-	private static final String legacyEntityVersion = "legacyEntityVersion";
-	private static final String legacyEntityName = "legacyEntityName";
-	private static final String legacyFindJsonExpression = "{}";
-	private static final String lightblueFindJsonExpression = "{}";
-	private static final String lightblueUpdateJsonExpression = "{}";
+	private String configPath = "lightblue-client.properties";
 
 	ConsistencyChecker checker;
 	
@@ -34,23 +26,23 @@ public class ConsistencyCheckerTest {
 	@Before
 	public void setUp() throws Exception {
 		checker = new ConsistencyChecker();
-		checker.setCheckerName(checkerName);
+		checker.setName(checkerName);
 		checker.setHostname(hostname);
 		checker.setIpAddress(ipAddress);
-		checker.setServiceURI(legacyServiceURI);
+		checker.setConfigPath(configPath);
 		client = new LightblueHttpClient();
 		checker.setClient(client);
 	}
 
 	@Test
 	public void testGetCheckerName() {
-		Assert.assertEquals(checkerName, checker.getCheckerName());
+		Assert.assertEquals(checkerName, checker.getName());
 	}
 
 	@Test
 	public void testSetCheckerName() {
-		checker.setCheckerName(hostname);
-		Assert.assertEquals(hostname, checker.getCheckerName());
+		checker.setName(hostname);
+		Assert.assertEquals(hostname, checker.getName());
 	}
 
 	@Test
@@ -77,12 +69,64 @@ public class ConsistencyCheckerTest {
 	
 	@Test
 	public void testGetServiceURI() {
-		Assert.assertEquals(serviceURI, checker.getServiceURI());
+		Assert.assertEquals(configPath, checker.getConfigPath());
 	}
 
 	@Test
 	public void testSetServiceURI() {
-		checker.setServiceURI(ipAddress);
-		Assert.assertEquals(ipAddress, checker.getServiceURI());
+		checker.setConfigPath(ipAddress);
+		Assert.assertEquals(ipAddress, checker.getConfigPath());
 	}
+	
+	@Test
+	public void testExecute() throws Exception {
+		ConsistencyChecker checker = new ConsistencyChecker() {
+			public int numRuns = 0;
+
+			@Override
+			protected List<MigrationJob> getMigrationJobs(JobConfiguration configuration) {
+				ArrayList<MigrationJob> jobs = new ArrayList<>();
+				if(numRuns == 0 || numRuns == 2) {
+					for(int i=0;i<10;i++) {
+						MigrationJob job = new MigrationJob() {
+							@Override
+							public void run() {
+								LOG.info("MigrationJob started");
+								LOG.info("MigrationJob completed");
+							}
+						};
+						jobs.add(job);	
+					}	
+				}
+				return jobs;
+			}
+			
+			@Override
+			protected List<JobConfiguration> getJobConfigurations(String checkerName) {
+				ArrayList<JobConfiguration> configurations = new ArrayList<>();
+				;
+				for(int i=0;i<5;i++) {
+					JobConfiguration config = new JobConfiguration();
+					config.setThreadCount(5);
+					configurations.add(config);	
+				}
+				
+				numRuns++;
+				if(numRuns > 2){
+					setRun(false);
+				}
+				return configurations;
+			}
+
+			protected MigrationJob getNextAvailableJob() {
+				MigrationJob job = new MigrationJob();
+				job.setWhenAvailable(DateUtils.addSeconds(new Date(), 5));
+				return job;
+			}
+
+		};
+		checker.execute();
+
+	}
+	
 }

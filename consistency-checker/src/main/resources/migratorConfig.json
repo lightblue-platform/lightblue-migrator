@@ -31,16 +31,16 @@
     "schema": {
         "access": {
             "delete": [
-                "lb-migratorConfig-delete"
+                "lb-migratorconfig-delete"
             ],
             "find": [
-                "lb-migratorConfig-find"
+                "lb-migratorconfig-find"
             ],
             "insert": [
-                "lb-migratorConfig-insert"
+                "lb-migratorconfig-insert"
             ],
             "update": [
-                "lb-migratorConfig-update"
+                "lb-migratorconfig-update"
             ]
         },
         "fields": {

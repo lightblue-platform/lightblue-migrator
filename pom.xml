@@ -46,7 +46,6 @@
     <rpm.install.basedir>/usr/share/jbossas/standalone/deployments</rpm.install.basedir>
     <lightblue-client.version>1.2.0-SNAPSHOT</lightblue-client.version>
     <lightblue-util.version>1.2.0-SNAPSHOT</lightblue-util.version>
-    <lightblue-core.version>1.2.0-SNAPSHOT</lightblue-core.version>
   </properties>
   <build>
     <plugins>

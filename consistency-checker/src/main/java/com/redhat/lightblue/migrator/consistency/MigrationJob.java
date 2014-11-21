@@ -20,14 +20,15 @@ public class MigrationJob implements Runnable {
 	private static final Log LOG = LogFactory.getLog("MigrationJob");
 	
 	public MigrationJob() {
-		
+
 	}
 	
 	public MigrationJob(JobConfiguration jobConfiguration) {
 		this.jobConfiguration = jobConfiguration;
 	}
 
-	private LightblueClient client = new LightblueHttpClient();
+	private LightblueClient legacyClient;
+	private LightblueClient lightblueClient;
 	
 	// configuration for migrator
 	private JobConfiguration jobConfiguration;
@@ -70,12 +71,20 @@ public class MigrationJob implements Runnable {
 		this.jobConfiguration = jobConfiguration;
 	}
 	
-	public LightblueClient getClient() {
-		return client;
+	public LightblueClient getLegacyClient() {
+		return legacyClient;
 	}
 
-	public void setClient(LightblueClient client) {
-		this.client = client;
+	public void setLegacyClient(LightblueClient client) {
+		this.legacyClient = client;
+	}
+
+	public LightblueClient getLightblueClient() {
+		return lightblueClient;
+	}
+
+	public void setLightblueClient(LightblueClient client) {
+		this.lightblueClient = client;
 	}
 	
 	public void setOverwriteLightblueDocuments(boolean overwriteLightblueDocuments) {
@@ -204,8 +213,10 @@ public class MigrationJob implements Runnable {
 	
 	@Override
   public void run() {
-		LOG.info("JobInstance started");
-
+		LOG.info("MigrationJob started");
+		
+		configureClients();
+		
 		List<JsonNode> legacyDocuments = getLegacyDocuments();
 		
 		List<JsonNode> lightblueDocuments = getLightblueDocuments(legacyDocuments);
@@ -221,8 +232,18 @@ public class MigrationJob implements Runnable {
 		
 		saveJobDetails();
 		
-		LOG.info("JobInstance completed");
+		LOG.info("MigrationJob completed");
   }
+	
+	private void configureClients() {
+		if(jobConfiguration.getConfigFilePath() == null) {
+			legacyClient = new LightblueHttpClient();
+			lightblueClient = new LightblueHttpClient();	
+		} else {
+			legacyClient = new LightblueHttpClient(jobConfiguration.getConfigFilePath());
+			lightblueClient = new LightblueHttpClient(jobConfiguration.getConfigFilePath());
+		}
+	}
 	
 	private LightblueResponse saveJobDetails() {
 		DataSaveRequest saveRequest = new DataSaveRequest();
@@ -252,20 +273,19 @@ public class MigrationJob implements Runnable {
 				//TODO add to lightblue batch request
 			}	
 		}	
-		return getLightblueData(lightblueRequest);
+		return findLightblueData(lightblueRequest);
 	}
 	
-	protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
-		return getClient().data(dataRequest).getJson().findValues("processed");
+	protected List<JsonNode> getLegacyData(LightblueRequest findRequest) {
+		return getLegacyClient().data(findRequest).getJson().findValues("processed");
 	}
 
-	protected List<JsonNode> getLightblueData(LightblueRequest dataRequest) {
-		return getClient().data(dataRequest).getJson().findValues("processed");
+	protected List<JsonNode> findLightblueData(LightblueRequest findRequest) {
+		return getLightblueClient().data(findRequest).getJson().findValues("processed");
 	}
 	
-	protected LightblueResponse saveLightblueData(LightblueRequest updateRequest) {
-		//return getClient().data(updateRequest);
-		return new LightblueResponse();
+	protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+		return getLightblueClient().data(saveRequest);
 	}
 
 }

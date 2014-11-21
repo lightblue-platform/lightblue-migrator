@@ -18,8 +18,6 @@ public class JobConfigurationTest {
 	private static final List<String> legacyEntityKeyFields = Arrays.asList("id","name");;;
 	private static final String legacyEntityTimestampField = "lastUpdateDate";
 	
-	private static final String legacyServiceURI = "http://demo.lightblue.io/rest/data/";
-	private static final String lightblueServiceURI = "http://demo.lightblue.io/rest/data/";
 	private static final String lightblueEntityVersion = "lightblueEntityVersion";
 	private static final String lightblueEntityName = "lightblueEntityName";
 	private static final String legacyEntityVersion = "legacyEntityVersion";
@@ -41,8 +39,6 @@ public class JobConfigurationTest {
 		configuration.setLegacyEntityVersion(legacyEntityVersion);
 		configuration.setLightblueEntityName(lightblueEntityName);
 		configuration.setLightblueEntityVersion(lightblueEntityVersion);
-		configuration.setLegacyServiceURI(legacyServiceURI);
-		configuration.setLightblueServiceURI(lightblueServiceURI);
 		configuration.setOverwriteLightblueDocuments(true);
 	}
 	
@@ -154,28 +150,6 @@ public class JobConfigurationTest {
 	public void testSetLegacyEntityTimestampField() {
 		configuration.setLegacyEntityTimestampField(legacyEntityTimestampField);
 		Assert.assertEquals(legacyEntityTimestampField, configuration.getLegacyEntityTimestampField());
-	}
-	
-	@Test
-	public void testGetLightblueServiceURI() {
-		Assert.assertEquals(lightblueServiceURI, configuration.getLightblueServiceURI());
-	}
-
-	@Test
-	public void testSetLightblueServiceURI() {
-		configuration.setLightblueEntityName(legacyServiceURI);
-		Assert.assertEquals(legacyServiceURI, configuration.getLightblueServiceURI());
-	}
-
-	@Test
-	public void testGetLegacyServiceURI() {
-		Assert.assertEquals(legacyServiceURI, configuration.getLegacyServiceURI());
-	}
-
-	@Test
-	public void testSetLegacyServiceURI() {
-		configuration.setLegacyEntityName(lightblueServiceURI);
-		Assert.assertEquals(lightblueServiceURI, configuration.getLegacyServiceURI());
 	}
 
 	@Test
