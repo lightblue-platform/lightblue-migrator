@@ -29,22 +29,24 @@ import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 
 public class MigrationJob implements Runnable {
-	
+
 	private static final Log LOG = LogFactory.getLog("MigrationJob");
-	
+
 	public MigrationJob() {
 
 	}
-	
+
 	public MigrationJob(MigrationConfiguration migrationConfiguration) {
 		this.migrationConfiguration = migrationConfiguration;
 	}
 
 	private LightblueClient legacyClient;
 	private LightblueClient lightblueClient;
-	
+
 	// configuration for migrator
 	private MigrationConfiguration migrationConfiguration;
+
+	private String name;
 
 	// information about migrator instance working job
 	private String owner;
@@ -75,7 +77,7 @@ public class MigrationJob implements Runnable {
 	private int recordsOverwritten;
 
 	private boolean hasFailures;
-	
+
 	public MigrationConfiguration getJobConfiguration() {
 		return migrationConfiguration;
 	}
@@ -83,7 +85,7 @@ public class MigrationJob implements Runnable {
 	public void setJobConfiguration(MigrationConfiguration jobConfiguration) {
 		this.migrationConfiguration = jobConfiguration;
 	}
-	
+
 	public LightblueClient getLegacyClient() {
 		return legacyClient;
 	}
@@ -99,19 +101,27 @@ public class MigrationJob implements Runnable {
 	public void setLightblueClient(LightblueClient client) {
 		this.lightblueClient = client;
 	}
-	
+
 	public void setOverwriteLightblueDocuments(boolean overwriteLightblueDocuments) {
 		migrationConfiguration.setOverwriteLightblueDocuments(overwriteLightblueDocuments);
 	}
-	
+
 	public boolean shouldOverwriteLightblueDocuments() {
 		return migrationConfiguration.shouldOverwriteLightblueDocuments();
 	}
-	
+
 	public boolean hasFailures() {
 		return hasFailures;
 	}
-	
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public String getOwner() {
 		return owner;
 	}
@@ -223,93 +233,92 @@ public class MigrationJob implements Runnable {
 	public void setRecordsOverwritten(int recordsOverwritten) {
 		this.recordsOverwritten = recordsOverwritten;
 	}
-	
+
 	@Override
-  public void run() {
+	public void run() {
 		LOG.info("MigrationJob started");
-		
+
 		configureClients();
-		
+
 		List<JsonNode> legacyDocuments = getLegacyDocuments();
-		
+
 		List<JsonNode> lightblueDocuments = getLightblueDocuments();
-		
-		List<JsonNode> documentsToOverwrite = ListUtils.subtract(legacyDocuments, lightblueDocuments); 
-    
-		if(!documentsToOverwrite.isEmpty()) {
-    	hasFailures = true;
-    }
-		if(shouldOverwriteLightblueDocuments()) {
+
+		List<JsonNode> documentsToOverwrite = ListUtils.subtract(legacyDocuments, lightblueDocuments);
+
+		if (!documentsToOverwrite.isEmpty()) {
+			hasFailures = true;
+		}
+		if (shouldOverwriteLightblueDocuments()) {
 			overwriteLightblue(documentsToOverwrite);
 		}
-		
+
 		saveJobDetails();
-		
+
 		LOG.info("MigrationJob completed");
-  }
-	
+	}
+
 	private void configureClients() {
-		if(migrationConfiguration.getConfigFilePath() == null) {
+		if (migrationConfiguration.getConfigFilePath() == null) {
 			legacyClient = new LightblueHttpClient();
-			lightblueClient = new LightblueHttpClient();	
+			lightblueClient = new LightblueHttpClient();
 		} else {
 			legacyClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
 			lightblueClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
 		}
 	}
-	
+
 	private LightblueResponse saveJobDetails() {
-		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(),getJobConfiguration().getLightblueEntityVersion());
+		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
 		saveRequest.setBody(this.toJson());
 		LightblueResponse response = saveLightblueData(saveRequest);
 		return response;
-  }
+	}
 
 	private LightblueResponse overwriteLightblue(List<JsonNode> documentsToOverwrite) {
-		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(),getJobConfiguration().getLightblueEntityVersion());
+		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
 		StringBuffer body = new StringBuffer();
-		for(JsonNode document : documentsToOverwrite) {
-			body.append(document.toString());	
+		for (JsonNode document : documentsToOverwrite) {
+			body.append(document.toString());
 		}
 		saveRequest.setBody(body.toString());
 		LightblueResponse response = saveLightblueData(saveRequest);
 		return response;
-  }
+	}
 
 	protected List<JsonNode> getLegacyDocuments() {
 		List<JsonNode> legacyDocuments = Collections.emptyList();
 		try {
-			DataFindRequest legacyRequest = new DataFindRequest(getJobConfiguration().getLegacyEntityName(),getJobConfiguration().getLegacyEntityVersion());
+			DataFindRequest legacyRequest = new DataFindRequest(getJobConfiguration().getLegacyEntityName(), getJobConfiguration().getLegacyEntityVersion());
 			List<Query> conditions = new LinkedList<Query>();
-	    conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " >= " + getStartDate()));
-	    conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " <= " + getEndDate()));
-	    legacyRequest.where(and(conditions));
-	    legacyRequest.select(includeFieldRecursively("*"));
-	    legacyDocuments = findLegacyData(legacyRequest);
-    } catch (IOException e) {
-    	LOG.error("Problem getting legacyDocuments", e);
-    }
+			conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " >= " + getStartDate()));
+			conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " <= " + getEndDate()));
+			legacyRequest.where(and(conditions));
+			legacyRequest.select(includeFieldRecursively("*"));
+			legacyDocuments = findLegacyData(legacyRequest);
+		} catch (IOException e) {
+			LOG.error("Problem getting legacyDocuments", e);
+		}
 		return legacyDocuments;
 	}
-	
 
 	protected List<JsonNode> getLightblueDocuments() {
 		List<JsonNode> lightblueDocuments = Collections.emptyList();
 		try {
-			DataFindRequest lightblueRequest = new DataFindRequest(getJobConfiguration().getLightblueEntityName(),getJobConfiguration().getLightblueEntityVersion());
+			DataFindRequest lightblueRequest = new DataFindRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
 			List<Query> conditions = new LinkedList<Query>();
 			conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " >= " + getStartDate()));
-	    conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " <= " + getEndDate()));
-	    lightblueRequest.where(and(conditions));
-	    lightblueRequest.select(includeFieldRecursively("*"));
-	    lightblueRequest.sort(new SortCondition(getJobConfiguration().getLightblueEntityTimestampField(), SortDirection.ASC));
-	    lightblueDocuments = findLightblueData(lightblueRequest);
+			conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " <= " + getEndDate()));
+			lightblueRequest.where(and(conditions));
+			lightblueRequest.select(includeFieldRecursively("*"));
+			lightblueRequest.sort(new SortCondition(getJobConfiguration().getLightblueEntityTimestampField(), SortDirection.ASC));
+			lightblueDocuments = findLightblueData(lightblueRequest);
 		} catch (IOException e) {
 			LOG.error("Error getting lightblueDocuments", e);
 		}
 		return lightblueDocuments;
 	}
-	
+
 	protected List<JsonNode> findLegacyData(LightblueRequest findRequest) throws IOException {
 		return Arrays.asList(getLegacyClient().data(findRequest, JsonNode[].class));
 	}
@@ -317,7 +326,7 @@ public class MigrationJob implements Runnable {
 	protected List<JsonNode> findLightblueData(LightblueRequest findRequest) throws IOException {
 		return Arrays.asList(getLightblueClient().data(findRequest, JsonNode[].class));
 	}
-	
+
 	protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
 		return getLightblueClient().data(saveRequest);
 	}
@@ -326,11 +335,11 @@ public class MigrationJob implements Runnable {
 		StringBuffer json = new StringBuffer();
 		ObjectMapper mapper = new ObjectMapper();
 		try {
-	    json.append(mapper.writeValueAsString(MigrationJob.class));
-    } catch (JsonProcessingException e) {
-    	LOG.error("Error transforming to JSON", e);
-    }
+			json.append(mapper.writeValueAsString(MigrationJob.class));
+		} catch (JsonProcessingException e) {
+			LOG.error("Error transforming to JSON", e);
+		}
 		return json.toString();
 	}
-	
+
 }
