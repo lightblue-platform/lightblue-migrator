@@ -23,15 +23,15 @@ public class MigrationJob implements Runnable {
 
 	}
 	
-	public MigrationJob(JobConfiguration jobConfiguration) {
-		this.jobConfiguration = jobConfiguration;
+	public MigrationJob(MigrationConfiguration migrationConfiguration) {
+		this.migrationConfiguration = migrationConfiguration;
 	}
 
 	private LightblueClient legacyClient;
 	private LightblueClient lightblueClient;
 	
 	// configuration for migrator
-	private JobConfiguration jobConfiguration;
+	private MigrationConfiguration migrationConfiguration;
 
 	// information about migrator instance working job
 	private String owner;
@@ -63,12 +63,12 @@ public class MigrationJob implements Runnable {
 
 	private boolean hasFailures;
 	
-	public JobConfiguration getJobConfiguration() {
-		return jobConfiguration;
+	public MigrationConfiguration getJobConfiguration() {
+		return migrationConfiguration;
 	}
 
-	public void setJobConfiguration(JobConfiguration jobConfiguration) {
-		this.jobConfiguration = jobConfiguration;
+	public void setJobConfiguration(MigrationConfiguration jobConfiguration) {
+		this.migrationConfiguration = jobConfiguration;
 	}
 	
 	public LightblueClient getLegacyClient() {
@@ -88,11 +88,11 @@ public class MigrationJob implements Runnable {
 	}
 	
 	public void setOverwriteLightblueDocuments(boolean overwriteLightblueDocuments) {
-		jobConfiguration.setOverwriteLightblueDocuments(overwriteLightblueDocuments);
+		migrationConfiguration.setOverwriteLightblueDocuments(overwriteLightblueDocuments);
 	}
 	
 	public boolean shouldOverwriteLightblueDocuments() {
-		return jobConfiguration.shouldOverwriteLightblueDocuments();
+		return migrationConfiguration.shouldOverwriteLightblueDocuments();
 	}
 	
 	public boolean hasFailures() {
@@ -236,12 +236,12 @@ public class MigrationJob implements Runnable {
   }
 	
 	private void configureClients() {
-		if(jobConfiguration.getConfigFilePath() == null) {
+		if(migrationConfiguration.getConfigFilePath() == null) {
 			legacyClient = new LightblueHttpClient();
 			lightblueClient = new LightblueHttpClient();	
 		} else {
-			legacyClient = new LightblueHttpClient(jobConfiguration.getConfigFilePath());
-			lightblueClient = new LightblueHttpClient(jobConfiguration.getConfigFilePath());
+			legacyClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
+			lightblueClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
 		}
 	}
 	

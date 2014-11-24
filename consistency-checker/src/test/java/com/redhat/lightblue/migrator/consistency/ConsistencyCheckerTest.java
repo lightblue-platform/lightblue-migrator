@@ -84,7 +84,7 @@ public class ConsistencyCheckerTest {
 			public int numRuns = 0;
 
 			@Override
-			protected List<MigrationJob> getMigrationJobs(JobConfiguration configuration) {
+			protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
 				ArrayList<MigrationJob> jobs = new ArrayList<>();
 				if(numRuns == 0 || numRuns == 2) {
 					for(int i=0;i<10;i++) {
@@ -102,11 +102,11 @@ public class ConsistencyCheckerTest {
 			}
 			
 			@Override
-			protected List<JobConfiguration> getJobConfigurations(String checkerName) {
-				ArrayList<JobConfiguration> configurations = new ArrayList<>();
+			protected List<MigrationConfiguration> getJobConfigurations(String checkerName) {
+				ArrayList<MigrationConfiguration> configurations = new ArrayList<>();
 				;
 				for(int i=0;i<5;i++) {
-					JobConfiguration config = new JobConfiguration();
+					MigrationConfiguration config = new MigrationConfiguration();
 					config.setThreadCount(5);
 					configurations.add(config);	
 				}

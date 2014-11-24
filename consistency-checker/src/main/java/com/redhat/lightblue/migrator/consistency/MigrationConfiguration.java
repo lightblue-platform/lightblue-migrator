@@ -2,7 +2,7 @@ package com.redhat.lightblue.migrator.consistency;
 
 import java.util.List;
 
-public class JobConfiguration {
+public class MigrationConfiguration {
 
 	private String configFilePath;
 

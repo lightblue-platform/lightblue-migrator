@@ -8,7 +8,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class JobConfigurationTest {
+public class MigrationConfigurationTest {
 
 	private static final String hostName = "lightblue.io";
 	private static final int threadCount = 63;
@@ -23,11 +23,11 @@ public class JobConfigurationTest {
 	private static final String legacyEntityVersion = "legacyEntityVersion";
 	private static final String legacyEntityName = "legacyEntityName";
 	
-	JobConfiguration configuration;
+	MigrationConfiguration configuration;
 	
 	@Before
 	public void setUp() throws Exception {
-		configuration = new JobConfiguration();
+		configuration = new MigrationConfiguration();
 		configuration.setHostName(hostName);
 		configuration.setThreadCount(threadCount);
 		configuration.setOverwriteLightblueDocuments(true);

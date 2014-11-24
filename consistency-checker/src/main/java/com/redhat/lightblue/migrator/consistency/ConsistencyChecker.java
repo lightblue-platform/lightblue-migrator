@@ -82,9 +82,9 @@ public class ConsistencyChecker {
 		
 		while (run) {
 			List<ExecutorService> executors = new ArrayList<>();
-			List<JobConfiguration> configurations = getJobConfigurations(name);
+			List<MigrationConfiguration> configurations = getJobConfigurations(name);
 
-			for (JobConfiguration configuration : configurations) {
+			for (MigrationConfiguration configuration : configurations) {
 				configuration.setConfigFilePath(configPath);
 				List<MigrationJob> jobs = getMigrationJobs(configuration);
 
@@ -110,7 +110,7 @@ public class ConsistencyChecker {
 
 	}
 
-	protected List<MigrationJob> getMigrationJobs(JobConfiguration configuration) {
+	protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
 		ArrayList<MigrationJob> jobs = new ArrayList<>();
 		DataFindRequest findRequest = new DataFindRequest();
 		// TODO set up stuff to find by checkerName
@@ -119,8 +119,8 @@ public class ConsistencyChecker {
 		return jobs;
 	}
 
-	protected List<JobConfiguration> getJobConfigurations(String checkerName) {
-		ArrayList<JobConfiguration> configurations = new ArrayList<>();
+	protected List<MigrationConfiguration> getJobConfigurations(String checkerName) {
+		ArrayList<MigrationConfiguration> configurations = new ArrayList<>();
 		// get job configurations from lightblue for this instance of consistency
 		// checker
 		DataFindRequest findRequest = new DataFindRequest();

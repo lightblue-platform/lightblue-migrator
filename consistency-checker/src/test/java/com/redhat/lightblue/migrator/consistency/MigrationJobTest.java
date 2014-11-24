@@ -29,7 +29,7 @@ public class MigrationJobTest {
 	@Before
 	public void setup() {
 		migrationJob = new MigrationJob();
-		migrationJob = new MigrationJob(new JobConfiguration());
+		migrationJob = new MigrationJob(new MigrationConfiguration());
 		migrationJob.setDocumentsProcessed(documentsProcessed);
 		migrationJob.setInconsistentDocuments(inconsistentDocuments);
 		migrationJob.setConsistentDocuments(consistentDocuments);
@@ -221,7 +221,7 @@ public class MigrationJobTest {
 	}
 
 	private void configureMigrationJob(MigrationJob migrationJob) {
-		JobConfiguration jobConfiguration = new JobConfiguration();
+		MigrationConfiguration jobConfiguration = new MigrationConfiguration();
 		jobConfiguration.setLegacyEntityKeyFields(new ArrayList<String>());
 		migrationJob.setJobConfiguration(jobConfiguration);
 		
