@@ -249,10 +249,15 @@ public class MigrationJob implements Runnable {
 		if (!documentsToOverwrite.isEmpty()) {
 			hasFailures = true;
 		}
+		
+		documentsProcessed = legacyDocuments.size();
+		consistentDocuments = legacyDocuments.size() - documentsToOverwrite.size();
+		inconsistentDocuments = documentsToOverwrite.size();
+		
 		if (shouldOverwriteLightblueDocuments()) {
-			overwriteLightblue(documentsToOverwrite);
+			recordsOverwritten = overwriteLightblue(documentsToOverwrite);
 		}
-
+		
 		saveJobDetails();
 
 		LOG.info("MigrationJob completed");
@@ -275,7 +280,7 @@ public class MigrationJob implements Runnable {
 		return response;
 	}
 
-	private LightblueResponse overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+	private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
 		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
 		StringBuffer body = new StringBuffer();
 		for (JsonNode document : documentsToOverwrite) {
@@ -283,7 +288,7 @@ public class MigrationJob implements Runnable {
 		}
 		saveRequest.setBody(body.toString());
 		LightblueResponse response = saveLightblueData(saveRequest);
-		return response;
+		return response.getJson().findValue("modifiedCount").asInt();
 	}
 
 	protected List<JsonNode> getLegacyDocuments() {

@@ -51,11 +51,19 @@ public class MigrationJobTest {
 			}
 			@Override
 			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
-				return new LightblueResponse();
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 			
-			
-
 		};
 		configureMigrationJob(migrationJob);
 		migrationJob.run();
@@ -76,8 +84,17 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveLightblueData(LightblueRequest updateRequest) {
-				return new LightblueResponse();
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 		};
 		configureMigrationJob(migrationJob);
@@ -100,7 +117,16 @@ public class MigrationJobTest {
 			
 			@Override
 			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
-				return new LightblueResponse();
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 			
 		};
@@ -124,8 +150,17 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveLightblueData(LightblueRequest updateRequest) {
-				return new LightblueResponse();
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 		};
 		configureMigrationJob(migrationJob);
@@ -148,7 +183,16 @@ public class MigrationJobTest {
 			
 			@Override
 			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
-				return new LightblueResponse();
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 			
 		};
@@ -171,8 +215,17 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveLightblueData(LightblueRequest updateRequest) {
-				return new LightblueResponse();
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 		};
 		configureMigrationJob(migrationJob);
@@ -194,8 +247,17 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveLightblueData(LightblueRequest updateRequest) {
-				return new LightblueResponse();
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 		};
 		configureMigrationJob(migrationJob);
@@ -217,8 +279,17 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveLightblueData(LightblueRequest updateRequest) {
-				return new LightblueResponse();
+			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+        try {
+	        node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+        } catch (IOException e) {
+	        e.printStackTrace();
+        }
+				response.setJson(node);
+				return response;
 			}
 		};
 		configureMigrationJob(migrationJob);
