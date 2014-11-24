@@ -32,6 +32,8 @@ public class ConsistencyChecker {
 	private String hostname;
 	private String ipAddress;
 	private String configPath;
+	private String migrationConfigurationEntityVersion;
+	private String migrationJobEntityVersion;
 
 	private boolean run = true;
 
@@ -79,6 +81,22 @@ public class ConsistencyChecker {
 		this.configPath = configPath;
 	}
 
+	public String getMigrationConfigurationEntityVersion() {
+		return migrationConfigurationEntityVersion;
+	}
+
+	public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
+		this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
+	}
+
+	public String getMigrationJobEntityVersion() {
+		return migrationJobEntityVersion;
+	}
+
+	public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
+		this.migrationJobEntityVersion = migrationJobEntityVersion;
+	}
+
 	public void execute() throws Exception {
 
 		LOG.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
@@ -116,7 +134,6 @@ public class ConsistencyChecker {
 				}
 			}
 		}
-
 	}
 
 	protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
@@ -135,7 +152,7 @@ public class ConsistencyChecker {
 	protected List<MigrationConfiguration> getJobConfigurations(String checkerName) {
 		List<MigrationConfiguration> configurations = Collections.emptyList();
 		try {
-			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", "0.1.0-SNAPSHOT");
+			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
 			findRequest.where(withValue("name = " + getName()));
 			findRequest.select(includeFieldRecursively("*"));
 			configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
@@ -148,10 +165,10 @@ public class ConsistencyChecker {
 	protected MigrationJob getNextAvailableJob() {
 		MigrationJob job = null;
 		try {
-			DataFindRequest findRequest = new DataFindRequest("migrationJob", "0.1.0-SNAPSHOT");
+			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
 			findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
 			findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
-			findRequest.range(0, 0);
+			findRequest.range(0, 1);
 			findRequest.select(includeFieldRecursively("*"));
 			job = client.data(findRequest, MigrationJob.class);
 		} catch (IOException e) {

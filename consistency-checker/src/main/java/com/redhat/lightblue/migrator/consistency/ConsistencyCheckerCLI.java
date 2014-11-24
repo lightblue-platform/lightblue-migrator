@@ -22,6 +22,8 @@ public final class ConsistencyCheckerCLI {
 		options.addOption(OptionBuilder.withArgName("hostname").withLongOpt("hostname").hasArg(true).withDescription("Hostname running the checker instance").isRequired().create('h'));
 		options.addOption(OptionBuilder.withArgName("ip").withLongOpt("ip").hasArg(true).withDescription("IP address of host running the checker instance").isRequired().create('i'));
 		options.addOption(OptionBuilder.withArgName("config").withLongOpt("config").hasArg(true).withDescription("Path to configuration file").isRequired().create('c'));
+		options.addOption(OptionBuilder.withArgName("configversion").withLongOpt("configversion").hasArg(true).withDescription("migrationConfiguration Entity Version").isRequired().create('v'));
+		options.addOption(OptionBuilder.withArgName("jobversion").withLongOpt("jobversion").hasArg(true).withDescription("migrationJob Entity Version").isRequired().create('j'));
 
 		ConsistencyChecker checker = new ConsistencyChecker();
 		PosixParser parser = new PosixParser();

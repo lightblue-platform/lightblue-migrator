@@ -18,5 +18,7 @@ java -jar consistency-checker-1.0.0-alldeps.jar
 --host lightblue.io
 --ip 127.0.0.1
 --config=lightblue-client.properties
+--configversion=1.0.0
+--jobversion=1.0.0
 ```
 
