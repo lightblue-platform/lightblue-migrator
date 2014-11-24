@@ -1,6 +1,12 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
+
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -10,8 +16,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
+import com.redhat.lightblue.client.util.ClientConstants;
 
 public class ConsistencyChecker {
 
@@ -74,12 +83,12 @@ public class ConsistencyChecker {
 
 		LOG.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
 
-		if(configPath != null) {
-			client = new LightblueHttpClient(configPath);	
+		if (configPath != null) {
+			client = new LightblueHttpClient(configPath);
 		} else {
 			client = new LightblueHttpClient();
 		}
-		
+
 		while (run) {
 			List<ExecutorService> executors = new ArrayList<>();
 			List<MigrationConfiguration> configurations = getJobConfigurations(name);
@@ -111,30 +120,43 @@ public class ConsistencyChecker {
 	}
 
 	protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-		ArrayList<MigrationJob> jobs = new ArrayList<>();
-		DataFindRequest findRequest = new DataFindRequest();
-		// TODO set up stuff to find by checkerName
-		getClient().data(findRequest);
-		// TODO convert response into MigrationJob
+		List<MigrationJob> jobs = Collections.emptyList();
+		try {
+			DataFindRequest findRequest = new DataFindRequest("migrationJob", "0.1.0-SNAPSHOT");
+			findRequest.where(withValue("name = " + configuration.getName()));
+			findRequest.select(includeFieldRecursively("*"));
+			jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+		} catch (IOException e) {
+			LOG.error("Problem getting migrationJobs", e);
+		}
 		return jobs;
 	}
 
 	protected List<MigrationConfiguration> getJobConfigurations(String checkerName) {
-		ArrayList<MigrationConfiguration> configurations = new ArrayList<>();
-		// get job configurations from lightblue for this instance of consistency
-		// checker
-		DataFindRequest findRequest = new DataFindRequest();
-		// TODO set up stuff to find by checkerName
-		getClient().data(findRequest);
-		// TODO convert response into JobConfiguration
+		List<MigrationConfiguration> configurations = Collections.emptyList();
+		try {
+			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", "0.1.0-SNAPSHOT");
+			findRequest.where(withValue("name = " + getName()));
+			findRequest.select(includeFieldRecursively("*"));
+			configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
+		} catch (IOException e) {
+			LOG.error("Problem getting migrationConfigurations", e);
+		}
 		return configurations;
 	}
 
 	protected MigrationJob getNextAvailableJob() {
-		MigrationJob job = new MigrationJob();
-		DataFindRequest findRequest = new DataFindRequest();
-		// TODO populate request here
-		getClient().data(findRequest);
+		MigrationJob job = null;
+		try {
+			DataFindRequest findRequest = new DataFindRequest("migrationJob", "0.1.0-SNAPSHOT");
+			findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
+			findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
+			findRequest.range(0, 0);
+			findRequest.select(includeFieldRecursively("*"));
+			job = client.data(findRequest, MigrationJob.class);
+		} catch (IOException e) {
+			LOG.error("Problem getting migrationJob", e);
+		}
 		return job;
 	}
 

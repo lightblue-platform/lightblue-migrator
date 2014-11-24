@@ -58,6 +58,13 @@
                 },
                 "type": "string"
             },
+            "name": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Name of this migration configuration"
+            },
             "hosts": { 
 	            "type": "array",
 	            "items": {

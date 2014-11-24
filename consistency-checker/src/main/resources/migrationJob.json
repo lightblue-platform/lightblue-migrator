@@ -60,6 +60,13 @@
                 },
                 "type": "string"
             },
+            "name": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Name of this migration job"
+            },
             "owner": {
                 "type": "string",
                 "constraints": {

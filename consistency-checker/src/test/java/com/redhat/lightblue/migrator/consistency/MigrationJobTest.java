@@ -11,6 +11,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.lightblue.client.LightblueClient;
@@ -40,7 +41,7 @@ public class MigrationJobTest {
 	public void testExecuteExistsInLegacyAndLightblue() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
 			}
 
@@ -48,9 +49,12 @@ public class MigrationJobTest {
 			protected List<JsonNode> findLightblueData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
 			}
+			@Override
 			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
 				return new LightblueResponse();
 			}
+			
+			
 
 		};
 		configureMigrationJob(migrationJob);
@@ -62,7 +66,7 @@ public class MigrationJobTest {
 	public void testExecuteExistsInLegacyButNotLightblue() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
 			}
 
@@ -85,7 +89,7 @@ public class MigrationJobTest {
 	public void testExecuteExistsInLegacyButNotLightblueDoNotOverwrite() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
 			}
 
@@ -94,6 +98,7 @@ public class MigrationJobTest {
 				return fromFileToJsonNode("emptyFindResponse.json").findValues("processed");
 			}
 			
+			@Override
 			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
 				return new LightblueResponse();
 			}
@@ -109,7 +114,7 @@ public class MigrationJobTest {
 	public void testExecuteExistsInLightblueButNotLegacy() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("emptyFindResponse.json").findValues("processed");
 			}
 
@@ -132,7 +137,7 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInLegacyAndLightblue() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("multipleFindResponse.json").findValues("processed");
 			}
 
@@ -141,6 +146,7 @@ public class MigrationJobTest {
 				return fromFileToJsonNode("multipleFindResponse.json").findValues("processed");
 			}
 			
+			@Override
 			protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
 				return new LightblueResponse();
 			}
@@ -155,7 +161,7 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInLegacyButNotLightblue() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("multipleFindResponse.json").findValues("processed");
 			}
 
@@ -178,7 +184,7 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInLightblueButNotLegacy() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("emptyFindResponse.json").findValues("processed");
 			}
 
@@ -201,7 +207,7 @@ public class MigrationJobTest {
 	public void testExecuteSingleMultipleExistsInLightblueButNotLegacy() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> getLegacyData(LightblueRequest dataRequest) {
+			protected List<JsonNode> findLegacyData(LightblueRequest dataRequest) {
 				return fromFileToJsonNode("singleFindResponse.json").findValues("processed");
 			}
 
@@ -223,6 +229,8 @@ public class MigrationJobTest {
 	private void configureMigrationJob(MigrationJob migrationJob) {
 		MigrationConfiguration jobConfiguration = new MigrationConfiguration();
 		jobConfiguration.setLegacyEntityKeyFields(new ArrayList<String>());
+		jobConfiguration.setLegacyEntityTimestampField("legacy-timestamp");
+		jobConfiguration.setLightblueEntityTimestampField("lightblue-timestamp");
 		migrationJob.setJobConfiguration(jobConfiguration);
 		
 		migrationJob.setOverwriteLightblueDocuments(true);

@@ -9,6 +9,8 @@ public class MigrationConfiguration {
 	private String hostName;
 	private int threadCount;
 
+	private String name;
+	
 	private String lightblueEntityName;
 	private String lightblueEntityVersion;
 	private List<String> lightblueEntityKeyFields;
@@ -49,6 +51,14 @@ public class MigrationConfiguration {
 		return lightblueEntityName;
 	}
 
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getName() {
+		return name;
+	}
+	
 	public void setLightblueEntityName(String lightblueEntityName) {
 		this.lightblueEntityName = lightblueEntityName;
 	}

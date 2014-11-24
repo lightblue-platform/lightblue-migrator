@@ -1,6 +1,14 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.collections4.ListUtils;
@@ -9,8 +17,11 @@ import org.apache.commons.logging.LogFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.enums.SortDirection;
+import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
+import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
@@ -219,7 +230,7 @@ public class MigrationJob implements Runnable {
 		
 		List<JsonNode> legacyDocuments = getLegacyDocuments();
 		
-		List<JsonNode> lightblueDocuments = getLightblueDocuments(legacyDocuments);
+		List<JsonNode> lightblueDocuments = getLightblueDocuments();
 		
 		List<JsonNode> documentsToOverwrite = ListUtils.subtract(legacyDocuments, lightblueDocuments); 
     
@@ -246,46 +257,79 @@ public class MigrationJob implements Runnable {
 	}
 	
 	private LightblueResponse saveJobDetails() {
-		DataSaveRequest saveRequest = new DataSaveRequest();
-		//TODO Save Request for lightblue
+		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(),getJobConfiguration().getLightblueEntityVersion());
+		saveRequest.setBody(this.toJson());
 		LightblueResponse response = saveLightblueData(saveRequest);
 		return response;
   }
 
 	private LightblueResponse overwriteLightblue(List<JsonNode> documentsToOverwrite) {
 		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(),getJobConfiguration().getLightblueEntityVersion());
-		//TODO build the appropriate update statement here, preferably in batch
+		StringBuffer body = new StringBuffer();
+		for(JsonNode document : documentsToOverwrite) {
+			body.append(document.toString());	
+		}
+		saveRequest.setBody(body.toString());
 		LightblueResponse response = saveLightblueData(saveRequest);
 		return response;
   }
 
 	protected List<JsonNode> getLegacyDocuments() {
-		LightblueRequest legacyRequest = new DataFindRequest();
-		//TODO make a batch request here using lightblue using job.getStartDate();job.getEndDate();job.getMigratorConfig().getLightblueEntityTimestampField();
-		return getLegacyData(legacyRequest);
-	}
-
-	protected List<JsonNode> getLightblueDocuments(List<JsonNode> legacyDocumentsToCompare) {
-		LightblueRequest lightblueRequest = new DataFindRequest();
-		for(JsonNode node : legacyDocumentsToCompare) {
-			for(String keyFieldName : getJobConfiguration().getLegacyEntityKeyFields()) {
-				node.findValue(keyFieldName);
-				//TODO add to lightblue batch request
-			}	
-		}	
-		return findLightblueData(lightblueRequest);
+		List<JsonNode> legacyDocuments = Collections.emptyList();
+		try {
+			DataFindRequest legacyRequest = new DataFindRequest(getJobConfiguration().getLegacyEntityName(),getJobConfiguration().getLegacyEntityVersion());
+			List<Query> conditions = new LinkedList<Query>();
+	    conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " >= " + getStartDate()));
+	    conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " <= " + getEndDate()));
+	    legacyRequest.where(and(conditions));
+	    legacyRequest.select(includeFieldRecursively("*"));
+	    legacyDocuments.addAll(findLegacyData(legacyRequest));
+    } catch (IOException e) {
+    	LOG.error("Problem getting legacyDocuments", e);
+    }
+		return legacyDocuments;
 	}
 	
-	protected List<JsonNode> getLegacyData(LightblueRequest findRequest) {
-		return getLegacyClient().data(findRequest).getJson().findValues("processed");
+
+	protected List<JsonNode> getLightblueDocuments() {
+		List<JsonNode> lightblueDocuments = Collections.emptyList();
+		try {
+			DataFindRequest lightblueRequest = new DataFindRequest(getJobConfiguration().getLightblueEntityName(),getJobConfiguration().getLightblueEntityVersion());
+			List<Query> conditions = new LinkedList<Query>();
+			conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " >= " + getStartDate()));
+	    conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " <= " + getEndDate()));
+	    lightblueRequest.where(and(conditions));
+	    lightblueRequest.select(includeFieldRecursively("*"));
+	    lightblueRequest.sort(new SortCondition(getJobConfiguration().getLightblueEntityTimestampField(), SortDirection.ASC));
+	    lightblueDocuments.addAll(findLightblueData(lightblueRequest));
+		} catch (IOException e) {
+			LOG.error("Error getting lightblueDocuments", e);
+		}
+		return lightblueDocuments;
+	}
+	
+	protected List<JsonNode> findLegacyData(LightblueRequest findRequest) throws IOException {
+		return Arrays.asList(getLegacyClient().data(findRequest, JsonNode[].class));
 	}
 
-	protected List<JsonNode> findLightblueData(LightblueRequest findRequest) {
-		return getLightblueClient().data(findRequest).getJson().findValues("processed");
+	protected List<JsonNode> findLightblueData(LightblueRequest findRequest) throws IOException {
+		return Arrays.asList(getLightblueClient().data(findRequest, JsonNode[].class));
 	}
 	
 	protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
 		return getLightblueClient().data(saveRequest);
 	}
 
+	private String toJson() {
+		return "{}";
+//		StringBuffer json = new StringBuffer();
+//		ObjectMapper mapper = new ObjectMapper();
+//		try {
+//	    json.append(mapper.writeValueAsString(MigrationJob.class));
+//    } catch (JsonProcessingException e) {
+//    	LOG.error("Error transforming to JSON", e);
+//    }
+//		return json.toString();
+	}
+	
 }
