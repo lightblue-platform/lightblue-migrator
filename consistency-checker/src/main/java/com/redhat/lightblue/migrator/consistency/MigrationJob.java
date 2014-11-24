@@ -15,7 +15,9 @@ import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
@@ -283,7 +285,7 @@ public class MigrationJob implements Runnable {
 	    conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " <= " + getEndDate()));
 	    legacyRequest.where(and(conditions));
 	    legacyRequest.select(includeFieldRecursively("*"));
-	    legacyDocuments.addAll(findLegacyData(legacyRequest));
+	    legacyDocuments = findLegacyData(legacyRequest);
     } catch (IOException e) {
     	LOG.error("Problem getting legacyDocuments", e);
     }
@@ -301,7 +303,7 @@ public class MigrationJob implements Runnable {
 	    lightblueRequest.where(and(conditions));
 	    lightblueRequest.select(includeFieldRecursively("*"));
 	    lightblueRequest.sort(new SortCondition(getJobConfiguration().getLightblueEntityTimestampField(), SortDirection.ASC));
-	    lightblueDocuments.addAll(findLightblueData(lightblueRequest));
+	    lightblueDocuments = findLightblueData(lightblueRequest);
 		} catch (IOException e) {
 			LOG.error("Error getting lightblueDocuments", e);
 		}
@@ -321,15 +323,14 @@ public class MigrationJob implements Runnable {
 	}
 
 	private String toJson() {
-		return "{}";
-//		StringBuffer json = new StringBuffer();
-//		ObjectMapper mapper = new ObjectMapper();
-//		try {
-//	    json.append(mapper.writeValueAsString(MigrationJob.class));
-//    } catch (JsonProcessingException e) {
-//    	LOG.error("Error transforming to JSON", e);
-//    }
-//		return json.toString();
+		StringBuffer json = new StringBuffer();
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+	    json.append(mapper.writeValueAsString(MigrationJob.class));
+    } catch (JsonProcessingException e) {
+    	LOG.error("Error transforming to JSON", e);
+    }
+		return json.toString();
 	}
 	
 }
