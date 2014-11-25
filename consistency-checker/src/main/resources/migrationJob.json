@@ -1,0 +1,206 @@
+{
+    "entityInfo": {
+        "datastore": {
+            "backend": "mongo",
+            "collection": "migrationJob",
+            "datasource": "mongodata"
+        },
+        "enums": [
+            
+        ],
+        "indexes": [
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "_id"
+                    }
+                ],
+                "name": null,
+                "unique": true
+            }
+        ],
+        "name": "migrationJob"
+    },
+    "schema": {
+        "access": {
+            "delete": [
+                "lb-migrationjob-delete"
+            ],
+            "find": [
+                "lb-migrationjob-find"
+            ],
+            "insert": [
+                "lb-migrationjob-insert"
+            ],
+            "update": [
+                "lb-migrationjob-update"
+            ]
+        },
+        "fields": {
+            "_id": {
+                "type": "uid",
+                "constraints": {
+                    "identity": true
+                },
+                "description": "The identifier of the migrationJob."
+            },
+            "objectType": {
+                "access": {
+                    "find": [
+                        "anyone"
+                    ],
+                    "update": [
+                        "noone"
+                    ]
+                },
+                "constraints": {
+                    "minLength": 1,
+                    "required": true
+                },
+                "type": "string"
+            },
+            "name": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Name of this migration job"
+            },
+            "owner": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Owner of this migration job"
+            },
+            "hostName": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Host running this migration job"
+            },
+            "pid": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Process id on the host running this migration job"
+            },
+            "startDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Document start date for of this migration job"
+            },
+            "endDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Document end date for this migration job"
+            },
+            "whenAvailable": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "First available time for execution of this job"
+            },
+            "expectedRunTime": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Expected duration of this job in ms"
+            },
+            "actualStartDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Actual start date for of this migration job"
+            },
+            "actualEndDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Actual end date for this migration job"
+            },
+            "completed": {
+                "type": "boolean",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Indicates whether or not this job successfully completed"
+            },
+            "documentsProcessed": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Number of documents processed by this job"
+            },
+            "consistentDocuments": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Number of documents that mathed for this job"
+            },
+            "inconsistentDocuments": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Number of documents that did not match for this job"
+            },
+            "documentsOverwritten": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Number of documents that were overwritten in lightblue"
+            },
+            "creationDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Creation date of the configuration"
+            },
+            "createdBy": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "User id of the configuration creator"
+            },
+            "lastUpdateDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Last updated date of the configuration"
+            },
+            "lastUpdatedBy": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "User id of the configuration creator"
+            }
+        },
+        "name": "migrationJob",
+        "status": {
+            "value": "active"
+        },
+        "version": {
+            "changelog": "Initial version",
+            "value": "0.1.0-SNAPSHOT"
+        }
+    }
+}

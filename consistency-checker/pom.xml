@@ -36,6 +36,11 @@
       <version>2.4</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+      <version>4.0</version>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
       <version>2.2.3</version>
@@ -93,7 +98,7 @@
               <transformers>
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.redhat.lightblue.migrator.consistency.CompareLightblueToLegacyCLI</mainClass>
+                  <mainClass>com.redhat.lightblue.migrator.consistency.ConsistencyCheckerCLI</mainClass>
                 </transformer>
               </transformers>
               <shadedArtifactAttached>true</shadedArtifactAttached>

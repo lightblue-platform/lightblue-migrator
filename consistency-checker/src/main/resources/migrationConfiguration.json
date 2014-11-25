@@ -1,0 +1,205 @@
+{
+    "entityInfo": {
+        "datastore": {
+            "backend": "mongo",
+            "collection": "migrationConfiguration",
+            "datasource": "mongodata"
+        },
+        "enums": [],
+        "indexes": [
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "_id"
+                    }
+                ],
+                "name": "primary",
+                "unique": true
+            }
+        ],
+        "name": "migrationConfiguration"
+    },
+    "schema": {
+        "access": {
+            "delete": [
+                "lb-migrationconfig-delete"
+            ],
+            "find": [
+                "lb-migrationconfig-find"
+            ],
+            "insert": [
+                "lb-migrationconfig-insert"
+            ],
+            "update": [
+                "lb-migrationconfig-update"
+            ]
+        },
+        "fields": {
+            "_id": {
+                "type": "uid",
+                "constraints": {
+                    "identity": true
+                },
+                "description": "The identifier of the migratonConfiguration."
+            },
+            "objectType": {
+                "access": {
+                    "find": [
+                        "anyone"
+                    ],
+                    "update": [
+                        "noone"
+                    ]
+                },
+                "constraints": {
+                    "minLength": 1,
+                    "required": true
+                },
+                "type": "string"
+            },
+            "name": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Name of this migration configuration"
+            },
+            "hosts": { 
+	            "type": "array",
+	            "items": {
+	                "type": "string"
+	            },
+	            "minItems": 1,
+	            "uniqueItems": true,
+	            "constraints": {
+                    "required": true
+                },
+                "description": "hosts authorized to run this migration"
+            },
+            "numberOfThreads": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Number of threads that should be devoted to migrator job"
+            },
+            "lightblueServiceURI": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "REST service URI for instance housing lightblue data."
+            },
+            "lightblueEntityName": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "lightblue Entity Name for data being migrated"
+            },
+            "lightblueEntityVersion": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "lightblue Entity Version for data being migrated"
+            },
+            "lightblueEntityKeyFields": { 
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true,
+                "constraints": {
+                    "required": true
+                },
+                "description": "lightblue Entity field names that identify a unique document"
+            },
+            "legacyEntityTimestampField": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Last updated date of the configuration."
+            },
+            "legacyServiceURI": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "REST service URI for instance housing legacy data."
+            },
+            "legacyEntityName": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "legacy Entity Name for data being migrated"
+            },
+            "legacyEntityVersion": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "legacy Entity Version for data being migrated"
+            },
+            "legacyEntityKeyFields": { 
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true,
+                "constraints": {
+                    "required": true
+                },
+                "description": "Legacy Entity field names that identify a unique document"
+            },
+            "legacyEntityTimestampField" : {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Last updated date of the configuration."
+            },
+            "creationDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Creation date of the configuration"
+            },
+            "createdBy": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "User id of the configuration creator"
+            },
+            "lastUpdateDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Last updated date of the configuration"
+            },
+            "lastUpdatedBy": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "User id of the configuration creator"
+            }
+        },
+        "name": "migrationConfiguration",
+        "status": {
+            "value": "active"
+        },
+        "version": {
+            "changelog": "Initial version",
+            "value": "0.1.0-SNAPSHOT"
+        }
+    }
+}
