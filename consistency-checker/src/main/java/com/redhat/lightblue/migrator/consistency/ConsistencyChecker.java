@@ -11,6 +11,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -131,6 +132,7 @@ public class ConsistencyChecker {
 			} else {
 				for (ExecutorService executor : executors) {
 					executor.shutdown();
+					executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
 				}
 			}
 		}
