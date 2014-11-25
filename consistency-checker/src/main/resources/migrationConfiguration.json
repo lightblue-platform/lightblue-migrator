@@ -2,7 +2,7 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migratonConfiguration",
+            "collection": "migrationConfiguration",
             "datasource": "mongodata"
         },
         "enums": [],
@@ -18,7 +18,7 @@
                 "unique": true
             }
         ],
-        "name": "migratonConfiguration"
+        "name": "migrationConfiguration"
     },
     "schema": {
         "access": {
@@ -193,7 +193,7 @@
                 "description": "User id of the configuration creator"
             }
         },
-        "name": "migratonConfiguration",
+        "name": "migrationConfiguration",
         "status": {
             "value": "active"
         },
