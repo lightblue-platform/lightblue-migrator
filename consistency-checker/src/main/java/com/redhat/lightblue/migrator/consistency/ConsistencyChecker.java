@@ -110,7 +110,7 @@ public class ConsistencyChecker {
 
 		while (run) {
 			List<ExecutorService> executors = new ArrayList<>();
-			List<MigrationConfiguration> configurations = getJobConfigurations(name);
+			List<MigrationConfiguration> configurations = getJobConfigurations();
 
 			for (MigrationConfiguration configuration : configurations) {
 				configuration.setConfigFilePath(configPath);
@@ -141,7 +141,7 @@ public class ConsistencyChecker {
 	protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
 		List<MigrationJob> jobs = Collections.emptyList();
 		try {
-			DataFindRequest findRequest = new DataFindRequest("migrationJob", "0.1.0-SNAPSHOT");
+			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
 			findRequest.where(withValue("name = " + configuration.getName()));
 			findRequest.select(includeFieldRecursively("*"));
 			jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
@@ -151,7 +151,7 @@ public class ConsistencyChecker {
 		return jobs;
 	}
 
-	protected List<MigrationConfiguration> getJobConfigurations(String checkerName) {
+	protected List<MigrationConfiguration> getJobConfigurations() {
 		List<MigrationConfiguration> configurations = Collections.emptyList();
 		try {
 			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
