@@ -4,127 +4,127 @@ import java.util.List;
 
 public class MigrationConfiguration {
 
-	private String configFilePath;
+    private String configFilePath;
 
-	private String hostName;
-	private int threadCount;
+    private String hostName;
+    private int threadCount;
 
-	private String name;
-	
-	private String lightblueEntityName;
-	private String lightblueEntityVersion;
-	private List<String> lightblueEntityKeyFields;
-	private String lightblueEntityTimestampField;
+    private String name;
 
-	private String legacyEntityName;
-	private String legacyEntityVersion;
-	private List<String> legacyEntityKeyFields;
-	private String legacyEntityTimestampField;
+    private String lightblueEntityName;
+    private String lightblueEntityVersion;
+    private List<String> lightblueEntityKeyFields;
+    private String lightblueEntityTimestampField;
 
-	private boolean overwriteLightblueDocuments = false;
+    private String legacyEntityName;
+    private String legacyEntityVersion;
+    private List<String> legacyEntityKeyFields;
+    private String legacyEntityTimestampField;
 
-	public String getConfigFilePath() {
-		return configFilePath;
-	}
+    private boolean overwriteLightblueDocuments = false;
 
-	public void setConfigFilePath(String configFilePath) {
-		this.configFilePath = configFilePath;
-	}
+    public String getConfigFilePath() {
+        return configFilePath;
+    }
 
-	public String getHostName() {
-		return hostName;
-	}
+    public void setConfigFilePath(String configFilePath) {
+        this.configFilePath = configFilePath;
+    }
 
-	public void setHostName(String hostName) {
-		this.hostName = hostName;
-	}
+    public String getHostName() {
+        return hostName;
+    }
 
-	public int getThreadCount() {
-		return threadCount;
-	}
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
 
-	public void setThreadCount(int threadCount) {
-		this.threadCount = threadCount;
-	}
+    public int getThreadCount() {
+        return threadCount;
+    }
 
-	public String getLightblueEntityName() {
-		return lightblueEntityName;
-	}
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
+    }
 
-	public void setName(String name) {
-		this.name = name;
-	}
+    public String getLightblueEntityName() {
+        return lightblueEntityName;
+    }
 
-	public String getName() {
-		return name;
-	}
-	
-	public void setLightblueEntityName(String lightblueEntityName) {
-		this.lightblueEntityName = lightblueEntityName;
-	}
+    public void setName(String name) {
+        this.name = name;
+    }
 
-	public String getLightblueEntityVersion() {
-		return lightblueEntityVersion;
-	}
+    public String getName() {
+        return name;
+    }
 
-	public void setLightblueEntityVersion(String lightblueEntityVersion) {
-		this.lightblueEntityVersion = lightblueEntityVersion;
-	}
+    public void setLightblueEntityName(String lightblueEntityName) {
+        this.lightblueEntityName = lightblueEntityName;
+    }
 
-	public List<String> getLightblueEntityKeyFields() {
-		return lightblueEntityKeyFields;
-	}
+    public String getLightblueEntityVersion() {
+        return lightblueEntityVersion;
+    }
 
-	public void setLightblueEntityKeyFields(List<String> lightblueEntityKeyFields) {
-		this.lightblueEntityKeyFields = lightblueEntityKeyFields;
-	}
+    public void setLightblueEntityVersion(String lightblueEntityVersion) {
+        this.lightblueEntityVersion = lightblueEntityVersion;
+    }
 
-	public String getLightblueEntityTimestampField() {
-		return lightblueEntityTimestampField;
-	}
+    public List<String> getLightblueEntityKeyFields() {
+        return lightblueEntityKeyFields;
+    }
 
-	public void setLightblueEntityTimestampField(String lightblueEntityTimestampField) {
-		this.lightblueEntityTimestampField = lightblueEntityTimestampField;
-	}
+    public void setLightblueEntityKeyFields(List<String> lightblueEntityKeyFields) {
+        this.lightblueEntityKeyFields = lightblueEntityKeyFields;
+    }
 
-	public String getLegacyEntityName() {
-		return legacyEntityName;
-	}
+    public String getLightblueEntityTimestampField() {
+        return lightblueEntityTimestampField;
+    }
 
-	public void setLegacyEntityName(String legacyEntityName) {
-		this.legacyEntityName = legacyEntityName;
-	}
+    public void setLightblueEntityTimestampField(String lightblueEntityTimestampField) {
+        this.lightblueEntityTimestampField = lightblueEntityTimestampField;
+    }
 
-	public String getLegacyEntityVersion() {
-		return legacyEntityVersion;
-	}
+    public String getLegacyEntityName() {
+        return legacyEntityName;
+    }
 
-	public void setLegacyEntityVersion(String legacyEntityVersion) {
-		this.legacyEntityVersion = legacyEntityVersion;
-	}
+    public void setLegacyEntityName(String legacyEntityName) {
+        this.legacyEntityName = legacyEntityName;
+    }
 
-	public List<String> getLegacyEntityKeyFields() {
-		return legacyEntityKeyFields;
-	}
+    public String getLegacyEntityVersion() {
+        return legacyEntityVersion;
+    }
 
-	public void setLegacyEntityKeyFields(List<String> legacyEntityKeyFields) {
-		this.legacyEntityKeyFields = legacyEntityKeyFields;
-	}
+    public void setLegacyEntityVersion(String legacyEntityVersion) {
+        this.legacyEntityVersion = legacyEntityVersion;
+    }
 
-	public String getLegacyEntityTimestampField() {
-		return legacyEntityTimestampField;
-	}
+    public List<String> getLegacyEntityKeyFields() {
+        return legacyEntityKeyFields;
+    }
 
-	public void setLegacyEntityTimestampField(String legacyEntityTimestampField) {
-		this.legacyEntityTimestampField = legacyEntityTimestampField;
-	}
+    public void setLegacyEntityKeyFields(List<String> legacyEntityKeyFields) {
+        this.legacyEntityKeyFields = legacyEntityKeyFields;
+    }
 
-	public void setOverwriteLightblueDocuments(boolean overwriteLightblueDocuments) {
-		this.overwriteLightblueDocuments = overwriteLightblueDocuments;
-	}
+    public String getLegacyEntityTimestampField() {
+        return legacyEntityTimestampField;
+    }
 
-	public boolean shouldOverwriteLightblueDocuments() {
-		return overwriteLightblueDocuments;
-	}
+    public void setLegacyEntityTimestampField(String legacyEntityTimestampField) {
+        this.legacyEntityTimestampField = legacyEntityTimestampField;
+    }
+
+    public void setOverwriteLightblueDocuments(boolean overwriteLightblueDocuments) {
+        this.overwriteLightblueDocuments = overwriteLightblueDocuments;
+    }
+
+    public boolean shouldOverwriteLightblueDocuments() {
+        return overwriteLightblueDocuments;
+    }
 
 }
