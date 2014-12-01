@@ -23,7 +23,7 @@ import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
 
-public class ConsistencyChecker {
+public class ConsistencyChecker implements Runnable{
 
 	LightblueClient client;
 
@@ -98,7 +98,7 @@ public class ConsistencyChecker {
 		this.migrationJobEntityVersion = migrationJobEntityVersion;
 	}
 
-	public void execute() throws Exception {
+	public void run() {
 
 		LOG.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
 
@@ -108,7 +108,7 @@ public class ConsistencyChecker {
 			client = new LightblueHttpClient();
 		}
 
-		while (run) {
+		while (run && !Thread.interrupted()) {
 			List<ExecutorService> executors = new ArrayList<>();
 			List<MigrationConfiguration> configurations = getJobConfigurations(name);
 
@@ -128,11 +128,22 @@ public class ConsistencyChecker {
 			if (executors.isEmpty()) {
 				MigrationJob nextJob = getNextAvailableJob();
 				long timeToWait = nextJob.getWhenAvailable().getTime() - new Date().getTime();
-				Thread.sleep(timeToWait);
+				try {
+					Thread.sleep(timeToWait);
+				}
+				catch (InterruptedException e) {
+					run = false;
+				}
 			} else {
 				for (ExecutorService executor : executors) {
 					executor.shutdown();
-					executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+				}
+				try{
+					for (ExecutorService executor : executors) {
+						executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+					}
+				} catch (InterruptedException e) {
+					run = false;
 				}
 			}
 		}

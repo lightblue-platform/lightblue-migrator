@@ -14,8 +14,23 @@ public final class ConsistencyCheckerCLI {
 
 	}
 
-	@SuppressWarnings("static-access")
 	public static void main(String[] args) {
+		ConsistencyChecker checker =  buildConsistencyChecker(args);
+
+		try{
+			ConsistencyChecker.LOG.info("Starting ConsistencyChecker");
+			checker.run();
+			ConsistencyChecker.LOG.info("Finished ConsistencyChecker");
+			System.exit(0);
+		}
+		catch (Exception e) {
+			ConsistencyChecker.LOG.error("Error running ConsistencyChecker", e);
+			System.exit(1);
+		}
+	}
+	
+	@SuppressWarnings("static-access")
+	public static ConsistencyChecker buildConsistencyChecker(String[] args){
 		Options options = new Options();
 
 		options.addOption(OptionBuilder.withArgName("name").withLongOpt("name").hasArg(true).withDescription("Name of checker instance").isRequired().create('n'));
@@ -38,20 +53,14 @@ public final class ConsistencyCheckerCLI {
 			checker.setHostname(System.getProperty("hostname"));
 			checker.setIpAddress(System.getProperty("ip"));
 			checker.setConfigPath(System.getProperty("config"));
-
-			ConsistencyChecker.LOG.info("Starting ConsistencyChecker");
-			checker.execute();
-			ConsistencyChecker.LOG.info("Finished ConsistencyChecker");
-			System.exit(0);
 		} catch (ParseException e) {
 			HelpFormatter formatter = new HelpFormatter();
 			formatter.printHelp(ConsistencyCheckerCLI.class.getSimpleName(), options, true);
 			System.out.println("\n");
 			System.out.println(e.getMessage());
 			System.exit(1);
-		} catch (Exception e) {
-			ConsistencyChecker.LOG.error("Error running ConsistencyChecker", e);
-			System.exit(1);
 		}
+        
+		return checker;
 	}
 }

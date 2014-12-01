@@ -125,7 +125,7 @@ public class ConsistencyCheckerTest {
 			}
 
 		};
-		checker.execute();
+		checker.run();
 
 	}
 	
