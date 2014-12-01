@@ -105,6 +105,11 @@ public class MigrationJob implements Runnable {
         return migrationConfiguration.shouldOverwriteLightblueDocuments();
     }
 
+    /**
+     * Returns true if there are any inconsistencies
+     * TODO https://github.com/lightblue-platform/lightblue-migrator/issues/37
+     * @return true if there are any inconsistencies
+     */
     public boolean hasFailures() {
         return hasFailures;
     }
