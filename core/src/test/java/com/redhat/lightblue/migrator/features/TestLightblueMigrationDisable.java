@@ -5,9 +5,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.togglz.junit.TogglzRule;
 
-import com.redhat.lightblue.migrator.features.LightblueMigration;
-import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
-
 public class TestLightblueMigrationDisable {
 
     @Rule

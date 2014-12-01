@@ -1,20 +1,5 @@
 package com.redhat.lightblue.migrator.consistency;
 
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +12,16 @@ import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import java.io.IOException;
+import java.util.*;
+
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class MigrationJob implements Runnable {
 

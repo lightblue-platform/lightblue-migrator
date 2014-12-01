@@ -1,16 +1,15 @@
 package com.redhat.lightblue.migrator.consistency;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
+import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.http.LightblueHttpClient;
 import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.http.LightblueHttpClient;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 public class ConsistencyCheckerTest {
 

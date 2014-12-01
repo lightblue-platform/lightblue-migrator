@@ -1,11 +1,5 @@
 package com.redhat.lightblue.migrator.features;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Properties;
-
-import javax.enterprise.context.ApplicationScoped;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.togglz.core.Feature;
@@ -14,6 +8,11 @@ import org.togglz.core.repository.StateRepository;
 import org.togglz.core.repository.file.FileBasedStateRepository;
 import org.togglz.core.user.UserProvider;
 import org.togglz.servlet.user.ServletUserProvider;
+
+import javax.enterprise.context.ApplicationScoped;
+import java.io.File;
+import java.io.IOException;
+import java.util.Properties;
 
 @ApplicationScoped
 public class LightblueMigrationConfiguration implements TogglzConfig {
