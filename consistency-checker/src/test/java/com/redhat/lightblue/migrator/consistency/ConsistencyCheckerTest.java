@@ -102,7 +102,7 @@ public class ConsistencyCheckerTest {
 			}
 			
 			@Override
-			protected List<MigrationConfiguration> getJobConfigurations(String checkerName) {
+			protected List<MigrationConfiguration> getJobConfigurations() {
 				ArrayList<MigrationConfiguration> configurations = new ArrayList<>();
 				;
 				for(int i=0;i<5;i++) {
