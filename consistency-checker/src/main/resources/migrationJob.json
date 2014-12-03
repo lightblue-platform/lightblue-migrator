@@ -163,7 +163,7 @@
                 "constraints": {
                     "required": true
                 },
-                "description": "Number of documents that were overwritten in lightblue"
+                "description": "Number of documents that were overwritten in destination"
             },
             "creationDate": {
                 "type": "date",

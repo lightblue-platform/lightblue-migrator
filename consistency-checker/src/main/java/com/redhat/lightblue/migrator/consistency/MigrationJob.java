@@ -35,8 +35,8 @@ public class MigrationJob implements Runnable {
         this.migrationConfiguration = migrationConfiguration;
     }
 
-    private LightblueClient legacyClient;
-    private LightblueClient lightblueClient;
+    private LightblueClient sourceClient;
+    private LightblueClient destinationClient;
 
     // configuration for migrator
     private MigrationConfiguration migrationConfiguration;
@@ -81,28 +81,28 @@ public class MigrationJob implements Runnable {
         this.migrationConfiguration = jobConfiguration;
     }
 
-    public LightblueClient getLegacyClient() {
-        return legacyClient;
+    public LightblueClient getSourceClient() {
+        return sourceClient;
     }
 
-    public void setLegacyClient(LightblueClient client) {
-        this.legacyClient = client;
+    public void setSourceClient(LightblueClient client) {
+        this.sourceClient = client;
     }
 
-    public LightblueClient getLightblueClient() {
-        return lightblueClient;
+    public LightblueClient getDestinationClient() {
+        return destinationClient;
     }
 
-    public void setLightblueClient(LightblueClient client) {
-        this.lightblueClient = client;
+    public void setDestinationClient(LightblueClient client) {
+        this.destinationClient = client;
     }
 
-    public void setOverwriteLightblueDocuments(boolean overwriteLightblueDocuments) {
-        migrationConfiguration.setOverwriteLightblueDocuments(overwriteLightblueDocuments);
+    public void setOverwriteDestinationDocuments(boolean overwriteDestinationDocuments) {
+        migrationConfiguration.setOverwriteDestinationDocuments(overwriteDestinationDocuments);
     }
 
-    public boolean shouldOverwriteLightblueDocuments() {
-        return migrationConfiguration.shouldOverwriteLightblueDocuments();
+    public boolean shouldOverwriteDestinationDocuments() {
+        return migrationConfiguration.shouldOverwriteDestinationDocuments();
     }
 
     /**
@@ -240,21 +240,21 @@ public class MigrationJob implements Runnable {
 
         configureClients();
 
-        List<JsonNode> legacyDocuments = getLegacyDocuments();
+        List<JsonNode> sourceDocuments = getSourceDocuments();
 
-        List<JsonNode> lightblueDocuments = getLightblueDocuments();
+        List<JsonNode> destinationDocuments = getDestinationDocuments();
 
-        List<JsonNode> documentsToOverwrite = ListUtils.subtract(legacyDocuments, lightblueDocuments);
+        List<JsonNode> documentsToOverwrite = ListUtils.subtract(sourceDocuments, destinationDocuments);
 
         if (!documentsToOverwrite.isEmpty()) {
             hasFailures = true;
         }
 
-        documentsProcessed = legacyDocuments.size();
-        consistentDocuments = legacyDocuments.size() - documentsToOverwrite.size();
+        documentsProcessed = sourceDocuments.size();
+        consistentDocuments = sourceDocuments.size() - documentsToOverwrite.size();
         inconsistentDocuments = documentsToOverwrite.size();
 
-        if (shouldOverwriteLightblueDocuments()) {
+        if (shouldOverwriteDestinationDocuments()) {
             recordsOverwritten = overwriteLightblue(documentsToOverwrite);
         }
 
@@ -265,75 +265,75 @@ public class MigrationJob implements Runnable {
 
     private void configureClients() {
         if (migrationConfiguration.getConfigFilePath() == null) {
-            legacyClient = new LightblueHttpClient();
-            lightblueClient = new LightblueHttpClient();
+            sourceClient = new LightblueHttpClient();
+            destinationClient = new LightblueHttpClient();
         } else {
-            legacyClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
-            lightblueClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
+            sourceClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
+            destinationClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
         }
     }
 
     private LightblueResponse saveJobDetails() {
-        LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
+        LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
         saveRequest.setBody(this.toJson());
-        LightblueResponse response = saveLightblueData(saveRequest);
+        LightblueResponse response = saveDestinationData(saveRequest);
         return response;
     }
 
     private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
-        LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
+        LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
         StringBuffer body = new StringBuffer();
         for (JsonNode document : documentsToOverwrite) {
             body.append(document.toString());
         }
         saveRequest.setBody(body.toString());
-        LightblueResponse response = saveLightblueData(saveRequest);
+        LightblueResponse response = saveDestinationData(saveRequest);
         return response.getJson().findValue("modifiedCount").asInt();
     }
 
-    protected List<JsonNode> getLegacyDocuments() {
-        List<JsonNode> legacyDocuments = Collections.emptyList();
+    protected List<JsonNode> getSourceDocuments() {
+        List<JsonNode> sourceDocuments = Collections.emptyList();
         try {
-            DataFindRequest legacyRequest = new DataFindRequest(getJobConfiguration().getLegacyEntityName(), getJobConfiguration().getLegacyEntityVersion());
+            DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
             List<Query> conditions = new LinkedList<Query>();
-            conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " >= " + getStartDate()));
-            conditions.add(withValue(getJobConfiguration().getLegacyEntityTimestampField() + " <= " + getEndDate()));
-            legacyRequest.where(and(conditions));
-            legacyRequest.select(includeFieldRecursively("*"));
-            legacyDocuments = findLegacyData(legacyRequest);
+            conditions.add(withValue(getJobConfiguration().getSourceEntityTimestampField() + " >= " + getStartDate()));
+            conditions.add(withValue(getJobConfiguration().getSourceEntityTimestampField() + " <= " + getEndDate()));
+            sourceRequest.where(and(conditions));
+            sourceRequest.select(includeFieldRecursively("*"));
+            sourceDocuments = findSourceData(sourceRequest);
         } catch (IOException e) {
-            LOG.error("Problem getting legacyDocuments", e);
+            LOG.error("Problem getting sourceDocuments", e);
         }
-        return legacyDocuments;
+        return sourceDocuments;
     }
 
-    protected List<JsonNode> getLightblueDocuments() {
-        List<JsonNode> lightblueDocuments = Collections.emptyList();
+    protected List<JsonNode> getDestinationDocuments() {
+        List<JsonNode> destinationDocuments = Collections.emptyList();
         try {
-            DataFindRequest lightblueRequest = new DataFindRequest(getJobConfiguration().getLightblueEntityName(), getJobConfiguration().getLightblueEntityVersion());
+            DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
             List<Query> conditions = new LinkedList<Query>();
-            conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " >= " + getStartDate()));
-            conditions.add(withValue(getJobConfiguration().getLightblueEntityTimestampField() + " <= " + getEndDate()));
-            lightblueRequest.where(and(conditions));
-            lightblueRequest.select(includeFieldRecursively("*"));
-            lightblueRequest.sort(new SortCondition(getJobConfiguration().getLightblueEntityTimestampField(), SortDirection.ASC));
-            lightblueDocuments = findLightblueData(lightblueRequest);
+            conditions.add(withValue(getJobConfiguration().getDestinationEntityTimestampField() + " >= " + getStartDate()));
+            conditions.add(withValue(getJobConfiguration().getDestinationEntityTimestampField() + " <= " + getEndDate()));
+            destinationRequest.where(and(conditions));
+            destinationRequest.select(includeFieldRecursively("*"));
+            destinationRequest.sort(new SortCondition(getJobConfiguration().getDestinationEntityTimestampField(), SortDirection.ASC));
+            destinationDocuments = findDestinationData(destinationRequest);
         } catch (IOException e) {
-            LOG.error("Error getting lightblueDocuments", e);
+            LOG.error("Error getting destinationDocuments", e);
         }
-        return lightblueDocuments;
+        return destinationDocuments;
     }
 
-    protected List<JsonNode> findLegacyData(LightblueRequest findRequest) throws IOException {
-        return Arrays.asList(getLegacyClient().data(findRequest, JsonNode[].class));
+    protected List<JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
+        return Arrays.asList(getSourceClient().data(findRequest, JsonNode[].class));
     }
 
-    protected List<JsonNode> findLightblueData(LightblueRequest findRequest) throws IOException {
-        return Arrays.asList(getLightblueClient().data(findRequest, JsonNode[].class));
+    protected List<JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
+        return Arrays.asList(getDestinationClient().data(findRequest, JsonNode[].class));
     }
 
-    protected LightblueResponse saveLightblueData(LightblueRequest saveRequest) {
-        return getLightblueClient().data(saveRequest);
+    protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+        return getDestinationClient().data(saveRequest);
     }
 
     private String toJson() {

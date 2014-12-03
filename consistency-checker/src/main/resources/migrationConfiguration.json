@@ -84,28 +84,28 @@
                 },
                 "description": "Number of threads that should be devoted to migrator job"
             },
-            "lightblueServiceURI": {
+            "destinationServiceURI": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "REST service URI for instance housing lightblue data."
+                "description": "REST service URI for instance housing destination data."
             },
-            "lightblueEntityName": {
+            "destinationEntityName": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "lightblue Entity Name for data being migrated"
+                "description": "destination Entity Name for data being migrated"
             },
-            "lightblueEntityVersion": {
+            "destinationEntityVersion": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "lightblue Entity Version for data being migrated"
+                "description": "destination Entity Version for data being migrated"
             },
-            "lightblueEntityKeyFields": { 
+            "destinationEntityKeyFields": { 
                 "type": "array",
                 "items": {
                     "type": "string"
@@ -115,37 +115,37 @@
                 "constraints": {
                     "required": true
                 },
-                "description": "lightblue Entity field names that identify a unique document"
+                "description": "destination Entity field names that identify a unique document"
             },
-            "legacyEntityTimestampField": {
+            "sourceEntityTimestampField": {
                 "type": "date",
                 "constraints": {
                     "required": true
                 },
-                "description": "Last updated date of the configuration."
+                "description": "destination Entity timestamp field name"
             },
-            "legacyServiceURI": {
+            "sourceServiceURI": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "REST service URI for instance housing legacy data."
+                "description": "REST service URI for instance housing source data"
             },
-            "legacyEntityName": {
+            "sourceEntityName": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "legacy Entity Name for data being migrated"
+                "description": "source Entity Name for data being migrated"
             },
-            "legacyEntityVersion": {
+            "sourceEntityVersion": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "legacy Entity Version for data being migrated"
+                "description": "source Entity Version for data being migrated"
             },
-            "legacyEntityKeyFields": { 
+            "sourceEntityKeyFields": { 
                 "type": "array",
                 "items": {
                     "type": "string"
@@ -155,14 +155,14 @@
                 "constraints": {
                     "required": true
                 },
-                "description": "Legacy Entity field names that identify a unique document"
+                "description": "source Entity field names that identify a unique document"
             },
-            "legacyEntityTimestampField" : {
+            "sourceEntityTimestampField" : {
                 "type": "date",
                 "constraints": {
                     "required": true
                 },
-                "description": "Last updated date of the configuration."
+                "description": "source Entity timestamp field name"
             },
             "creationDate": {
                 "type": "date",
