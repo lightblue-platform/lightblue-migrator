@@ -244,8 +244,10 @@ public class MigrationJob implements Runnable {
     public void run() {
         LOGGER.info("MigrationJob started");
 
+        saveJobDetails();
+        
         configureClients();
-
+        
         List<JsonNode> sourceDocuments = getSourceDocuments();
 
         List<JsonNode> destinationDocuments = getDestinationDocuments();
