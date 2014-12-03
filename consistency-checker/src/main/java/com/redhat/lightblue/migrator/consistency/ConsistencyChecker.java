@@ -28,6 +28,8 @@ public class ConsistencyChecker {
     LightblueClient client;
 
     public static final Logger LOGGER=LoggerFactory.getLogger(MigrationJob.class);
+
+    public static final int MAX_WAIT_TIME = 86400000; //24 hours
     
     private String name;
     private String hostname;
@@ -127,8 +129,8 @@ public class ConsistencyChecker {
 
             if (executors.isEmpty()) {
                 MigrationJob nextJob = getNextAvailableJob();
-                long timeToWait = nextJob.getWhenAvailable().getTime() - new Date().getTime();
-                Thread.sleep(timeToWait);
+                long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
+                Thread.sleep((timeUntilNextJob > MAX_WAIT_TIME) ? MAX_WAIT_TIME : timeUntilNextJob);
             } else {
                 for (ExecutorService executor : executors) {
                     executor.shutdown();
