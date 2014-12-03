@@ -25,161 +25,161 @@ import com.redhat.lightblue.client.util.ClientConstants;
 
 public class ConsistencyChecker {
 
-    LightblueClient client;
+	LightblueClient client;
 
-    public static final Logger LOGGER=LoggerFactory.getLogger(MigrationJob.class);
+	public static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
-    public static final int MAX_WAIT_TIME = 86400000; //24 hours
-    
-    private String name;
-    private String hostName;
-    private String ipAddress;
-    private String configPath;
-    private String migrationConfigurationEntityVersion;
-    private String migrationJobEntityVersion;
+	public static final int MAX_WAIT_TIME = 86400000; // 24 hours
 
-    private boolean run = true;
+	private String name;
+	private String hostName;
+	private String ipAddress;
+	private String configPath;
+	private String migrationConfigurationEntityVersion;
+	private String migrationJobEntityVersion;
 
-    public void setRun(boolean run) {
-        this.run = run;
-    }
+	private boolean run = true;
 
-    public String getName() {
-        return name;
-    }
+	public void setRun(boolean run) {
+		this.run = run;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public LightblueClient getClient() {
-        return client;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public void setClient(LightblueClient client) {
-        this.client = client;
-    }
+	public LightblueClient getClient() {
+		return client;
+	}
 
-    public String getHostName() {
-        return hostName;
-    }
+	public void setClient(LightblueClient client) {
+		this.client = client;
+	}
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
-    }
+	public String getHostName() {
+		return hostName;
+	}
 
-    public String getIpAddress() {
-        return ipAddress;
-    }
+	public void setHostName(String hostName) {
+		this.hostName = hostName;
+	}
 
-    public void setIpAddress(String ipAddress) {
-        this.ipAddress = ipAddress;
-    }
+	public String getIpAddress() {
+		return ipAddress;
+	}
 
-    public String getConfigPath() {
-        return configPath;
-    }
+	public void setIpAddress(String ipAddress) {
+		this.ipAddress = ipAddress;
+	}
 
-    public void setConfigPath(String configPath) {
-        this.configPath = configPath;
-    }
+	public String getConfigPath() {
+		return configPath;
+	}
 
-    public String getMigrationConfigurationEntityVersion() {
-        return migrationConfigurationEntityVersion;
-    }
+	public void setConfigPath(String configPath) {
+		this.configPath = configPath;
+	}
 
-    public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
-        this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
-    }
+	public String getMigrationConfigurationEntityVersion() {
+		return migrationConfigurationEntityVersion;
+	}
 
-    public String getMigrationJobEntityVersion() {
-        return migrationJobEntityVersion;
-    }
+	public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
+		this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
+	}
 
-    public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
-        this.migrationJobEntityVersion = migrationJobEntityVersion;
-    }
+	public String getMigrationJobEntityVersion() {
+		return migrationJobEntityVersion;
+	}
 
-    public void execute() throws Exception {
+	public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
+		this.migrationJobEntityVersion = migrationJobEntityVersion;
+	}
 
-        LOGGER.info("From CLI - name: " + getName() + " hostName: " + getHostName() + " ipAddress: " + getIpAddress());
+	public void execute() throws Exception {
 
-        if (configPath != null) {
-            client = new LightblueHttpClient(configPath);
-        } else {
-            client = new LightblueHttpClient();
-        }
+		LOGGER.info("From CLI - name: " + getName() + " hostName: " + getHostName() + " ipAddress: " + getIpAddress());
 
-        while (run) {
-            List<ExecutorService> executors = new ArrayList<>();
-            List<MigrationConfiguration> configurations = getJobConfigurations();
+		if (configPath != null) {
+			client = new LightblueHttpClient(configPath);
+		} else {
+			client = new LightblueHttpClient();
+		}
 
-            for (MigrationConfiguration configuration : configurations) {
-                configuration.setConfigFilePath(configPath);
-                List<MigrationJob> jobs = getMigrationJobs(configuration);
+		while (run) {
+			List<ExecutorService> executors = new ArrayList<>();
+			List<MigrationConfiguration> configurations = getJobConfigurations();
 
-                if (!jobs.isEmpty()) {
-                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
-                    executors.add(jobExecutor);
-                    for (MigrationJob job : jobs) {
-                    	job.setHostName(getHostName());
-                      jobExecutor.execute(job);
-                    }
-                }
-            }
+			for (MigrationConfiguration configuration : configurations) {
+				configuration.setConfigFilePath(configPath);
+				List<MigrationJob> jobs = getMigrationJobs(configuration);
 
-            if (executors.isEmpty()) {
-                MigrationJob nextJob = getNextAvailableJob();
-                long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
-                Thread.sleep((timeUntilNextJob > MAX_WAIT_TIME) ? MAX_WAIT_TIME : timeUntilNextJob);
-            } else {
-                for (ExecutorService executor : executors) {
-                    executor.shutdown();
-                    executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
-                }
-            }
-        }
-    }
+				if (!jobs.isEmpty()) {
+					ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
+					executors.add(jobExecutor);
+					for (MigrationJob job : jobs) {
+						job.setHostName(getHostName());
+						jobExecutor.execute(job);
+					}
+				}
+			}
 
-    protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-        List<MigrationJob> jobs = Collections.emptyList();
-        try {
-            DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("name = " + configuration.getName()));
-            findRequest.select(includeFieldRecursively("*"));
-            jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
-        } catch (IOException e) {
-            LOGGER.error("Problem getting migrationJobs", e);
-        }
-        return jobs;
-    }
+			if (executors.isEmpty()) {
+				MigrationJob nextJob = getNextAvailableJob();
+				long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
+				Thread.sleep((timeUntilNextJob > MAX_WAIT_TIME) ? MAX_WAIT_TIME : timeUntilNextJob);
+			} else {
+				for (ExecutorService executor : executors) {
+					executor.shutdown();
+					executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+				}
+			}
+		}
+	}
 
-    protected List<MigrationConfiguration> getJobConfigurations() {
-        List<MigrationConfiguration> configurations = Collections.emptyList();
-        try {
-            DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
-            findRequest.where(withValue("name = " + getName()));
-            findRequest.select(includeFieldRecursively("*"));
-            configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
-        } catch (IOException e) {
-            LOGGER.error("Problem getting migrationConfigurations", e);
-        }
-        return configurations;
-    }
+	protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
+		List<MigrationJob> jobs = Collections.emptyList();
+		try {
+			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
+			findRequest.where(withValue("name = " + configuration.getName()));
+			findRequest.select(includeFieldRecursively("*"));
+			jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+		} catch (IOException e) {
+			LOGGER.error("Problem getting migrationJobs", e);
+		}
+		return jobs;
+	}
 
-    protected MigrationJob getNextAvailableJob() {
-        MigrationJob job = null;
-        try {
-            DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
-            findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
-            findRequest.range(0, 1);
-            findRequest.select(includeFieldRecursively("*"));
-            job = client.data(findRequest, MigrationJob.class);
-        } catch (IOException e) {
-            LOGGER.error("Problem getting migrationJob", e);
-        }
-        return job;
-    }
+	protected List<MigrationConfiguration> getJobConfigurations() {
+		List<MigrationConfiguration> configurations = Collections.emptyList();
+		try {
+			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
+			findRequest.where(withValue("name = " + getName()));
+			findRequest.select(includeFieldRecursively("*"));
+			configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
+		} catch (IOException e) {
+			LOGGER.error("Problem getting migrationConfigurations", e);
+		}
+		return configurations;
+	}
+
+	protected MigrationJob getNextAvailableJob() {
+		MigrationJob job = null;
+		try {
+			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
+			findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
+			findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
+			findRequest.range(0, 1);
+			findRequest.select(includeFieldRecursively("*"));
+			job = client.data(findRequest, MigrationJob.class);
+		} catch (IOException e) {
+			LOGGER.error("Problem getting migrationJob", e);
+		}
+		return job;
+	}
 
 }

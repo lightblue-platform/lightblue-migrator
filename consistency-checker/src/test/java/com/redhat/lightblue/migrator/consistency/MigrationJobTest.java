@@ -20,423 +20,423 @@ import java.util.List;
 import static com.redhat.lightblue.util.test.FileUtil.readFile;
 
 public class MigrationJobTest {
-    private static final int recordsOverwritten = 42;
-    private static final int inconsistentDocuments = 42;
-    private static final int consistentDocuments = 21;
-    private static final int documentsProcessed = 63;
+	private static final int recordsOverwritten = 42;
+	private static final int inconsistentDocuments = 42;
+	private static final int consistentDocuments = 21;
+	private static final int documentsProcessed = 63;
 
-    MigrationJob migrationJob;
+	MigrationJob migrationJob;
 
-    @Before
-    public void setup() {
-        migrationJob = new MigrationJob();
-        migrationJob = new MigrationJob(new MigrationConfiguration());
-        migrationJob.setDocumentsProcessed(documentsProcessed);
-        migrationJob.setInconsistentDocuments(inconsistentDocuments);
-        migrationJob.setConsistentDocuments(consistentDocuments);
-        migrationJob.setRecordsOverwritten(recordsOverwritten);
-    }
+	@Before
+	public void setup() {
+		migrationJob = new MigrationJob();
+		migrationJob = new MigrationJob(new MigrationConfiguration());
+		migrationJob.setDocumentsProcessed(documentsProcessed);
+		migrationJob.setInconsistentDocuments(inconsistentDocuments);
+		migrationJob.setConsistentDocuments(consistentDocuments);
+		migrationJob.setRecordsOverwritten(recordsOverwritten);
+	}
 
-    @Test
-    public void testExecuteExistsInLegacyAndLightblue() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+	@Test
+	public void testExecuteExistsInLegacyAndLightblue() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
 
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
 
-    private List<JsonNode> getProcessedContentsFrom(String filename) {
-        List<JsonNode> output = new ArrayList<>();
+	private List<JsonNode> getProcessedContentsFrom(String filename) {
+		List<JsonNode> output = new ArrayList<>();
 
-        JsonNode processedNode = fromFileToJsonNode(filename).findValue("processed");
-        if (processedNode instanceof ArrayNode) {
-            Iterator<JsonNode> i = ((ArrayNode)processedNode).iterator();
-            while (i.hasNext()) {
-                output.add(i.next());
-            }
-        } else {
-            output.add(processedNode);
-        }
+		JsonNode processedNode = fromFileToJsonNode(filename).findValue("processed");
+		if (processedNode instanceof ArrayNode) {
+			Iterator<JsonNode> i = ((ArrayNode) processedNode).iterator();
+			while (i.hasNext()) {
+				output.add(i.next());
+			}
+		} else {
+			output.add(processedNode);
+		}
 
-        return output;
-    }
+		return output;
+	}
 
-    @Test
-    public void testExecuteExistsInLegacyButNotLightblue() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+	@Test
+	public void testExecuteExistsInLegacyButNotLightblue() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("emptyFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
-    }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertTrue(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteExistsInLegacyButNotLightblueDoNotOverwrite() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+	@Test
+	public void testExecuteExistsInLegacyButNotLightblueDoNotOverwrite() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("emptyFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
 
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.setOverwriteDestinationDocuments(false);
-        migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.setOverwriteDestinationDocuments(false);
+		migrationJob.run();
+		Assert.assertTrue(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteExistsInLightblueButNotLegacy() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+	@Test
+	public void testExecuteExistsInLightblueButNotLegacy() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("emptyFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteMultipleExistsInLegacyAndLightblue() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+	@Test
+	public void testExecuteMultipleExistsInLegacyAndLightblue() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
 
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(2, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(2, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteMultipleExistsInLegacyButNotLightblue() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+	@Test
+	public void testExecuteMultipleExistsInLegacyButNotLightblue() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("emptyFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getRecordsOverwritten());
-    }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertTrue(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteMultipleExistsInLightblueButNotLegacy() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+	@Test
+	public void testExecuteMultipleExistsInLightblueButNotLegacy() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("emptyFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteSingleMultipleExistsInLightblueButNotLegacy() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+	@Test
+	public void testExecuteSingleMultipleExistsInLightblueButNotLegacy() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testExecuteMultipleExistsInLegacyAndSingleExistsInLightblue() {
-        MigrationJob migrationJob = new MigrationJob() {
-            @Override
-            protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+	@Test
+	public void testExecuteMultipleExistsInLegacyAndSingleExistsInLightblue() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponse.json");
+			}
 
-            @Override
-            protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+			@Override
+			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("singleFindResponse.json");
+			}
 
-            @Override
-            protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\"}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
-    }
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertTrue(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+	}
 
-    private void configureMigrationJob(MigrationJob migrationJob) {
-        MigrationConfiguration jobConfiguration = new MigrationConfiguration();
-        jobConfiguration.setSourceEntityKeyFields(new ArrayList<String>());
-        jobConfiguration.setSourceEntityTimestampField("legacy-timestamp");
-        jobConfiguration.setDestinationEntityTimestampField("lightblue-timestamp");
-        migrationJob.setJobConfiguration(jobConfiguration);
+	private void configureMigrationJob(MigrationJob migrationJob) {
+		MigrationConfiguration jobConfiguration = new MigrationConfiguration();
+		jobConfiguration.setSourceEntityKeyFields(new ArrayList<String>());
+		jobConfiguration.setSourceEntityTimestampField("legacy-timestamp");
+		jobConfiguration.setDestinationEntityTimestampField("lightblue-timestamp");
+		migrationJob.setJobConfiguration(jobConfiguration);
 
-        migrationJob.setOverwriteDestinationDocuments(true);
+		migrationJob.setOverwriteDestinationDocuments(true);
 
-        LightblueClient client = new LightblueHttpClient();
-        migrationJob.setSourceClient(client);
-    }
+		LightblueClient client = new LightblueHttpClient();
+		migrationJob.setSourceClient(client);
+	}
 
-    private static JsonNode fromFileToJsonNode(String fileName) {
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode actualObj = null;
-        try {
-            actualObj = mapper.readTree(readFile(fileName));
-        } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
-        }
-        return actualObj;
-    }
+	private static JsonNode fromFileToJsonNode(String fileName) {
+		ObjectMapper mapper = new ObjectMapper();
+		JsonNode actualObj = null;
+		try {
+			actualObj = mapper.readTree(readFile(fileName));
+		} catch (IOException | URISyntaxException e) {
+			e.printStackTrace();
+		}
+		return actualObj;
+	}
 
-    @Test
-    public void testGetDocumentsProcessed() {
-        Assert.assertEquals(documentsProcessed, migrationJob.getDocumentsProcessed());
-    }
+	@Test
+	public void testGetDocumentsProcessed() {
+		Assert.assertEquals(documentsProcessed, migrationJob.getDocumentsProcessed());
+	}
 
-    @Test
-    public void testSetDocumentsProcessed() {
-        migrationJob.setDocumentsProcessed(recordsOverwritten);
-        Assert.assertEquals(recordsOverwritten, migrationJob.getDocumentsProcessed());
-    }
+	@Test
+	public void testSetDocumentsProcessed() {
+		migrationJob.setDocumentsProcessed(recordsOverwritten);
+		Assert.assertEquals(recordsOverwritten, migrationJob.getDocumentsProcessed());
+	}
 
-    @Test
-    public void testGetInconsistentDocuments() {
-        Assert.assertEquals(inconsistentDocuments, migrationJob.getInconsistentDocuments());
-    }
+	@Test
+	public void testGetInconsistentDocuments() {
+		Assert.assertEquals(inconsistentDocuments, migrationJob.getInconsistentDocuments());
+	}
 
-    @Test
-    public void testSetInconsistentDocuments() {
-        migrationJob.setInconsistentDocuments(recordsOverwritten);
-        Assert.assertEquals(recordsOverwritten, migrationJob.getInconsistentDocuments());
-    }
+	@Test
+	public void testSetInconsistentDocuments() {
+		migrationJob.setInconsistentDocuments(recordsOverwritten);
+		Assert.assertEquals(recordsOverwritten, migrationJob.getInconsistentDocuments());
+	}
 
-    @Test
-    public void testGetRecordsOverwritten() {
-        Assert.assertEquals(recordsOverwritten, migrationJob.getRecordsOverwritten());
-    }
+	@Test
+	public void testGetRecordsOverwritten() {
+		Assert.assertEquals(recordsOverwritten, migrationJob.getRecordsOverwritten());
+	}
 
-    @Test
-    public void testSetRecordsOverwritten() {
-        migrationJob.setRecordsOverwritten(documentsProcessed);
-        Assert.assertEquals(documentsProcessed, migrationJob.getRecordsOverwritten());
-    }
+	@Test
+	public void testSetRecordsOverwritten() {
+		migrationJob.setRecordsOverwritten(documentsProcessed);
+		Assert.assertEquals(documentsProcessed, migrationJob.getRecordsOverwritten());
+	}
 
 }
