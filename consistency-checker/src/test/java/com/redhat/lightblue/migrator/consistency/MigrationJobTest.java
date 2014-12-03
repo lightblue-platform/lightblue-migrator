@@ -68,7 +68,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertFalse(migrationJob.hasFailures());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
@@ -120,7 +120,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasFailures());
+        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
@@ -158,7 +158,7 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.setOverwriteDestinationDocuments(false);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasFailures());
+        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
@@ -194,7 +194,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertFalse(migrationJob.hasFailures());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
@@ -231,7 +231,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertFalse(migrationJob.hasFailures());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(2, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
@@ -267,7 +267,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasFailures());
+        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
@@ -303,7 +303,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertFalse(migrationJob.hasFailures());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
@@ -339,7 +339,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertFalse(migrationJob.hasFailures());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
@@ -375,7 +375,7 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasFailures());
+        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
         Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());

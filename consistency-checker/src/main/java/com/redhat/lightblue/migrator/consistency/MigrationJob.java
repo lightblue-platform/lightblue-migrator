@@ -77,7 +77,7 @@ public class MigrationJob implements Runnable {
     private int inconsistentDocuments;
     private int recordsOverwritten;
 
-    private boolean hasFailures;
+    private boolean hasInconsistentDocuments;
 
     public MigrationConfiguration getJobConfiguration() {
         return migrationConfiguration;
@@ -112,12 +112,12 @@ public class MigrationJob implements Runnable {
     }
 
     /**
-     * Returns true if there are any inconsistencies
-     * TODO https://github.com/lightblue-platform/lightblue-migrator/issues/37
-     * @return true if there are any inconsistencies
+     * Returns true if there are any inconsistent documents
+     * 
+     * @return true if there are any inconsistent documents
      */
-    public boolean hasFailures() {
-        return hasFailures;
+    public boolean hasInconsistentDocuments() {
+        return hasInconsistentDocuments;
     }
 
     public String getName() {
@@ -253,7 +253,7 @@ public class MigrationJob implements Runnable {
         List<JsonNode> documentsToOverwrite = ListUtils.subtract(sourceDocuments, destinationDocuments);
 
         if (!documentsToOverwrite.isEmpty()) {
-            hasFailures = true;
+            hasInconsistentDocuments = true;
         }
 
         documentsProcessed = sourceDocuments.size();
