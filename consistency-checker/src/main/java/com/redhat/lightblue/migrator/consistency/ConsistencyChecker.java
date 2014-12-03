@@ -1,29 +1,34 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class ConsistencyChecker {
 
     LightblueClient client;
 
-    public static final Log LOG = LogFactory.getLog("ConsistencyChecker");
-
+    public static final Logger LOGGER=LoggerFactory.getLogger(MigrationJob.class);
+    
     private String name;
     private String hostname;
     private String ipAddress;
@@ -95,7 +100,7 @@ public class ConsistencyChecker {
 
     public void execute() throws Exception {
 
-        LOG.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
+        LOGGER.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
 
         if (configPath != null) {
             client = new LightblueHttpClient(configPath);
@@ -141,7 +146,7 @@ public class ConsistencyChecker {
             findRequest.select(includeFieldRecursively("*"));
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
         } catch (IOException e) {
-            LOG.error("Problem getting migrationJobs", e);
+            LOGGER.error("Problem getting migrationJobs", e);
         }
         return jobs;
     }
@@ -154,7 +159,7 @@ public class ConsistencyChecker {
             findRequest.select(includeFieldRecursively("*"));
             configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
         } catch (IOException e) {
-            LOG.error("Problem getting migrationConfigurations", e);
+            LOGGER.error("Problem getting migrationConfigurations", e);
         }
         return configurations;
     }
@@ -169,7 +174,7 @@ public class ConsistencyChecker {
             findRequest.select(includeFieldRecursively("*"));
             job = client.data(findRequest, MigrationJob.class);
         } catch (IOException e) {
-            LOG.error("Problem getting migrationJob", e);
+            LOGGER.error("Problem getting migrationJob", e);
         }
         return job;
     }

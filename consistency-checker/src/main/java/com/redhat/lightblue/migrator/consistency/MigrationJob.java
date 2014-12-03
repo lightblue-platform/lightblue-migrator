@@ -1,5 +1,20 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.commons.collections4.ListUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,21 +27,12 @@ import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
-import org.apache.commons.collections4.ListUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import java.io.IOException;
-import java.util.*;
-
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class MigrationJob implements Runnable {
 
-    private static final Log LOG = LogFactory.getLog("MigrationJob");
-
+    
+    private static final Logger LOGGER=LoggerFactory.getLogger(MigrationJob.class);
+    
     public MigrationJob() {
 
     }
@@ -236,7 +242,7 @@ public class MigrationJob implements Runnable {
 
     @Override
     public void run() {
-        LOG.info("MigrationJob started");
+        LOGGER.info("MigrationJob started");
 
         configureClients();
 
@@ -260,7 +266,7 @@ public class MigrationJob implements Runnable {
 
         saveJobDetails();
 
-        LOG.info("MigrationJob completed");
+        LOGGER.info("MigrationJob completed");
     }
 
     private void configureClients() {
@@ -302,7 +308,7 @@ public class MigrationJob implements Runnable {
             sourceRequest.select(includeFieldRecursively("*"));
             sourceDocuments = findSourceData(sourceRequest);
         } catch (IOException e) {
-            LOG.error("Problem getting sourceDocuments", e);
+            LOGGER.error("Problem getting sourceDocuments", e);
         }
         return sourceDocuments;
     }
@@ -319,7 +325,7 @@ public class MigrationJob implements Runnable {
             destinationRequest.sort(new SortCondition(getJobConfiguration().getDestinationEntityTimestampField(), SortDirection.ASC));
             destinationDocuments = findDestinationData(destinationRequest);
         } catch (IOException e) {
-            LOG.error("Error getting destinationDocuments", e);
+            LOGGER.error("Error getting destinationDocuments", e);
         }
         return destinationDocuments;
     }
@@ -342,7 +348,7 @@ public class MigrationJob implements Runnable {
         try {
             json.append(mapper.writeValueAsString(MigrationJob.class));
         } catch (JsonProcessingException e) {
-            LOG.error("Error transforming to JSON", e);
+            LOGGER.error("Error transforming to JSON", e);
         }
         return json.toString();
     }

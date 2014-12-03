@@ -33,9 +33,9 @@ public final class ConsistencyCheckerCLI {
             checker.setIpAddress(System.getProperty("ip"));
             checker.setConfigPath(System.getProperty("config"));
 
-            ConsistencyChecker.LOG.info("Starting ConsistencyChecker");
+            ConsistencyChecker.LOGGER.info("Starting ConsistencyChecker");
             checker.execute();
-            ConsistencyChecker.LOG.info("Finished ConsistencyChecker");
+            ConsistencyChecker.LOGGER.info("Finished ConsistencyChecker");
             System.exit(0);
         } catch (ParseException e) {
             HelpFormatter formatter = new HelpFormatter();
@@ -44,7 +44,7 @@ public final class ConsistencyCheckerCLI {
             System.out.println(e.getMessage());
             System.exit(1);
         } catch (Exception e) {
-            ConsistencyChecker.LOG.error("Error running ConsistencyChecker", e);
+            ConsistencyChecker.LOGGER.error("Error running ConsistencyChecker", e);
             System.exit(1);
         }
     }

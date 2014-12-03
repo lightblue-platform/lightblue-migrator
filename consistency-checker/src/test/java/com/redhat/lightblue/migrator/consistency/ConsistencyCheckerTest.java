@@ -90,8 +90,8 @@ public class ConsistencyCheckerTest {
                         MigrationJob job = new MigrationJob() {
                             @Override
                             public void run() {
-                                LOG.info("MigrationJob started");
-                                LOG.info("MigrationJob completed");
+                                LOGGER.info("MigrationJob started");
+                                LOGGER.info("MigrationJob completed");
                             }
                         };
                         jobs.add(job);
