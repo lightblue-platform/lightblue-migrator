@@ -26,7 +26,7 @@ public class ConsistencyCheckerTest {
     public void setUp() throws Exception {
         checker = new ConsistencyChecker();
         checker.setName(checkerName);
-        checker.setHostname(hostname);
+        checker.setHostName(hostname);
         checker.setIpAddress(ipAddress);
         checker.setConfigPath(configPath);
         client = new LightblueHttpClient();
@@ -46,13 +46,13 @@ public class ConsistencyCheckerTest {
 
     @Test
     public void testGetHostName() {
-        Assert.assertEquals(hostname, checker.getHostname());
+        Assert.assertEquals(hostname, checker.getHostName());
     }
 
     @Test
     public void testSetHostName() {
-        checker.setHostname(checkerName);
-        Assert.assertEquals(checkerName, checker.getHostname());
+        checker.setHostName(checkerName);
+        Assert.assertEquals(checkerName, checker.getHostName());
     }
 
     @Test

@@ -29,7 +29,7 @@ public final class ConsistencyCheckerCLI {
                 System.setProperty(opt.getLongOpt(), opt.getValue() == null ? "true" : opt.getValue());
             }
             checker.setName(System.getProperty("name"));
-            checker.setHostname(System.getProperty("hostname"));
+            checker.setHostName(System.getProperty("hostname"));
             checker.setIpAddress(System.getProperty("ip"));
             checker.setConfigPath(System.getProperty("config"));
 

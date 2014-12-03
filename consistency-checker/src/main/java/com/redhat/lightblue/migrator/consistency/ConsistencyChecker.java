@@ -32,7 +32,7 @@ public class ConsistencyChecker {
     public static final int MAX_WAIT_TIME = 86400000; //24 hours
     
     private String name;
-    private String hostname;
+    private String hostName;
     private String ipAddress;
     private String configPath;
     private String migrationConfigurationEntityVersion;
@@ -60,12 +60,12 @@ public class ConsistencyChecker {
         this.client = client;
     }
 
-    public String getHostname() {
-        return hostname;
+    public String getHostName() {
+        return hostName;
     }
 
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
     }
 
     public String getIpAddress() {
@@ -102,7 +102,7 @@ public class ConsistencyChecker {
 
     public void execute() throws Exception {
 
-        LOGGER.info("From CLI - name: " + getName() + " hostname: " + getHostname() + " ipAddress: " + getIpAddress());
+        LOGGER.info("From CLI - name: " + getName() + " hostName: " + getHostName() + " ipAddress: " + getIpAddress());
 
         if (configPath != null) {
             client = new LightblueHttpClient(configPath);
@@ -122,7 +122,8 @@ public class ConsistencyChecker {
                     ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
                     executors.add(jobExecutor);
                     for (MigrationJob job : jobs) {
-                        jobExecutor.execute(job);
+                    	job.setHostName(getHostName());
+                      jobExecutor.execute(job);
                     }
                 }
             }
