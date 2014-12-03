@@ -45,7 +45,7 @@ public class MigrationJob implements Runnable {
 
     // information about migrator instance working job
     private String owner;
-    private String hostname;
+    private String hostName;
     private String pid;
 
     // dates of data to migrate
@@ -130,12 +130,12 @@ public class MigrationJob implements Runnable {
         this.owner = owner;
     }
 
-    public String getHostname() {
-        return hostname;
+    public String getHostName() {
+        return hostName;
     }
 
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
     }
 
     public String getPid() {
