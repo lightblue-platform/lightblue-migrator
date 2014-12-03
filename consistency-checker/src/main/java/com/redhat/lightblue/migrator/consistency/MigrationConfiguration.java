@@ -9,7 +9,8 @@ public class MigrationConfiguration {
 	private String hostName;
 	private int threadCount;
 
-	private String name;
+	private String configurationName;
+	private String consistencyCheckerName;
 
 	private String destinationEntityName;
 	private String destinationEntityVersion;
@@ -47,18 +48,26 @@ public class MigrationConfiguration {
 		this.threadCount = threadCount;
 	}
 
+	public String getConfigurationName() {
+		return configurationName;
+	}
+
+	public void setConfigurationName(String configurationName) {
+		this.configurationName = configurationName;
+	}
+	
+	public void setConsistencyCheckerName(String name) {
+		this.consistencyCheckerName = name;
+	}
+
+	public String getConsistencyCheckerName() {
+		return consistencyCheckerName;
+	}
+
 	public String getDestinationEntityName() {
 		return destinationEntityName;
 	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public String getName() {
-		return name;
-	}
-
+	
 	public void setDestinationEntityName(String destinationEntityName) {
 		this.destinationEntityName = destinationEntityName;
 	}

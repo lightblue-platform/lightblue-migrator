@@ -58,12 +58,19 @@
                 },
                 "type": "string"
             },
-            "name": {
+            "configurationName": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "Name of this migration configuration"
+                "description": "Name of the configuration for this job"
+            },
+            "consistencyCheckerNameName": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Name of the consistency checker responsible for this configuration"
             },
             "hosts": { 
 	            "type": "array",

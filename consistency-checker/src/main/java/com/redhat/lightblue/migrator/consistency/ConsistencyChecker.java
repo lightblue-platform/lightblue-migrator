@@ -4,6 +4,7 @@ import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,9 +32,8 @@ public class ConsistencyChecker {
 
 	public static final int MAX_WAIT_TIME = 86400000; // 24 hours
 
-	private String name;
+	private String consistencyCheckerName;
 	private String hostName;
-	private String ipAddress;
 	private String configPath;
 	private String migrationConfigurationEntityVersion;
 	private String migrationJobEntityVersion;
@@ -44,12 +44,12 @@ public class ConsistencyChecker {
 		this.run = run;
 	}
 
-	public String getName() {
-		return name;
+	public String getConsistencyCheckerName() {
+		return consistencyCheckerName;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setConsistencyCheckerName(String consistencyCheckerName) {
+		this.consistencyCheckerName = consistencyCheckerName;
 	}
 
 	public LightblueClient getClient() {
@@ -66,14 +66,6 @@ public class ConsistencyChecker {
 
 	public void setHostName(String hostName) {
 		this.hostName = hostName;
-	}
-
-	public String getIpAddress() {
-		return ipAddress;
-	}
-
-	public void setIpAddress(String ipAddress) {
-		this.ipAddress = ipAddress;
 	}
 
 	public String getConfigPath() {
@@ -102,7 +94,7 @@ public class ConsistencyChecker {
 
 	public void execute() throws Exception {
 
-		LOGGER.info("From CLI - name: " + getName() + " hostName: " + getHostName() + " ipAddress: " + getIpAddress());
+		LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
 
 		if (configPath != null) {
 			client = new LightblueHttpClient(configPath);
@@ -122,7 +114,9 @@ public class ConsistencyChecker {
 					ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
 					executors.add(jobExecutor);
 					for (MigrationJob job : jobs) {
+						job.setOwner(getConsistencyCheckerName());
 						job.setHostName(getHostName());
+						job.setPid(ManagementFactory.getRuntimeMXBean().getName());
 						jobExecutor.execute(job);
 					}
 				}
@@ -145,7 +139,7 @@ public class ConsistencyChecker {
 		List<MigrationJob> jobs = Collections.emptyList();
 		try {
 			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-			findRequest.where(withValue("name = " + configuration.getName()));
+			findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
 			findRequest.select(includeFieldRecursively("*"));
 			jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
 		} catch (IOException e) {
@@ -158,7 +152,7 @@ public class ConsistencyChecker {
 		List<MigrationConfiguration> configurations = Collections.emptyList();
 		try {
 			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
-			findRequest.where(withValue("name = " + getName()));
+			findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
 			findRequest.select(includeFieldRecursively("*"));
 			configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
 		} catch (IOException e) {

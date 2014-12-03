@@ -46,8 +46,6 @@ public class MigrationJob implements Runnable {
 	// configuration for migrator
 	private MigrationConfiguration migrationConfiguration;
 
-	private String name;
-
 	// information about migrator instance working job
 	private String owner;
 	private String hostName;
@@ -119,12 +117,12 @@ public class MigrationJob implements Runnable {
 		return hasInconsistentDocuments;
 	}
 
-	public String getName() {
-		return name;
+	public String getConfigurationName() {
+		return migrationConfiguration.getConfigurationName();
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public void setConfigurationName(String configurationName) {
+		this.migrationConfiguration.setConfigurationName(configurationName);
 	}
 
 	public String getOwner() {

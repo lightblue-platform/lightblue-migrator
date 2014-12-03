@@ -60,12 +60,12 @@
                 },
                 "type": "string"
             },
-            "name": {
+            "configurationName": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "Name of this migration job"
+                "description": "Name of the configuration that corresponds to this job"
             },
             "owner": {
                 "type": "string",

@@ -15,7 +15,6 @@ public class ConsistencyCheckerTest {
 
 	private String checkerName = "testChecker";
 	private String hostname = "http://lightblue.io";
-	private String ipAddress = "127.0.0.1";
 	private String configPath = "lightblue-client.properties";
 
 	ConsistencyChecker checker;
@@ -25,23 +24,22 @@ public class ConsistencyCheckerTest {
 	@Before
 	public void setUp() throws Exception {
 		checker = new ConsistencyChecker();
-		checker.setName(checkerName);
+		checker.setConsistencyCheckerName(checkerName);
 		checker.setHostName(hostname);
-		checker.setIpAddress(ipAddress);
 		checker.setConfigPath(configPath);
 		client = new LightblueHttpClient();
 		checker.setClient(client);
 	}
 
 	@Test
-	public void testGetCheckerName() {
-		Assert.assertEquals(checkerName, checker.getName());
+	public void testGetConsistencyCheckerName() {
+		Assert.assertEquals(checkerName, checker.getConsistencyCheckerName());
 	}
 
 	@Test
-	public void testSetCheckerName() {
-		checker.setName(hostname);
-		Assert.assertEquals(hostname, checker.getName());
+	public void testSetConsistencyCheckerName() {
+		checker.setConsistencyCheckerName(hostname);
+		Assert.assertEquals(hostname, checker.getConsistencyCheckerName());
 	}
 
 	@Test
@@ -56,25 +54,14 @@ public class ConsistencyCheckerTest {
 	}
 
 	@Test
-	public void testGetIpAddress() {
-		Assert.assertEquals(ipAddress, checker.getIpAddress());
-	}
-
-	@Test
-	public void testSetIpAddress() {
-		checker.setIpAddress(hostname);
-		Assert.assertEquals(hostname, checker.getIpAddress());
-	}
-
-	@Test
 	public void testGetServiceURI() {
 		Assert.assertEquals(configPath, checker.getConfigPath());
 	}
 
 	@Test
 	public void testSetServiceURI() {
-		checker.setConfigPath(ipAddress);
-		Assert.assertEquals(ipAddress, checker.getConfigPath());
+		checker.setConfigPath(checkerName);
+		Assert.assertEquals(checkerName, checker.getConfigPath());
 	}
 
 	@Test
