@@ -34,14 +34,11 @@ public class MigrationJob implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
 	public MigrationJob() {
-		 thisRun = new MigrationJobRun();
-		 jobRuns = new ArrayList<>();
+
 	}
 
 	public MigrationJob(MigrationConfiguration migrationConfiguration) {
 		this.migrationConfiguration = migrationConfiguration;
-		 thisRun = new MigrationJobRun();
-		 jobRuns = new ArrayList<>();
 	}
 
 	private String sourceConfigPath;
@@ -55,7 +52,7 @@ public class MigrationJob implements Runnable {
 
 	private List<MigrationJobRun> jobRuns;
 
-	MigrationJobRun thisRun;
+	MigrationJobRun currentRun;
 	
 	// information about migrator instance working job
 	private String owner;
@@ -82,6 +79,21 @@ public class MigrationJob implements Runnable {
 		this.migrationConfiguration = jobConfiguration;
 	}
 
+	private List<MigrationJobRun> getJobRuns() {
+		if (null == jobRuns) {
+			jobRuns = new ArrayList<MigrationJobRun>(1);
+		}
+		return jobRuns;
+	}
+	
+	public void setJobRuns(List<MigrationJobRun> jobRuns) {
+		this.jobRuns = jobRuns;
+  }
+
+	public void setCurrentRun(MigrationJobRun currentRun) {
+	  this.currentRun = currentRun;
+  }
+	
 	public LightblueClient getSourceClient() {
 		return sourceClient;
 	}
@@ -196,29 +208,29 @@ public class MigrationJob implements Runnable {
 	}
 	
 	public int getDocumentsProcessed() {
-		return thisRun.getDocumentsProcessed();
+		return currentRun.getDocumentsProcessed();
 	}
 
 	public int getConsistentDocuments() {
-		return thisRun.getConsistentDocuments();
+		return currentRun.getConsistentDocuments();
 	}
 
 	public int getInconsistentDocuments() {
-		return thisRun.getInconsistentDocuments();
+		return currentRun.getInconsistentDocuments();
 	}
 
 	public int getRecordsOverwritten() {
-		return thisRun.getRecordsOverwritten();
+		return currentRun.getRecordsOverwritten();
 	}
 
 	@Override
 	public void run() {
 		LOGGER.info("MigrationJob started");
 
-		thisRun.setOwner(owner);
-		thisRun.setHostName(hostName);
-		thisRun.setPid(pid);
-		thisRun.setActualStartDate(new Date());
+		currentRun.setOwner(owner);
+		currentRun.setHostName(hostName);
+		currentRun.setPid(pid);
+		currentRun.setActualStartDate(new Date());
 				
 		saveJobDetails();
 
@@ -234,17 +246,17 @@ public class MigrationJob implements Runnable {
 			hasInconsistentDocuments = true;
 		}
 
-		thisRun.setDocumentsProcessed(sourceDocuments.size());
-		thisRun.setConsistentDocuments(sourceDocuments.size() - documentsToOverwrite.size());
-		thisRun.setInconsistentDocuments(documentsToOverwrite.size());
+		currentRun.setDocumentsProcessed(sourceDocuments.size());
+		currentRun.setConsistentDocuments(sourceDocuments.size() - documentsToOverwrite.size());
+		currentRun.setInconsistentDocuments(documentsToOverwrite.size());
 
 		if (shouldOverwriteDestinationDocuments()) {
-			thisRun.setRecordsOverwritten(overwriteLightblue(documentsToOverwrite));
+			currentRun.setRecordsOverwritten(overwriteLightblue(documentsToOverwrite));
 		}
 		
-		thisRun.setCompleted(true);
-		thisRun.setActualEndDate(new Date());
-		jobRuns.add(thisRun);
+		currentRun.setCompleted(true);
+		currentRun.setActualEndDate(new Date());
+		getJobRuns().add(currentRun);
 		saveJobDetails();
 
 		LOGGER.info("MigrationJob completed");

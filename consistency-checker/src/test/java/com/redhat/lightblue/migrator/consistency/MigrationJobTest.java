@@ -33,6 +33,8 @@ public class MigrationJobTest {
 		migrationJob = new MigrationJob(new MigrationConfiguration());
 		migrationJob.setSourceConfigPath(sourceConfigPath);
 		migrationJob.setDestinationConfigPath(destinationConfigPath);
+		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
+		migrationJob.setCurrentRun(new MigrationJobRun());
 	}
 
 	@Test
@@ -408,9 +410,10 @@ public class MigrationJobTest {
 		jobConfiguration.setSourceEntityTimestampField("legacy-timestamp");
 		jobConfiguration.setDestinationEntityTimestampField("lightblue-timestamp");
 		migrationJob.setJobConfiguration(jobConfiguration);
-
 		migrationJob.setOverwriteDestinationDocuments(true);
-
+		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
+		migrationJob.setCurrentRun(new MigrationJobRun());
+		
 		LightblueClient client = new LightblueHttpClient();
 		migrationJob.setSourceClient(client);
 	}
