@@ -24,177 +24,194 @@ import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
 
-public class ConsistencyChecker {
+public class ConsistencyChecker implements Runnable{
 
-	LightblueClient client;
+    LightblueClient client;
 
-	public static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
+    public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
-	public static final int MAX_JOB_WAIT_TIME = 86400000; // 24 hours
-	public static final int MAX_THREAD_WAIT_TIME = 21600; // 6 hours
-	
-	private String consistencyCheckerName;
-	private String hostName;
-	private String configPath;
-	private String migrationConfigurationEntityVersion;
-	private String migrationJobEntityVersion;
-	private String sourceConfigPath;
-	private String destinationConfigPath;
+    public static final int MAX_JOB_WAIT_TIME = 86400000; // 24 hours
+    public static final int MAX_THREAD_WAIT_TIME = 21600; // 6 hours
 
-	private boolean run = true;
+    private String consistencyCheckerName;
+    private String hostName;
+    private String configPath;
+    private String migrationConfigurationEntityVersion;
+    private String migrationJobEntityVersion;
+    private String sourceConfigPath;
+    private String destinationConfigPath;
 
-	public void setRun(boolean run) {
-		this.run = run;
-	}
+    private boolean run = true;
 
-	public String getConsistencyCheckerName() {
-		return consistencyCheckerName;
-	}
+    public void setRun(boolean run) {
+        this.run = run;
+    }
 
-	public void setConsistencyCheckerName(String consistencyCheckerName) {
-		this.consistencyCheckerName = consistencyCheckerName;
-	}
+    public String getConsistencyCheckerName() {
+        return consistencyCheckerName;
+    }
 
-	public LightblueClient getClient() {
-		return client;
-	}
+    public void setConsistencyCheckerName(String consistencyCheckerName) {
+        this.consistencyCheckerName = consistencyCheckerName;
+    }
 
-	public void setClient(LightblueClient client) {
-		this.client = client;
-	}
+    public LightblueClient getClient() {
+        return client;
+    }
 
-	public String getHostName() {
-		return hostName;
-	}
+    public void setClient(LightblueClient client) {
+        this.client = client;
+    }
 
-	public void setHostName(String hostName) {
-		this.hostName = hostName;
-	}
+    public String getHostName() {
+        return hostName;
+    }
 
-	public String getConfigPath() {
-		return configPath;
-	}
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
 
-	public void setConfigPath(String configPath) {
-		this.configPath = configPath;
-	}
+    public String getConfigPath() {
+        return configPath;
+    }
 
-	public String getMigrationConfigurationEntityVersion() {
-		return migrationConfigurationEntityVersion;
-	}
+    public void setConfigPath(String configPath) {
+        this.configPath = configPath;
+    }
 
-	public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
-		this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
-	}
+    public String getMigrationConfigurationEntityVersion() {
+        return migrationConfigurationEntityVersion;
+    }
 
-	public String getMigrationJobEntityVersion() {
-		return migrationJobEntityVersion;
-	}
+    public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
+        this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
+    }
 
-	public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
-		this.migrationJobEntityVersion = migrationJobEntityVersion;
-	}
+    public String getMigrationJobEntityVersion() {
+        return migrationJobEntityVersion;
+    }
 
-	public String getSourceConfigPath() {
-		return sourceConfigPath;
-	}
+    public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
+        this.migrationJobEntityVersion = migrationJobEntityVersion;
+    }
 
-	public void setSourceConfigPath(String configPath) {
-		this.sourceConfigPath = configPath;
-	}
-	
-	public String getDestinationConfigPath() {
-		return destinationConfigPath;
-	}
+    public String getSourceConfigPath() {
+        return sourceConfigPath;
+    }
 
-	public void setDestinationConfigPath(String configPath) {
-		this.destinationConfigPath = configPath;
-	}
-	
-	public void execute() throws Exception {
+    public void setSourceConfigPath(String configPath) {
+        this.sourceConfigPath = configPath;
+    }
 
-		LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
+    public String getDestinationConfigPath() {
+        return destinationConfigPath;
+    }
 
-		if (configPath != null) {
-			client = new LightblueHttpClient(configPath);
-		} else {
-			client = new LightblueHttpClient();
-		}
+    public void setDestinationConfigPath(String configPath) {
+        this.destinationConfigPath = configPath;
+    }
 
-		while (run) {
-			List<ExecutorService> executors = new ArrayList<>();
-			List<MigrationConfiguration> configurations = getJobConfigurations();
+    @Override
+    public void run() {
 
-			for (MigrationConfiguration configuration : configurations) {
-				configuration.setConfigFilePath(configPath);
-				List<MigrationJob> jobs = getMigrationJobs(configuration);
+        LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
 
-				if (!jobs.isEmpty()) {
-					ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
-					executors.add(jobExecutor);
-					for (MigrationJob job : jobs) {
-						job.setOwner(getConsistencyCheckerName());
-						job.setHostName(getHostName());
-						job.setPid(ManagementFactory.getRuntimeMXBean().getName());
-						job.setSourceConfigPath(sourceConfigPath);
-						job.setDestinationConfigPath(destinationConfigPath);
-						jobExecutor.execute(job);
-					}
-				}
-			}
+        if (configPath != null) {
+            client = new LightblueHttpClient(configPath);
+        } else {
+            client = new LightblueHttpClient();
+        }
 
-			if (executors.isEmpty()) {
-				MigrationJob nextJob = getNextAvailableJob();
-				long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
-				Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
-			} else {
-				for (ExecutorService executor : executors) {
-					executor.shutdown();
-					executor.awaitTermination(MAX_THREAD_WAIT_TIME, TimeUnit.MILLISECONDS);
-				}
-			}
-		}
-	}
+        while (run && !Thread.interrupted()) {
+            List<ExecutorService> executors = new ArrayList<>();
+            List<MigrationConfiguration> configurations = getJobConfigurations();
 
-	protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-		List<MigrationJob> jobs = Collections.emptyList();
-		try {
-			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-			findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
-			findRequest.select(includeFieldRecursively("*"));
-			jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
-		} catch (IOException e) {
-			LOGGER.error("Problem getting migrationJobs", e);
-		}
-		return jobs;
-	}
+            for (MigrationConfiguration configuration : configurations) {
+                configuration.setConfigFilePath(configPath);
+                List<MigrationJob> jobs = getMigrationJobs(configuration);
 
-	protected List<MigrationConfiguration> getJobConfigurations() {
-		List<MigrationConfiguration> configurations = Collections.emptyList();
-		try {
-			DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
-			findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
-			findRequest.select(includeFieldRecursively("*"));
-			configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
-		} catch (IOException e) {
-			LOGGER.error("Problem getting migrationConfigurations", e);
-		}
-		return configurations;
-	}
+                if (!jobs.isEmpty()) {
+                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
+                    executors.add(jobExecutor);
+                    for (MigrationJob job : jobs) {
+                        job.setOwner(getConsistencyCheckerName());
+                        job.setHostName(getHostName());
+                        job.setPid(ManagementFactory.getRuntimeMXBean().getName());
+                        job.setSourceConfigPath(sourceConfigPath);
+                        job.setDestinationConfigPath(destinationConfigPath);
+                        jobExecutor.execute(job);
+                    }
+                }
+            }
 
-	protected MigrationJob getNextAvailableJob() {
-		MigrationJob job = null;
-		try {
-			DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-			findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
-			findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
-			findRequest.range(0, 1);
-			findRequest.select(includeFieldRecursively("*"));
-			job = client.data(findRequest, MigrationJob.class);
-		} catch (IOException e) {
-			LOGGER.error("Problem getting migrationJob", e);
-		}
-		return job;
-	}
+            if (executors.isEmpty()) {
+                if(run && !Thread.interrupted()){
+                    MigrationJob nextJob = getNextAvailableJob();
+                    long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
+                    try{
+                        Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
+                    }
+                    catch (InterruptedException e){
+                        run = false;
+                    }
+                }
+            } else {
+                for (ExecutorService executor : executors) {
+                    executor.shutdown();
+                }
+                if((!Thread.interrupted())){
+                    try{
+                        for (ExecutorService executor : executors) {
+                            executor.awaitTermination(MAX_THREAD_WAIT_TIME, TimeUnit.MILLISECONDS);
+                        }
+                    }
+                    catch (InterruptedException e) {
+                        run = false;
+                    }
+                }
+            }
+        }
+    }
+
+    protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
+        List<MigrationJob> jobs = Collections.emptyList();
+        try {
+            DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
+            findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
+            findRequest.select(includeFieldRecursively("*"));
+            jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+        } catch (IOException e) {
+            LOGGER.error("Problem getting migrationJobs", e);
+        }
+        return jobs;
+    }
+
+    protected List<MigrationConfiguration> getJobConfigurations() {
+        List<MigrationConfiguration> configurations = Collections.emptyList();
+        try {
+            DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
+            findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
+            findRequest.select(includeFieldRecursively("*"));
+            configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
+        } catch (IOException e) {
+            LOGGER.error("Problem getting migrationConfigurations", e);
+        }
+        return configurations;
+    }
+
+    protected MigrationJob getNextAvailableJob() {
+        MigrationJob job = null;
+        try {
+            DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
+            findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
+            findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
+            findRequest.range(0, 1);
+            findRequest.select(includeFieldRecursively("*"));
+            job = client.data(findRequest, MigrationJob.class);
+        } catch (IOException e) {
+            LOGGER.error("Problem getting migrationJob", e);
+        }
+        return job;
+    }
 
 }
