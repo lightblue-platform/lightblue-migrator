@@ -30,8 +30,9 @@ public class ConsistencyChecker {
 
 	public static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
-	public static final int MAX_WAIT_TIME = 86400000; // 24 hours
-
+	public static final int MAX_JOB_WAIT_TIME = 86400000; // 24 hours
+	public static final int MAX_THREAD_WAIT_TIME = 21600; // 6 hours
+	
 	private String consistencyCheckerName;
 	private String hostName;
 	private String configPath;
@@ -145,11 +146,11 @@ public class ConsistencyChecker {
 			if (executors.isEmpty()) {
 				MigrationJob nextJob = getNextAvailableJob();
 				long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
-				Thread.sleep((timeUntilNextJob > MAX_WAIT_TIME) ? MAX_WAIT_TIME : timeUntilNextJob);
+				Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
 			} else {
 				for (ExecutorService executor : executors) {
 					executor.shutdown();
-					executor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+					executor.awaitTermination(MAX_THREAD_WAIT_TIME, TimeUnit.MILLISECONDS);
 				}
 			}
 		}
