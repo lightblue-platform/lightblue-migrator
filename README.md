@@ -16,9 +16,10 @@ The consistency checker builds as a self-contained jar using the Maven Shade plu
 java -jar consistency-checker-1.0.0-alldeps.jar 
 --name checker_0
 --host lightblue.io
---ip 127.0.0.1
 --config=lightblue-client.properties
 --configversion=1.0.0
 --jobversion=1.0.0
+--sourceconfig=source-lightblue-client.properties
+--destinationconfig=destination-lightblue-client.properties
 ```
 
