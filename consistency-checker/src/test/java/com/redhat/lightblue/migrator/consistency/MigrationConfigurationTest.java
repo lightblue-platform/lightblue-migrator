@@ -12,15 +12,15 @@ public class MigrationConfigurationTest {
 	private static final String hostName = "lightblue.io";
 	private static final int threadCount = 63;
 
-	private static final List<String> lightblueEntityKeyFields = Arrays.asList("id", "name");;
-	private static final String lightblueEntityTimestampField = "lastUpdateDate";
-	private static final List<String> legacyEntityKeyFields = Arrays.asList("id", "name");;;
-	private static final String legacyEntityTimestampField = "lastUpdateDate";
+	private static final List<String> destinationEntityKeyFields = Arrays.asList("id", "name");;
+	private static final String destinationEntityTimestampField = "lastUpdateDate";
+	private static final List<String> sourceEntityKeyFields = Arrays.asList("id", "name");;;
+	private static final String sourceEntityTimestampField = "lastUpdateDate";
 
-	private static final String lightblueEntityVersion = "lightblueEntityVersion";
-	private static final String lightblueEntityName = "lightblueEntityName";
-	private static final String legacyEntityVersion = "legacyEntityVersion";
-	private static final String legacyEntityName = "legacyEntityName";
+	private static final String destinationEntityVersion = "destinationEntityVersion";
+	private static final String destinationEntityName = "destinationEntityName";
+	private static final String sourceEntityVersion = "sourceEntityVersion";
+	private static final String sourceEntityName = "sourceEntityName";
 
 	MigrationConfiguration configuration;
 
@@ -30,14 +30,14 @@ public class MigrationConfigurationTest {
 		configuration.setHostName(hostName);
 		configuration.setThreadCount(threadCount);
 		configuration.setOverwriteDestinationDocuments(true);
-		configuration.setDestinationEntityKeyFields(lightblueEntityKeyFields);
-		configuration.setDestinationEntityTimestampField(lightblueEntityTimestampField);
-		configuration.setSourceEntityKeyFields(legacyEntityKeyFields);
-		configuration.setSourceEntityTimestampField(legacyEntityTimestampField);
-		configuration.setSourceEntityName(legacyEntityName);
-		configuration.setSourceEntityVersion(legacyEntityVersion);
-		configuration.setDestinationEntityName(lightblueEntityName);
-		configuration.setDestinationEntityVersion(lightblueEntityVersion);
+		configuration.setDestinationEntityKeyFields(destinationEntityKeyFields);
+		configuration.setDestinationEntityTimestampField(destinationEntityTimestampField);
+		configuration.setSourceEntityKeyFields(sourceEntityKeyFields);
+		configuration.setSourceEntityTimestampField(sourceEntityTimestampField);
+		configuration.setSourceEntityName(sourceEntityName);
+		configuration.setSourceEntityVersion(sourceEntityVersion);
+		configuration.setDestinationEntityName(destinationEntityName);
+		configuration.setDestinationEntityVersion(destinationEntityVersion);
 		configuration.setOverwriteDestinationDocuments(true);
 	}
 
@@ -48,8 +48,8 @@ public class MigrationConfigurationTest {
 
 	@Test
 	public void testSetHostName() {
-		configuration.setHostName(legacyEntityName);
-		Assert.assertEquals(legacyEntityName, configuration.getHostName());
+		configuration.setHostName(sourceEntityName);
+		Assert.assertEquals(sourceEntityName, configuration.getHostName());
 	}
 
 	@Test
@@ -64,101 +64,101 @@ public class MigrationConfigurationTest {
 	}
 
 	@Test
-	public void testGetLightblueEntityName() {
-		Assert.assertEquals(lightblueEntityName, configuration.getDestinationEntityName());
+	public void testGetDestinationEntityName() {
+		Assert.assertEquals(destinationEntityName, configuration.getDestinationEntityName());
 	}
 
 	@Test
-	public void testSetLightblueEntityName() {
-		configuration.setDestinationEntityName(legacyEntityName);
-		Assert.assertEquals(legacyEntityName, configuration.getDestinationEntityName());
+	public void testSetDestinationEntityName() {
+		configuration.setDestinationEntityName(sourceEntityName);
+		Assert.assertEquals(sourceEntityName, configuration.getDestinationEntityName());
 	}
 
 	@Test
-	public void testGetLightblueEntityVersion() {
-		Assert.assertEquals(lightblueEntityVersion, configuration.getDestinationEntityVersion());
+	public void testGetDestinationEntityVersion() {
+		Assert.assertEquals(destinationEntityVersion, configuration.getDestinationEntityVersion());
 	}
 
 	@Test
-	public void testSetLightblueEntityVersion() {
-		configuration.setDestinationEntityVersion(lightblueEntityName);
-		Assert.assertEquals(lightblueEntityName, configuration.getDestinationEntityVersion());
+	public void testSetDestinationEntityVersion() {
+		configuration.setDestinationEntityVersion(destinationEntityName);
+		Assert.assertEquals(destinationEntityName, configuration.getDestinationEntityVersion());
 	}
 
 	@Test
-	public void testGetLightblueEntityKeyFields() {
-		Assert.assertEquals(lightblueEntityKeyFields, configuration.getDestinationEntityKeyFields());
+	public void testGetDestinationEntityKeyFields() {
+		Assert.assertEquals(destinationEntityKeyFields, configuration.getDestinationEntityKeyFields());
 	}
 
 	@Test
-	public void testSetLightblueEntityKeyFields() {
-		configuration.setDestinationEntityKeyFields(legacyEntityKeyFields);
-		Assert.assertEquals(legacyEntityKeyFields, configuration.getDestinationEntityKeyFields());
+	public void testSetDestinationEntityKeyFields() {
+		configuration.setDestinationEntityKeyFields(sourceEntityKeyFields);
+		Assert.assertEquals(sourceEntityKeyFields, configuration.getDestinationEntityKeyFields());
 	}
 
 	@Test
-	public void testGetLightblueEntityTimestampField() {
-		Assert.assertEquals(lightblueEntityTimestampField, configuration.getDestinationEntityTimestampField());
+	public void testGetDestinationEntityTimestampField() {
+		Assert.assertEquals(destinationEntityTimestampField, configuration.getDestinationEntityTimestampField());
 	}
 
 	@Test
-	public void testSetLightblueEntityTimestampField() {
-		configuration.setDestinationEntityTimestampField(legacyEntityTimestampField);
-		Assert.assertEquals(legacyEntityTimestampField, configuration.getDestinationEntityTimestampField());
+	public void testSetDestinationEntityTimestampField() {
+		configuration.setDestinationEntityTimestampField(sourceEntityTimestampField);
+		Assert.assertEquals(sourceEntityTimestampField, configuration.getDestinationEntityTimestampField());
 	}
 
 	@Test
-	public void testGetLegacyEntityName() {
-		Assert.assertEquals(legacyEntityName, configuration.getSourceEntityName());
+	public void testGetSourceEntityName() {
+		Assert.assertEquals(sourceEntityName, configuration.getSourceEntityName());
 	}
 
 	@Test
-	public void testSetLegacyEntityName() {
-		configuration.setSourceEntityName(lightblueEntityName);
-		Assert.assertEquals(lightblueEntityName, configuration.getSourceEntityName());
+	public void testSetSourceEntityName() {
+		configuration.setSourceEntityName(destinationEntityName);
+		Assert.assertEquals(destinationEntityName, configuration.getSourceEntityName());
 	}
 
 	@Test
-	public void testGetLegacyEntityVersion() {
-		Assert.assertEquals(legacyEntityVersion, configuration.getSourceEntityVersion());
+	public void testGetSourceEntityVersion() {
+		Assert.assertEquals(sourceEntityVersion, configuration.getSourceEntityVersion());
 	}
 
 	@Test
-	public void testSetLegacyEntityVersion() {
-		configuration.setSourceEntityVersion(lightblueEntityVersion);
-		Assert.assertEquals(lightblueEntityVersion, configuration.getSourceEntityVersion());
+	public void testSetSourceEntityVersion() {
+		configuration.setSourceEntityVersion(destinationEntityVersion);
+		Assert.assertEquals(destinationEntityVersion, configuration.getSourceEntityVersion());
 	}
 
 	@Test
-	public void testGetLegacyEntityKeyFields() {
-		Assert.assertEquals(legacyEntityKeyFields, configuration.getSourceEntityKeyFields());
+	public void testGetSourceEntityKeyFields() {
+		Assert.assertEquals(sourceEntityKeyFields, configuration.getSourceEntityKeyFields());
 	}
 
 	@Test
-	public void testSetLegacyEntityKeyFields() {
-		configuration.setSourceEntityKeyFields(legacyEntityKeyFields);
-		Assert.assertEquals(legacyEntityKeyFields, configuration.getSourceEntityKeyFields());
+	public void testSetSourceEntityKeyFields() {
+		configuration.setSourceEntityKeyFields(sourceEntityKeyFields);
+		Assert.assertEquals(sourceEntityKeyFields, configuration.getSourceEntityKeyFields());
 	}
 
 	@Test
-	public void testGetLegacyEntityTimestampField() {
-		Assert.assertEquals(legacyEntityTimestampField, configuration.getSourceEntityTimestampField());
+	public void testGetSourceEntityTimestampField() {
+		Assert.assertEquals(sourceEntityTimestampField, configuration.getSourceEntityTimestampField());
 	}
 
 	@Test
-	public void testSetLegacyEntityTimestampField() {
-		configuration.setSourceEntityTimestampField(legacyEntityTimestampField);
-		Assert.assertEquals(legacyEntityTimestampField, configuration.getSourceEntityTimestampField());
+	public void testSetSourceEntityTimestampField() {
+		configuration.setSourceEntityTimestampField(sourceEntityTimestampField);
+		Assert.assertEquals(sourceEntityTimestampField, configuration.getSourceEntityTimestampField());
 	}
 
 	@Test
-	public void testSetOverwriteLightblueDocuments() {
+	public void testSetOverwriteDestinationDocuments() {
 		configuration.setOverwriteDestinationDocuments(false);
 		Assert.assertEquals(false, configuration.shouldOverwriteDestinationDocuments());
 	}
 
 	@Test
-	public void testShouldOverwriteLightblueDocuments() {
+	public void testShouldOverwriteDestinationDocuments() {
 		Assert.assertEquals(true, configuration.shouldOverwriteDestinationDocuments());
 	}
 

@@ -11,27 +11,27 @@ public class TestLightblueMigrationEnable {
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
 
     @Test
-    public void testReadLegacyEntityFeature() {
-        togglzRule.enable(LightblueMigrationFeatures.READ_LEGACY_ENTITY);
-        Assert.assertTrue(LightblueMigration.shouldReadLegacyEntity());
+    public void testReadSourceEntityFeature() {
+        togglzRule.enable(LightblueMigrationFeatures.READ_SOURCE_ENTITY);
+        Assert.assertTrue(LightblueMigration.shouldReadSourceEntity());
     }
 
     @Test
-    public void testWriteLegacyEntityFeature() {
-        togglzRule.enable(LightblueMigrationFeatures.WRITE_LEGACY_ENTITY);
-        Assert.assertTrue(LightblueMigration.shouldWriteLegacyEntity());
+    public void testWriteSourecEntityFeature() {
+        togglzRule.enable(LightblueMigrationFeatures.WRITE_SOURCE_ENTITY);
+        Assert.assertTrue(LightblueMigration.shouldWriteSourceEntity());
     }
 
     @Test
-    public void testReadLightblueEntityFeature() {
-        togglzRule.enable(LightblueMigrationFeatures.READ_LIGHTBLUE_ENTITY);
-        Assert.assertTrue(LightblueMigration.shouldReadLightblueEntity());
+    public void testReadDestinationEntityFeature() {
+        togglzRule.enable(LightblueMigrationFeatures.READ_DESTINATION_ENTITY);
+        Assert.assertTrue(LightblueMigration.shouldReadDestinationEntity());
     }
 
     @Test
-    public void testWriteLightblueEntityFeature() {
-        togglzRule.enable(LightblueMigrationFeatures.WRITE_LIGHTBLUE_ENTITY);
-        Assert.assertTrue(LightblueMigration.shouldWriteLightblueEntity());
+    public void testWriteDestinationEntityFeature() {
+        togglzRule.enable(LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY);
+        Assert.assertTrue(LightblueMigration.shouldWriteDestinationEntity());
     }
 
     @Test

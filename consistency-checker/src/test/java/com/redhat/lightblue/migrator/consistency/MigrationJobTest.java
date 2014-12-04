@@ -60,7 +60,7 @@ public class MigrationJobTest {
 	}
 	
 	@Test
-	public void testExecuteExistsInLegacyAndLightblue() {
+	public void testExecuteExistsInSourceAndDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -114,7 +114,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteExistsInLegacyButNotLightblue() {
+	public void testExecuteExistsInSourceButNotDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -150,7 +150,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteExistsInLegacyButNotLightblueDoNotOverwrite() {
+	public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -188,7 +188,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteExistsInLightblueButNotLegacy() {
+	public void testExecuteExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -224,7 +224,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteMultipleExistsInLegacyAndLightblue() {
+	public void testExecuteMultipleExistsInSourceAndDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -261,7 +261,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteMultipleExistsInLegacyButNotLightblue() {
+	public void testExecuteMultipleExistsInSourceButNotDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -297,7 +297,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteMultipleExistsInLightblueButNotLegacy() {
+	public void testExecuteMultipleExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -333,7 +333,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteSingleMultipleExistsInLightblueButNotLegacy() {
+	public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -369,7 +369,7 @@ public class MigrationJobTest {
 	}
 
 	@Test
-	public void testExecuteMultipleExistsInLegacyAndSingleExistsInLightblue() {
+	public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
 			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -407,8 +407,8 @@ public class MigrationJobTest {
 	private void configureMigrationJob(MigrationJob migrationJob) {
 		MigrationConfiguration jobConfiguration = new MigrationConfiguration();
 		jobConfiguration.setSourceEntityKeyFields(new ArrayList<String>());
-		jobConfiguration.setSourceEntityTimestampField("legacy-timestamp");
-		jobConfiguration.setDestinationEntityTimestampField("lightblue-timestamp");
+		jobConfiguration.setSourceEntityTimestampField("source-timestamp");
+		jobConfiguration.setDestinationEntityTimestampField("destination-timestamp");
 		migrationJob.setJobConfiguration(jobConfiguration);
 		migrationJob.setOverwriteDestinationDocuments(true);
 		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
