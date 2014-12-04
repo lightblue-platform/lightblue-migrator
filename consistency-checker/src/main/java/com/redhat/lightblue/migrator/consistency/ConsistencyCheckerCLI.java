@@ -35,7 +35,7 @@ public final class ConsistencyCheckerCLI {
 			checker.setMigrationConfigurationEntityVersion(System.getProperty("configversion"));
 			checker.setMigrationJobEntityVersion(System.getProperty("jobversion"));
 			checker.setSourceConfigPath(System.getProperty("sourceconfig"));
-			checker.setDestinationConfigPath(System.getProperty("config"));
+			checker.setDestinationConfigPath(System.getProperty("destinationconfig"));
 
 			ConsistencyChecker.LOGGER.info("Starting ConsistencyChecker");
 			checker.execute();
