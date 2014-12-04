@@ -14,9 +14,11 @@ public final class ConsistencyCheckerCLI {
 
 		options.addOption(OptionBuilder.withArgName("name").withLongOpt("name").hasArg(true).withDescription("Name of checker instance").isRequired().create('n'));
 		options.addOption(OptionBuilder.withArgName("hostname").withLongOpt("hostname").hasArg(true).withDescription("Hostname running the checker instance").isRequired().create('h'));
-		options.addOption(OptionBuilder.withArgName("config").withLongOpt("config").hasArg(true).withDescription("Path to configuration file").isRequired().create('c'));
+		options.addOption(OptionBuilder.withArgName("config").withLongOpt("config").hasArg(true).withDescription("Path to configuration file for migration").isRequired().create('c'));
 		options.addOption(OptionBuilder.withArgName("configversion").withLongOpt("configversion").hasArg(true).withDescription("migrationConfiguration Entity Version").isRequired().create('v'));
 		options.addOption(OptionBuilder.withArgName("jobversion").withLongOpt("jobversion").hasArg(true).withDescription("migrationJob Entity Version").isRequired().create('j'));
+		options.addOption(OptionBuilder.withArgName("sourceconfig").withLongOpt("sourceconfig").hasArg(true).withDescription("Path to configuration file for source").isRequired().create('s'));
+		options.addOption(OptionBuilder.withArgName("destinationconfig").withLongOpt("destinationconfig").hasArg(true).withDescription("Path to configuration file for destination").isRequired().create('d'));
 
 		ConsistencyChecker checker = new ConsistencyChecker();
 		PosixParser parser = new PosixParser();
@@ -30,6 +32,10 @@ public final class ConsistencyCheckerCLI {
 			checker.setConsistencyCheckerName(System.getProperty("name"));
 			checker.setHostName(System.getProperty("hostname"));
 			checker.setConfigPath(System.getProperty("config"));
+			checker.setMigrationConfigurationEntityVersion(System.getProperty("configversion"));
+			checker.setMigrationJobEntityVersion(System.getProperty("jobversion"));
+			checker.setSourceConfigPath(System.getProperty("sourceconfig"));
+			checker.setDestinationConfigPath(System.getProperty("config"));
 
 			ConsistencyChecker.LOGGER.info("Starting ConsistencyChecker");
 			checker.execute();

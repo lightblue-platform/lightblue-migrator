@@ -40,6 +40,9 @@ public class MigrationJob implements Runnable {
 		this.migrationConfiguration = migrationConfiguration;
 	}
 
+	private String sourceConfigPath;
+	private String destinationConfigPath;
+	
 	private LightblueClient sourceClient;
 	private LightblueClient destinationClient;
 
@@ -108,6 +111,22 @@ public class MigrationJob implements Runnable {
 		return migrationConfiguration.shouldOverwriteDestinationDocuments();
 	}
 
+	public String getSourceConfigPath() {
+		return sourceConfigPath;
+	}
+
+	public void setSourceConfigPath(String configPath) {
+		this.sourceConfigPath = configPath;
+	}
+	
+	public String getDestinationConfigPath() {
+		return destinationConfigPath;
+	}
+
+	public void setDestinationConfigPath(String configPath) {
+		this.destinationConfigPath = configPath;
+	}
+	
 	/**
 	 * Returns true if there are any inconsistent documents
 	 * 
@@ -269,12 +288,12 @@ public class MigrationJob implements Runnable {
 	}
 
 	private void configureClients() {
-		if (migrationConfiguration.getConfigFilePath() == null) {
+		if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
 			sourceClient = new LightblueHttpClient();
 			destinationClient = new LightblueHttpClient();
 		} else {
-			sourceClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
-			destinationClient = new LightblueHttpClient(migrationConfiguration.getConfigFilePath());
+			sourceClient = new LightblueHttpClient(getSourceConfigPath());
+			destinationClient = new LightblueHttpClient(getDestinationConfigPath());
 		}
 	}
 

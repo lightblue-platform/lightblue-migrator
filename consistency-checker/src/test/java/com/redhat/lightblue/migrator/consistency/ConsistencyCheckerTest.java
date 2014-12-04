@@ -16,6 +16,8 @@ public class ConsistencyCheckerTest {
 	private String checkerName = "testChecker";
 	private String hostname = "http://lightblue.io";
 	private String configPath = "lightblue-client.properties";
+	private String sourceConfigPath = "source-lightblue-client.properties";
+	private String destinationConfigPath = "destination-lightblue-client.properties";
 
 	ConsistencyChecker checker;
 
@@ -27,6 +29,8 @@ public class ConsistencyCheckerTest {
 		checker.setConsistencyCheckerName(checkerName);
 		checker.setHostName(hostname);
 		checker.setConfigPath(configPath);
+		checker.setSourceConfigPath(sourceConfigPath);
+		checker.setDestinationConfigPath(destinationConfigPath);
 		client = new LightblueHttpClient();
 		checker.setClient(client);
 	}
@@ -63,7 +67,40 @@ public class ConsistencyCheckerTest {
 		checker.setConfigPath(checkerName);
 		Assert.assertEquals(checkerName, checker.getConfigPath());
 	}
+	
+	@Test
+	public void testGetConfigPath() {
+		Assert.assertEquals(configPath, checker.getConfigPath());
+	}
 
+	@Test
+	public void testSetConfigPath() {
+		checker.setConfigPath(sourceConfigPath);
+		Assert.assertEquals(sourceConfigPath, checker.getConfigPath());
+	}
+	
+	@Test
+	public void testSourceGetConfigPath() {
+		Assert.assertEquals(sourceConfigPath, checker.getSourceConfigPath());
+	}
+
+	@Test
+	public void testSetSourceConfigPath() {
+		checker.setSourceConfigPath(destinationConfigPath);
+		Assert.assertEquals(destinationConfigPath, checker.getSourceConfigPath());
+	}
+
+	@Test
+	public void testDestinationGetConfigPath() {
+		Assert.assertEquals(destinationConfigPath, checker.getDestinationConfigPath());
+	}
+
+	@Test
+	public void testSetDesitnationConfigPath() {
+		checker.setDestinationConfigPath(sourceConfigPath);
+		Assert.assertEquals(sourceConfigPath, checker.getDestinationConfigPath());
+	}
+	
 	@Test
 	public void testExecute() throws Exception {
 		ConsistencyChecker checker = new ConsistencyChecker() {

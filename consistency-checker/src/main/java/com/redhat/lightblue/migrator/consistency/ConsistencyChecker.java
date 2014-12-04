@@ -37,6 +37,8 @@ public class ConsistencyChecker {
 	private String configPath;
 	private String migrationConfigurationEntityVersion;
 	private String migrationJobEntityVersion;
+	private String sourceConfigPath;
+	private String destinationConfigPath;
 
 	private boolean run = true;
 
@@ -92,6 +94,22 @@ public class ConsistencyChecker {
 		this.migrationJobEntityVersion = migrationJobEntityVersion;
 	}
 
+	public String getSourceConfigPath() {
+		return sourceConfigPath;
+	}
+
+	public void setSourceConfigPath(String configPath) {
+		this.sourceConfigPath = configPath;
+	}
+	
+	public String getDestinationConfigPath() {
+		return destinationConfigPath;
+	}
+
+	public void setDestinationConfigPath(String configPath) {
+		this.destinationConfigPath = configPath;
+	}
+	
 	public void execute() throws Exception {
 
 		LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
@@ -117,6 +135,8 @@ public class ConsistencyChecker {
 						job.setOwner(getConsistencyCheckerName());
 						job.setHostName(getHostName());
 						job.setPid(ManagementFactory.getRuntimeMXBean().getName());
+						job.setSourceConfigPath(sourceConfigPath);
+						job.setDestinationConfigPath(destinationConfigPath);
 						jobExecutor.execute(job);
 					}
 				}

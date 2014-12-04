@@ -7,6 +7,7 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,6 +26,9 @@ public class MigrationJobTest {
 	private static final int consistentDocuments = 21;
 	private static final int documentsProcessed = 63;
 
+	private String sourceConfigPath = "source-lightblue-client.properties";
+	private String destinationConfigPath = "destination-lightblue-client.properties";
+	
 	MigrationJob migrationJob;
 
 	@Before
@@ -35,8 +39,32 @@ public class MigrationJobTest {
 		migrationJob.setInconsistentDocuments(inconsistentDocuments);
 		migrationJob.setConsistentDocuments(consistentDocuments);
 		migrationJob.setRecordsOverwritten(recordsOverwritten);
+		migrationJob.setSourceConfigPath(sourceConfigPath);
+		migrationJob.setDestinationConfigPath(destinationConfigPath);
 	}
 
+	@Test
+	public void testSourceGetConfigPath() {
+		Assert.assertEquals(sourceConfigPath, migrationJob.getSourceConfigPath());
+	}
+
+	@Test
+	public void testSetSourceConfigPath() {
+		migrationJob.setSourceConfigPath(destinationConfigPath);
+		Assert.assertEquals(destinationConfigPath, migrationJob.getSourceConfigPath());
+	}
+
+	@Test
+	public void testDestinationGetConfigPath() {
+		Assert.assertEquals(destinationConfigPath, migrationJob.getDestinationConfigPath());
+	}
+
+	@Test
+	public void testSetDesitnationConfigPath() {
+		migrationJob.setDestinationConfigPath(sourceConfigPath);
+		Assert.assertEquals(sourceConfigPath, migrationJob.getDestinationConfigPath());
+	}
+	
 	@Test
 	public void testExecuteExistsInLegacyAndLightblue() {
 		MigrationJob migrationJob = new MigrationJob() {
