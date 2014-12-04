@@ -34,7 +34,6 @@ public class MigrationJobTest {
 		migrationJob.setSourceConfigPath(sourceConfigPath);
 		migrationJob.setDestinationConfigPath(destinationConfigPath);
 		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
-		migrationJob.setCurrentRun(new MigrationJobRun());
 	}
 
 	@Test
@@ -412,7 +411,6 @@ public class MigrationJobTest {
 		migrationJob.setJobConfiguration(jobConfiguration);
 		migrationJob.setOverwriteDestinationDocuments(true);
 		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
-		migrationJob.setCurrentRun(new MigrationJobRun());
 		
 		LightblueClient client = new LightblueHttpClient();
 		migrationJob.setSourceClient(client);

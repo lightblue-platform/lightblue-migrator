@@ -89,10 +89,6 @@ public class MigrationJob implements Runnable {
 	public void setJobRuns(List<MigrationJobRun> jobRuns) {
 		this.jobRuns = jobRuns;
   }
-
-	public void setCurrentRun(MigrationJobRun currentRun) {
-	  this.currentRun = currentRun;
-  }
 	
 	public LightblueClient getSourceClient() {
 		return sourceClient;
@@ -227,11 +223,13 @@ public class MigrationJob implements Runnable {
 	public void run() {
 		LOGGER.info("MigrationJob started");
 
+		currentRun = new MigrationJobRun();
 		currentRun.setOwner(owner);
 		currentRun.setHostName(hostName);
 		currentRun.setPid(pid);
 		currentRun.setActualStartDate(new Date());
-				
+		getJobRuns().add(currentRun);
+		
 		saveJobDetails();
 
 		configureClients();
@@ -256,7 +254,7 @@ public class MigrationJob implements Runnable {
 		
 		currentRun.setCompleted(true);
 		currentRun.setActualEndDate(new Date());
-		getJobRuns().add(currentRun);
+		
 		saveJobDetails();
 
 		LOGGER.info("MigrationJob completed");
