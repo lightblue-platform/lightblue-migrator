@@ -5,6 +5,7 @@ import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -33,11 +34,14 @@ public class MigrationJob implements Runnable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
 	public MigrationJob() {
-
+		 thisRun = new MigrationJobRun();
+		 jobRuns = new ArrayList<>();
 	}
 
 	public MigrationJob(MigrationConfiguration migrationConfiguration) {
 		this.migrationConfiguration = migrationConfiguration;
+		 thisRun = new MigrationJobRun();
+		 jobRuns = new ArrayList<>();
 	}
 
 	private String sourceConfigPath;
@@ -49,6 +53,10 @@ public class MigrationJob implements Runnable {
 	// configuration for migrator
 	private MigrationConfiguration migrationConfiguration;
 
+	private List<MigrationJobRun> jobRuns;
+
+	MigrationJobRun thisRun;
+	
 	// information about migrator instance working job
 	private String owner;
 	private String hostName;
@@ -63,19 +71,6 @@ public class MigrationJob implements Runnable {
 
 	// how long we think it will take
 	private int expectedRunTime;
-
-	// actual run times for job
-	private Date actualStartDate;
-	private Date actualEndDate;
-
-	// did job complete successfully?
-	private boolean completed;
-
-	// summary info on what the job did
-	private int documentsProcessed;
-	private int consistentDocuments;
-	private int inconsistentDocuments;
-	private int recordsOverwritten;
 
 	private boolean hasInconsistentDocuments;
 
@@ -199,67 +194,32 @@ public class MigrationJob implements Runnable {
 	public void setExpectedRunTime(int expectedRunTime) {
 		this.expectedRunTime = expectedRunTime;
 	}
-
-	public Date getActualStartDate() {
-		return actualStartDate;
-	}
-
-	public void setActualStartDate(Date actualStartDate) {
-		this.actualStartDate = actualStartDate;
-	}
-
-	public Date getActualEndDate() {
-		return actualEndDate;
-	}
-
-	public void setActualEndDate(Date actualEndDate) {
-		this.actualEndDate = actualEndDate;
-	}
-
-	public boolean isCompleted() {
-		return completed;
-	}
-
-	public void setCompleted(boolean completed) {
-		this.completed = completed;
-	}
-
+	
 	public int getDocumentsProcessed() {
-		return documentsProcessed;
-	}
-
-	public void setDocumentsProcessed(int documentsProcessed) {
-		this.documentsProcessed = documentsProcessed;
+		return thisRun.getDocumentsProcessed();
 	}
 
 	public int getConsistentDocuments() {
-		return consistentDocuments;
-	}
-
-	public void setConsistentDocuments(int consistentDocuments) {
-		this.consistentDocuments = consistentDocuments;
+		return thisRun.getConsistentDocuments();
 	}
 
 	public int getInconsistentDocuments() {
-		return inconsistentDocuments;
-	}
-
-	public void setInconsistentDocuments(int inconsistentDocuments) {
-		this.inconsistentDocuments = inconsistentDocuments;
+		return thisRun.getInconsistentDocuments();
 	}
 
 	public int getRecordsOverwritten() {
-		return recordsOverwritten;
-	}
-
-	public void setRecordsOverwritten(int recordsOverwritten) {
-		this.recordsOverwritten = recordsOverwritten;
+		return thisRun.getRecordsOverwritten();
 	}
 
 	@Override
 	public void run() {
 		LOGGER.info("MigrationJob started");
 
+		thisRun.setOwner(owner);
+		thisRun.setHostName(hostName);
+		thisRun.setPid(pid);
+		thisRun.setActualStartDate(new Date());
+				
 		saveJobDetails();
 
 		configureClients();
@@ -274,14 +234,17 @@ public class MigrationJob implements Runnable {
 			hasInconsistentDocuments = true;
 		}
 
-		documentsProcessed = sourceDocuments.size();
-		consistentDocuments = sourceDocuments.size() - documentsToOverwrite.size();
-		inconsistentDocuments = documentsToOverwrite.size();
+		thisRun.setDocumentsProcessed(sourceDocuments.size());
+		thisRun.setConsistentDocuments(sourceDocuments.size() - documentsToOverwrite.size());
+		thisRun.setInconsistentDocuments(documentsToOverwrite.size());
 
 		if (shouldOverwriteDestinationDocuments()) {
-			recordsOverwritten = overwriteLightblue(documentsToOverwrite);
+			thisRun.setRecordsOverwritten(overwriteLightblue(documentsToOverwrite));
 		}
-
+		
+		thisRun.setCompleted(true);
+		thisRun.setActualEndDate(new Date());
+		jobRuns.add(thisRun);
 		saveJobDetails();
 
 		LOGGER.info("MigrationJob completed");

@@ -21,10 +21,6 @@ import java.util.List;
 import static com.redhat.lightblue.util.test.FileUtil.readFile;
 
 public class MigrationJobTest {
-	private static final int recordsOverwritten = 42;
-	private static final int inconsistentDocuments = 42;
-	private static final int consistentDocuments = 21;
-	private static final int documentsProcessed = 63;
 
 	private String sourceConfigPath = "source-lightblue-client.properties";
 	private String destinationConfigPath = "destination-lightblue-client.properties";
@@ -35,10 +31,6 @@ public class MigrationJobTest {
 	public void setup() {
 		migrationJob = new MigrationJob();
 		migrationJob = new MigrationJob(new MigrationConfiguration());
-		migrationJob.setDocumentsProcessed(documentsProcessed);
-		migrationJob.setInconsistentDocuments(inconsistentDocuments);
-		migrationJob.setConsistentDocuments(consistentDocuments);
-		migrationJob.setRecordsOverwritten(recordsOverwritten);
 		migrationJob.setSourceConfigPath(sourceConfigPath);
 		migrationJob.setDestinationConfigPath(destinationConfigPath);
 	}
@@ -432,39 +424,6 @@ public class MigrationJobTest {
 			e.printStackTrace();
 		}
 		return actualObj;
-	}
-
-	@Test
-	public void testGetDocumentsProcessed() {
-		Assert.assertEquals(documentsProcessed, migrationJob.getDocumentsProcessed());
-	}
-
-	@Test
-	public void testSetDocumentsProcessed() {
-		migrationJob.setDocumentsProcessed(recordsOverwritten);
-		Assert.assertEquals(recordsOverwritten, migrationJob.getDocumentsProcessed());
-	}
-
-	@Test
-	public void testGetInconsistentDocuments() {
-		Assert.assertEquals(inconsistentDocuments, migrationJob.getInconsistentDocuments());
-	}
-
-	@Test
-	public void testSetInconsistentDocuments() {
-		migrationJob.setInconsistentDocuments(recordsOverwritten);
-		Assert.assertEquals(recordsOverwritten, migrationJob.getInconsistentDocuments());
-	}
-
-	@Test
-	public void testGetRecordsOverwritten() {
-		Assert.assertEquals(recordsOverwritten, migrationJob.getRecordsOverwritten());
-	}
-
-	@Test
-	public void testSetRecordsOverwritten() {
-		migrationJob.setRecordsOverwritten(documentsProcessed);
-		Assert.assertEquals(documentsProcessed, migrationJob.getRecordsOverwritten());
 	}
 
 }

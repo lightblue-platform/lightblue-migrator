@@ -67,27 +67,6 @@
                 },
                 "description": "Name of the configuration that corresponds to this job"
             },
-            "owner": {
-                "type": "string",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Owner of this migration job"
-            },
-            "hostName": {
-                "type": "string",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Host running this migration job"
-            },
-            "pid": {
-                "type": "string",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Process id on the host running this migration job"
-            },
             "startDate": {
                 "type": "date",
                 "constraints": {
@@ -116,54 +95,83 @@
                 },
                 "description": "Expected duration of this job in ms"
             },
-            "actualStartDate": {
-                "type": "date",
-                "constraints": {
-                    "required": true
+            "jobRuns": {
+                "items": {
+                    "fields": {
+                        "owner": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Owner of this migration job"
+                        },
+                        "hostName": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Host running this migration job"
+                        },
+                        "pid": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Process id on the host running this migration job"
+                        },
+                        "actualStartDate": {
+                            "type": "date",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Actual start date for of this migration job"
+                        },
+                        "actualEndDate": {
+                            "type": "date",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Actual end date for this migration job"
+                        },
+                        "completed": {
+                            "type": "boolean",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Indicates whether or not this job successfully completed"
+                        },
+                        "documentsProcessed": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents processed by this job"
+                        },
+                        "consistentDocuments": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents that mathed for this job"
+                        },
+                        "inconsistentDocuments": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents that did not match for this job"
+                        },
+                        "documentsOverwritten": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents that were overwritten in destination"
+                        }
+                    },
+                    "type": "object"
                 },
-                "description": "Actual start date for of this migration job"
-            },
-            "actualEndDate": {
-                "type": "date",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Actual end date for this migration job"
-            },
-            "completed": {
-                "type": "boolean",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Indicates whether or not this job successfully completed"
-            },
-            "documentsProcessed": {
-                "type": "integer",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Number of documents processed by this job"
-            },
-            "consistentDocuments": {
-                "type": "integer",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Number of documents that mathed for this job"
-            },
-            "inconsistentDocuments": {
-                "type": "integer",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Number of documents that did not match for this job"
-            },
-            "documentsOverwritten": {
-                "type": "integer",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Number of documents that were overwritten in destination"
+                "type": "array"
             },
             "creationDate": {
                 "type": "date",
