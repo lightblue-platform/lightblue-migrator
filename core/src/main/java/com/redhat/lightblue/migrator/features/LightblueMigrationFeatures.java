@@ -8,15 +8,15 @@ import org.togglz.core.context.FeatureContext;
 public enum LightblueMigrationFeatures implements Feature {
 
     @EnabledByDefault
-    @Label("Read Legacy Entity")
-    READ_LEGACY_ENTITY,
+    @Label("Read Source Entity")
+    READ_SOURCE_ENTITY,
     @EnabledByDefault
-    @Label("Write Legacy Entity")
-    WRITE_LEGACY_ENTITY,
-    @Label("Read lightblue Entity")
-    READ_LIGHTBLUE_ENTITY,
-    @Label("Write lightblue Entity")
-    WRITE_LIGHTBLUE_ENTITY,
+    @Label("Write Source Entity")
+    WRITE_SOURCE_ENTITY,
+    @Label("Read Destination Entity")
+    READ_DESTINATION_ENTITY,
+    @Label("Write Destination Entity")
+    WRITE_DESTINATION_ENTITY,
     @Label("Read consistency Entity")
     READ_CONSISTENCY_ENTITY,
     @Label("Write consistency Entity")
