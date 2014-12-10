@@ -271,14 +271,14 @@ public class MigrationJob implements Runnable {
 	}
 
 	private LightblueResponse saveJobDetails() {
-		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
+		DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
 		saveRequest.setBody(this.toJson());
 		LightblueResponse response = saveDestinationData(saveRequest);
 		return response;
 	}
 
 	private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
-		LightblueRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
+		DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
 		StringBuffer body = new StringBuffer();
 		for (JsonNode document : documentsToOverwrite) {
 			body.append(document.toString());
