@@ -16,6 +16,16 @@
                 ],
                 "name": "primary",
                 "unique": true
+            },
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "configurationName"
+                    }
+                ],
+                "name": "configurationName",
+                "unique": true
             }
         ],
         "name": "migrationConfiguration"
@@ -63,16 +73,16 @@
                 "constraints": {
                     "required": true
                 },
-                "description": "Name of the configuration for this job"
+                "description": "Name of the configuration.  Referenced by jobs."
             },
-            "consistencyCheckerNameName": {
+            "consistencyCheckerName": {
                 "type": "string",
                 "constraints": {
                     "required": true
                 },
                 "description": "Name of the consistency checker responsible for this configuration"
             },
-            "hosts": { 
+            "authorizedHostnames": { 
 	            "type": "array",
 	            "items": {
 	                "type": "string"
@@ -84,12 +94,21 @@
                 },
                 "description": "hosts authorized to run this migration"
             },
-            "numberOfThreads": {
+            "threadCount": {
                 "type": "integer",
                 "constraints": {
                     "required": true
                 },
-                "description": "Number of threads that should be devoted to migrator job"
+                "description": "Number of threads that should be devoted to migrator jobs"
+            },
+            "comparisonExclusionFields": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minitems": 1,
+                "uniqueitems": true,
+                "description": "Optional paths to exclude comparisons of source and destination documents.  Fields including arrays will apply to all elements in the array even if specific indexes are included."
             },
             "destinationServiceURI": {
                 "type": "string",
@@ -112,24 +131,17 @@
                 },
                 "description": "destination Entity Version for data being migrated"
             },
-            "destinationEntityKeyFields": { 
+            "destinationIdentityFields": { 
                 "type": "array",
                 "items": {
                     "type": "string"
                 },
-                "minItems": 1,
-                "uniqueItems": true,
+                "minitems": 1,
+                "uniqueitems": true,
                 "constraints": {
                     "required": true
                 },
-                "description": "destination Entity field names that identify a unique document"
-            },
-            "sourceEntityTimestampField": {
-                "type": "date",
-                "constraints": {
-                    "required": true
-                },
-                "description": "destination Entity timestamp field name"
+                "description": "identity fields in the destination entity."
             },
             "sourceServiceURI": {
                 "type": "string",
@@ -152,19 +164,7 @@
                 },
                 "description": "source Entity Version for data being migrated"
             },
-            "sourceEntityKeyFields": { 
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "minItems": 1,
-                "uniqueItems": true,
-                "constraints": {
-                    "required": true
-                },
-                "description": "source Entity field names that identify a unique document"
-            },
-            "sourceEntityTimestampField" : {
+            "sourceTimestampPath" : {
                 "type": "date",
                 "constraints": {
                     "required": true
