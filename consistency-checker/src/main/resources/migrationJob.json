@@ -81,29 +81,29 @@
                 },
                 "description": "Document end date for this migration job"
             },
-            "whenAvailable": {
+            "whenAvailableDate
                 "type": "date",
                 "constraints": {
                     "required": true
                 },
                 "description": "First available time for execution of this job"
             },
-            "expectedRunTime": {
+            "expectedExecutionMilliseconds": {
                 "type": "integer",
                 "constraints": {
                     "required": true
                 },
                 "description": "Expected duration of this job in ms"
             },
-            "jobRuns": {
+            "jobExecutions": {
                 "items": {
                     "fields": {
-                        "owner": {
+                        "ownerName": {
                             "type": "string",
                             "constraints": {
                                 "required": true
                             },
-                            "description": "Owner of this migration job"
+                            "description": "Name of the consistency checker instance that owns this execution."
                         },
                         "hostName": {
                             "type": "string",
@@ -117,7 +117,7 @@
                             "constraints": {
                                 "required": true
                             },
-                            "description": "Process id on the host running this migration job"
+                            "description": "Process id of the consistency checker instance on the host running this migration job"
                         },
                         "actualStartDate": {
                             "type": "date",
@@ -133,35 +133,35 @@
                             },
                             "description": "Actual end date for this migration job"
                         },
-                        "completed": {
+                        "completedFlag": {
                             "type": "boolean",
                             "constraints": {
                                 "required": true
                             },
                             "description": "Indicates whether or not this job successfully completed"
                         },
-                        "documentsProcessed": {
+                        "processedDocumentCount": {
                             "type": "integer",
                             "constraints": {
                                 "required": true
                             },
                             "description": "Number of documents processed by this job"
                         },
-                        "consistentDocuments": {
+                        "consistentDocumentCount": {
                             "type": "integer",
                             "constraints": {
                                 "required": true
                             },
                             "description": "Number of documents that mathed for this job"
                         },
-                        "inconsistentDocuments": {
+                        "inconsistentDocumentCount": {
                             "type": "integer",
                             "constraints": {
                                 "required": true
                             },
                             "description": "Number of documents that did not match for this job"
                         },
-                        "documentsOverwritten": {
+                        "overwrittenDocumentCount": {
                             "type": "integer",
                             "constraints": {
                                 "required": true
