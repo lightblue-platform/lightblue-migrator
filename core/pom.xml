@@ -3,11 +3,11 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.redhat.lightblue.migrator</groupId>
-    <artifactId>migrator-pom</artifactId>
+    <artifactId>lightblue-migrator-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <groupId>com.redhat.lightblue.migrator</groupId>
-  <artifactId>core</artifactId>
+  <artifactId>lightblue-migrator-core</artifactId>
   <packaging>jar</packaging>
   <version>0.0.1-SNAPSHOT</version>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>

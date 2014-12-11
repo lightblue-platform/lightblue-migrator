@@ -8,7 +8,7 @@
     <version>7</version>
   </parent>
   <groupId>com.redhat.lightblue.migrator</groupId>
-  <artifactId>migrator-pom</artifactId>
+  <artifactId>lightblue-migrator-pom</artifactId>
   <version>0.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
