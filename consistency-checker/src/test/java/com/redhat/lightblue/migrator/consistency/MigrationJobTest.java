@@ -7,6 +7,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -333,6 +334,43 @@ public class MigrationJobTest {
 	}
 
 	@Test
+	public void testExecuteMultipleSameExceptForTimestamp() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponseSource.json");
+			}
+
+			@Override
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponseDestination.json");
+			}
+
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(2, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
+
+	
+	@Test
 	public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
@@ -406,6 +444,9 @@ public class MigrationJobTest {
 
 	private void configureMigrationJob(MigrationJob migrationJob) {
 		MigrationConfiguration jobConfiguration = new MigrationConfiguration();
+		List<String> pathsToExclude = new ArrayList<String>();
+		pathsToExclude.add("lastUpdateTime");
+		jobConfiguration.setComparisonExclusionPaths(pathsToExclude);
 		jobConfiguration.setDestinationEntityKeyFields(new ArrayList<String>());
 		jobConfiguration.setSourceTimestampPath("source-timestamp");
 		migrationJob.setJobConfiguration(jobConfiguration);

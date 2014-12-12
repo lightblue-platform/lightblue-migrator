@@ -1,16 +1,19 @@
 package com.redhat.lightblue.migrator.consistency;
 
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +24,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
+import com.redhat.lightblue.client.expression.query.ValueQuery;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.request.SortCondition;
@@ -308,13 +312,16 @@ public class MigrationJob implements Runnable {
 		Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
 		try {
 			DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-			List<Query> conditions = new LinkedList<Query>();
+			List<Query> requestConditions = new LinkedList<Query>();
 			for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+				List<Query> docConditions = new LinkedList<Query>();
 				for(String keyField : getJobConfiguration().getDestinationEntityKeyFields()) {
-					conditions.add(withValue(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText()));	
+					ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
+					docConditions.add(docQuery);	
 				}	
+				requestConditions.add(and(docConditions));
 			}
-			destinationRequest.where(and(conditions));
+			destinationRequest.where(or(requestConditions));
 			destinationRequest.select(includeFieldRecursively("*"));
 			destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
 			destinationDocuments = findDestinationData(destinationRequest);
@@ -338,11 +345,21 @@ public class MigrationJob implements Runnable {
 	}
 	
 	protected boolean documentsConsistent(JsonNode sourceDocument, JsonNode destinationDocument) {
-		if(sourceDocument.equals(destinationDocument)) {
-			return true;
-		} else {
-			return false;	
+		boolean consistent = true;
+		
+		Iterator<Entry<String, JsonNode>> nodeIterator = sourceDocument.fields();
+		
+		while (nodeIterator.hasNext()) {
+			Entry<String, JsonNode> sourceNode = nodeIterator.next();
+			
+			if(!getJobConfiguration().getComparisonExclusionPaths().contains(sourceNode.getKey())) {
+				if(!sourceNode.getValue().equals(destinationDocument.findValue(sourceNode.getKey()))) {
+					consistent = false;
+					break;
+				}	
+			}
 		}
+		return consistent;
 	}
 	
 	protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
