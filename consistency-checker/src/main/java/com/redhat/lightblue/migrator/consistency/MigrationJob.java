@@ -6,13 +6,12 @@ import static com.redhat.lightblue.client.projection.FieldProjection.includeFiel
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
-import org.apache.commons.collections4.ListUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +45,7 @@ public class MigrationJob implements Runnable {
 	
 	private LightblueClient sourceClient;
 	private LightblueClient destinationClient;
-
+	
 	// configuration for migrator
 	private MigrationConfiguration migrationConfiguration;
 
@@ -234,11 +233,12 @@ public class MigrationJob implements Runnable {
 
 		configureClients();
 
-		List<JsonNode> sourceDocuments = getSourceDocuments();
+		Map<String, JsonNode> sourceDocuments = getSourceDocuments();
 
-		List<JsonNode> destinationDocuments = getDestinationDocuments();
+		Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
 
-		List<JsonNode> documentsToOverwrite = ListUtils.subtract(sourceDocuments, destinationDocuments);
+		List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
+
 
 		if (!documentsToOverwrite.isEmpty()) {
 			hasInconsistentDocuments = true;
@@ -288,13 +288,13 @@ public class MigrationJob implements Runnable {
 		return response.getJson().findValue("modifiedCount").asInt();
 	}
 
-	protected List<JsonNode> getSourceDocuments() {
-		List<JsonNode> sourceDocuments = Collections.emptyList();
+	protected Map<String, JsonNode>  getSourceDocuments() {
+		Map<String, JsonNode> sourceDocuments = new LinkedHashMap<>();
 		try {
 			DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
 			List<Query> conditions = new LinkedList<Query>();
-			conditions.add(withValue(getJobConfiguration().getSourceEntityTimestampField() + " >= " + getStartDate()));
-			conditions.add(withValue(getJobConfiguration().getSourceEntityTimestampField() + " <= " + getEndDate()));
+			conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
+			conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
 			sourceRequest.where(and(conditions));
 			sourceRequest.select(includeFieldRecursively("*"));
 			sourceDocuments = findSourceData(sourceRequest);
@@ -304,17 +304,19 @@ public class MigrationJob implements Runnable {
 		return sourceDocuments;
 	}
 
-	protected List<JsonNode> getDestinationDocuments() {
-		List<JsonNode> destinationDocuments = Collections.emptyList();
+	protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
+		Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
 		try {
-			DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration()
-			    .getDestinationEntityVersion());
+			DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
 			List<Query> conditions = new LinkedList<Query>();
-			conditions.add(withValue(getJobConfiguration().getDestinationEntityTimestampField() + " >= " + getStartDate()));
-			conditions.add(withValue(getJobConfiguration().getDestinationEntityTimestampField() + " <= " + getEndDate()));
+			for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+				for(String keyField : getJobConfiguration().getDestinationEntityKeyFields()) {
+					conditions.add(withValue(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText()));	
+				}	
+			}
 			destinationRequest.where(and(conditions));
 			destinationRequest.select(includeFieldRecursively("*"));
-			destinationRequest.sort(new SortCondition(getJobConfiguration().getDestinationEntityTimestampField(), SortDirection.ASC));
+			destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
 			destinationDocuments = findDestinationData(destinationRequest);
 		} catch (IOException e) {
 			LOGGER.error("Error getting destinationDocuments", e);
@@ -322,14 +324,47 @@ public class MigrationJob implements Runnable {
 		return destinationDocuments;
 	}
 
-	protected List<JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
-		return Arrays.asList(getSourceClient().data(findRequest, JsonNode[].class));
+	protected List<JsonNode> getDocumentsToOverwrite(Map<String, JsonNode> sourceDocuments, Map<String, JsonNode> destinationDocuments) {
+		List<JsonNode> documentsToOverwrite = new ArrayList<>();
+		for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+			JsonNode destinationDocument = destinationDocuments.get(sourceDocument.getKey());
+			if(destinationDocument == null) {
+				documentsToOverwrite.add(sourceDocument.getValue());
+			} else if (!documentsConsistent(sourceDocument.getValue(), destinationDocument)) {
+				documentsToOverwrite.add(sourceDocument.getValue());
+			}
+		}
+		return documentsToOverwrite;
+	}
+	
+	protected boolean documentsConsistent(JsonNode sourceDocument, JsonNode destinationDocument) {
+		if(sourceDocument.equals(destinationDocument)) {
+			return true;
+		} else {
+			return false;	
+		}
+	}
+	
+	protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
+		return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationEntityKeyFields());
+	}
+	
+	protected Map<String, JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
+		return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationEntityKeyFields());
 	}
 
-	protected List<JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
-		return Arrays.asList(getDestinationClient().data(findRequest, JsonNode[].class));
+	protected LinkedHashMap<String, JsonNode> getJsonNodeMap(JsonNode[] results, List<String> entityKeyFields) {
+		LinkedHashMap<String, JsonNode> resultsMap = new LinkedHashMap<>();
+		for(JsonNode result : results) {
+			StringBuffer resultKey = new StringBuffer();
+			for(String keyField : entityKeyFields) {
+				resultKey.append(result.findValue(keyField));
+			}
+			resultsMap.put(resultKey.toString(), result);
+		}
+		return resultsMap;
 	}
-
+	
 	protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
 		return getDestinationClient().data(saveRequest);
 	}

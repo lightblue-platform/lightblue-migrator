@@ -101,7 +101,7 @@
                 },
                 "description": "Number of threads that should be devoted to migrator jobs"
             },
-            "comparisonExclusionFields": {
+            "comparisonExclusionPaths": {
                 "type": "array",
                 "items": {
                     "type": "string"

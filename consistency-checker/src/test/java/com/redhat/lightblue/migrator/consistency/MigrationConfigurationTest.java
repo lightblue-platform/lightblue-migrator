@@ -13,9 +13,8 @@ public class MigrationConfigurationTest {
 	private static final int threadCount = 63;
 
 	private static final List<String> destinationEntityKeyFields = Arrays.asList("id", "name");;
-	private static final String destinationEntityTimestampField = "lastUpdateDate";
 	private static final List<String> sourceEntityKeyFields = Arrays.asList("id", "name");;;
-	private static final String sourceEntityTimestampField = "lastUpdateDate";
+	private static final String sourceEntityTimestampPath = "lastUpdateDate";
 
 	private static final String destinationEntityVersion = "destinationEntityVersion";
 	private static final String destinationEntityName = "destinationEntityName";
@@ -31,9 +30,7 @@ public class MigrationConfigurationTest {
 		configuration.setThreadCount(threadCount);
 		configuration.setOverwriteDestinationDocuments(true);
 		configuration.setDestinationEntityKeyFields(destinationEntityKeyFields);
-		configuration.setDestinationEntityTimestampField(destinationEntityTimestampField);
-		configuration.setSourceEntityKeyFields(sourceEntityKeyFields);
-		configuration.setSourceEntityTimestampField(sourceEntityTimestampField);
+		configuration.setSourceTimestampPath(sourceEntityTimestampPath);
 		configuration.setSourceEntityName(sourceEntityName);
 		configuration.setSourceEntityVersion(sourceEntityVersion);
 		configuration.setDestinationEntityName(destinationEntityName);
@@ -97,17 +94,6 @@ public class MigrationConfigurationTest {
 	}
 
 	@Test
-	public void testGetDestinationEntityTimestampField() {
-		Assert.assertEquals(destinationEntityTimestampField, configuration.getDestinationEntityTimestampField());
-	}
-
-	@Test
-	public void testSetDestinationEntityTimestampField() {
-		configuration.setDestinationEntityTimestampField(sourceEntityTimestampField);
-		Assert.assertEquals(sourceEntityTimestampField, configuration.getDestinationEntityTimestampField());
-	}
-
-	@Test
 	public void testGetSourceEntityName() {
 		Assert.assertEquals(sourceEntityName, configuration.getSourceEntityName());
 	}
@@ -130,25 +116,14 @@ public class MigrationConfigurationTest {
 	}
 
 	@Test
-	public void testGetSourceEntityKeyFields() {
-		Assert.assertEquals(sourceEntityKeyFields, configuration.getSourceEntityKeyFields());
-	}
-
-	@Test
-	public void testSetSourceEntityKeyFields() {
-		configuration.setSourceEntityKeyFields(sourceEntityKeyFields);
-		Assert.assertEquals(sourceEntityKeyFields, configuration.getSourceEntityKeyFields());
-	}
-
-	@Test
-	public void testGetSourceEntityTimestampField() {
-		Assert.assertEquals(sourceEntityTimestampField, configuration.getSourceEntityTimestampField());
+	public void testGetSourceTimestampPath() {
+		Assert.assertEquals(sourceEntityTimestampPath, configuration.getSourceTimestampPath());
 	}
 
 	@Test
 	public void testSetSourceEntityTimestampField() {
-		configuration.setSourceEntityTimestampField(sourceEntityTimestampField);
-		Assert.assertEquals(sourceEntityTimestampField, configuration.getSourceEntityTimestampField());
+		configuration.setSourceTimestampPath(sourceEntityTimestampPath);
+		Assert.assertEquals(sourceEntityTimestampPath, configuration.getSourceTimestampPath());
 	}
 
 	@Test
