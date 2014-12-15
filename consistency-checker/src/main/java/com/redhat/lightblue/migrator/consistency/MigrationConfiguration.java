@@ -12,15 +12,15 @@ public class MigrationConfiguration {
 	private String configurationName;
 	private String consistencyCheckerName;
 
+	private List<String> comparisonExclusionPaths;
+	
 	private String destinationEntityName;
 	private String destinationEntityVersion;
 	private List<String> destinationEntityKeyFields;
-	private String destinationEntityTimestampField;
 
 	private String sourceEntityName;
 	private String sourceEntityVersion;
-	private List<String> sourceEntityKeyFields;
-	private String sourceEntityTimestampField;
+	private String sourceTimestampPath;
 
 	private boolean overwriteDestinationDocuments = false;
 
@@ -64,6 +64,14 @@ public class MigrationConfiguration {
 		return consistencyCheckerName;
 	}
 
+	public List<String> getComparisonExclusionPaths() {
+		return comparisonExclusionPaths;
+	}
+
+	public void setComparisonExclusionPaths(List<String> comparisonExclusionPaths) {
+		this.comparisonExclusionPaths = comparisonExclusionPaths;
+	}
+	
 	public String getDestinationEntityName() {
 		return destinationEntityName;
 	}
@@ -88,14 +96,6 @@ public class MigrationConfiguration {
 		this.destinationEntityKeyFields = destinationEntityKeyFields;
 	}
 
-	public String getDestinationEntityTimestampField() {
-		return destinationEntityTimestampField;
-	}
-
-	public void setDestinationEntityTimestampField(String destinationEntityTimestampField) {
-		this.destinationEntityTimestampField = destinationEntityTimestampField;
-	}
-
 	public String getSourceEntityName() {
 		return sourceEntityName;
 	}
@@ -112,20 +112,12 @@ public class MigrationConfiguration {
 		this.sourceEntityVersion = sourceEntityVersion;
 	}
 
-	public List<String> getSourceEntityKeyFields() {
-		return sourceEntityKeyFields;
+	public String getSourceTimestampPath() {
+		return sourceTimestampPath;
 	}
 
-	public void setSourceEntityKeyFields(List<String> sourceEntityKeyFields) {
-		this.sourceEntityKeyFields = sourceEntityKeyFields;
-	}
-
-	public String getSourceEntityTimestampField() {
-		return sourceEntityTimestampField;
-	}
-
-	public void setSourceEntityTimestampField(String sourceEntityTimestampField) {
-		this.sourceEntityTimestampField = sourceEntityTimestampField;
+	public void setSourceTimestampPath(String sourceTimestampPath) {
+		this.sourceTimestampPath = sourceTimestampPath;
 	}
 
 	public void setOverwriteDestinationDocuments(boolean overwriteDestinationDocuments) {

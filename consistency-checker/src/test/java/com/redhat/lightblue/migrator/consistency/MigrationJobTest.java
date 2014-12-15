@@ -1,5 +1,18 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.util.test.FileUtil.readFile;
+
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -7,18 +20,6 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
-
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
-import static com.redhat.lightblue.util.test.FileUtil.readFile;
 
 public class MigrationJobTest {
 
@@ -62,12 +63,12 @@ public class MigrationJobTest {
 	public void testExecuteExistsInSourceAndDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
@@ -96,17 +97,18 @@ public class MigrationJobTest {
 		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
 	}
 
-	private List<JsonNode> getProcessedContentsFrom(String filename) {
-		List<JsonNode> output = new ArrayList<>();
+	private LinkedHashMap<String, JsonNode> getProcessedContentsFrom(String filename) {
+		LinkedHashMap<String, JsonNode> output = new LinkedHashMap<>();
 
 		JsonNode processedNode = fromFileToJsonNode(filename).findValue("processed");
 		if (processedNode instanceof ArrayNode) {
 			Iterator<JsonNode> i = ((ArrayNode) processedNode).iterator();
 			while (i.hasNext()) {
-				output.add(i.next());
+				JsonNode node = i.next();
+				output.put(node.findValue("iso3code").textValue(), node);
 			}
 		} else {
-			output.add(processedNode);
+			output.put(processedNode.findValue("iso3code").textValue(), processedNode);
 		}
 
 		return output;
@@ -116,12 +118,12 @@ public class MigrationJobTest {
 	public void testExecuteExistsInSourceButNotDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("emptyFindResponse.json");
 			}
 
@@ -152,12 +154,12 @@ public class MigrationJobTest {
 	public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("emptyFindResponse.json");
 			}
 
@@ -190,12 +192,12 @@ public class MigrationJobTest {
 	public void testExecuteExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("emptyFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
@@ -226,12 +228,12 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInSourceAndDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("multipleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("multipleFindResponse.json");
 			}
 
@@ -263,12 +265,12 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInSourceButNotDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("multipleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("emptyFindResponse.json");
 			}
 
@@ -299,12 +301,12 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("emptyFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("multipleFindResponse.json");
 			}
 
@@ -332,15 +334,52 @@ public class MigrationJobTest {
 	}
 
 	@Test
+	public void testExecuteMultipleSameExceptForTimestamp() {
+		MigrationJob migrationJob = new MigrationJob() {
+			@Override
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponseSource.json");
+			}
+
+			@Override
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
+				return getProcessedContentsFrom("multipleFindResponseDestination.json");
+			}
+
+			@Override
+			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+				LightblueResponse response = new LightblueResponse();
+				ObjectMapper mapper = new ObjectMapper();
+				JsonNode node = null;
+				try {
+					node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				response.setJson(node);
+				return response;
+			}
+		};
+		configureMigrationJob(migrationJob);
+		migrationJob.run();
+		Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+		Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+		Assert.assertEquals(2, migrationJob.getConsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+		Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+	}
+
+	
+	@Test
 	public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("multipleFindResponse.json");
 			}
 
@@ -371,12 +410,12 @@ public class MigrationJobTest {
 	public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
 		MigrationJob migrationJob = new MigrationJob() {
 			@Override
-			protected List<JsonNode> findSourceData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("multipleFindResponse.json");
 			}
 
 			@Override
-			protected List<JsonNode> findDestinationData(LightblueRequest dataRequest) {
+			protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
 				return getProcessedContentsFrom("singleFindResponse.json");
 			}
 
@@ -405,9 +444,11 @@ public class MigrationJobTest {
 
 	private void configureMigrationJob(MigrationJob migrationJob) {
 		MigrationConfiguration jobConfiguration = new MigrationConfiguration();
-		jobConfiguration.setSourceEntityKeyFields(new ArrayList<String>());
-		jobConfiguration.setSourceEntityTimestampField("source-timestamp");
-		jobConfiguration.setDestinationEntityTimestampField("destination-timestamp");
+		List<String> pathsToExclude = new ArrayList<String>();
+		pathsToExclude.add("lastUpdateTime");
+		jobConfiguration.setComparisonExclusionPaths(pathsToExclude);
+		jobConfiguration.setDestinationEntityKeyFields(new ArrayList<String>());
+		jobConfiguration.setSourceTimestampPath("source-timestamp");
 		migrationJob.setJobConfiguration(jobConfiguration);
 		migrationJob.setOverwriteDestinationDocuments(true);
 		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
