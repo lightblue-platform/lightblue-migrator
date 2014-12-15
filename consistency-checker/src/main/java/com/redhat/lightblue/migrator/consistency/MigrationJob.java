@@ -84,7 +84,7 @@ public class MigrationJob implements Runnable {
 
 	private List<MigrationJobRun> getJobRuns() {
 		if (null == jobRuns) {
-			jobRuns = new ArrayList<MigrationJobRun>(1);
+			jobRuns = new ArrayList<>(1);
 		}
 		return jobRuns;
 	}
@@ -277,13 +277,12 @@ public class MigrationJob implements Runnable {
 	private LightblueResponse saveJobDetails() {
 		DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
 		saveRequest.setBody(this.toJson());
-		LightblueResponse response = saveDestinationData(saveRequest);
-		return response;
+		return saveDestinationData(saveRequest);
 	}
 
 	private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
 		DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-		StringBuffer body = new StringBuffer();
+		StringBuilder body = new StringBuilder();
 		for (JsonNode document : documentsToOverwrite) {
 			body.append(document.toString());
 		}
@@ -296,7 +295,7 @@ public class MigrationJob implements Runnable {
 		Map<String, JsonNode> sourceDocuments = new LinkedHashMap<>();
 		try {
 			DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
-			List<Query> conditions = new LinkedList<Query>();
+			List<Query> conditions = new LinkedList<>();
 			conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
 			conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
 			sourceRequest.where(and(conditions));
@@ -312,9 +311,9 @@ public class MigrationJob implements Runnable {
 		Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
 		try {
 			DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-			List<Query> requestConditions = new LinkedList<Query>();
+			List<Query> requestConditions = new LinkedList<>();
 			for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
-				List<Query> docConditions = new LinkedList<Query>();
+				List<Query> docConditions = new LinkedList<>();
 				for(String keyField : getJobConfiguration().getDestinationEntityKeyFields()) {
 					ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
 					docConditions.add(docQuery);	
@@ -363,7 +362,7 @@ public class MigrationJob implements Runnable {
 	}
 	
 	protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
-		return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationEntityKeyFields());
+		return getJsonNodeMap(getSourceClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationEntityKeyFields());
 	}
 	
 	protected Map<String, JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
@@ -373,9 +372,9 @@ public class MigrationJob implements Runnable {
 	protected LinkedHashMap<String, JsonNode> getJsonNodeMap(JsonNode[] results, List<String> entityKeyFields) {
 		LinkedHashMap<String, JsonNode> resultsMap = new LinkedHashMap<>();
 		for(JsonNode result : results) {
-			StringBuffer resultKey = new StringBuffer();
+			StringBuilder resultKey = new StringBuilder();
 			for(String keyField : entityKeyFields) {
-				resultKey.append(result.findValue(keyField));
+				resultKey.append(result.findValue(keyField)).append("|||");
 			}
 			resultsMap.put(resultKey.toString(), result);
 		}
@@ -387,7 +386,7 @@ public class MigrationJob implements Runnable {
 	}
 
 	private String toJson() {
-		StringBuffer json = new StringBuffer();
+        StringBuilder json = new StringBuilder();
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			json.append(mapper.writeValueAsString(MigrationJob.class));
