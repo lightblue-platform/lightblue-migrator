@@ -44,8 +44,6 @@
     <sonar.host.url>http://127.0.0.1:8080</sonar.host.url>
     <sonar.projectName>lightblue-migrator</sonar.projectName>
     <rpm.install.basedir>/usr/share/jbossas/standalone/deployments</rpm.install.basedir>
-    <lightblue-client.version>1.2.0-SNAPSHOT</lightblue-client.version>
-    <lightblue-util.version>1.2.0-SNAPSHOT</lightblue-util.version>
   </properties>
   <build>
     <plugins>
