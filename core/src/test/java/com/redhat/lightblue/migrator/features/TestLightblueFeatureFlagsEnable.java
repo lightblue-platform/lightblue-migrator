@@ -35,15 +35,15 @@ public class TestLightblueFeatureFlagsEnable {
     }
 
     @Test
-    public void testReadConsistencyEntityFeature() {
-        togglzRule.enable(LightblueMigrationFeatures.READ_CONSISTENCY_ENTITY);
-        Assert.assertTrue(LightblueMigrationFeatures.READ_CONSISTENCY_ENTITY.isActive());
+    public void testCheckReadConsistencyFeature() {
+        togglzRule.enable(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY);
+        Assert.assertTrue(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY.isActive());
     }
 
     @Test
-    public void testWriteConsistencyEntityFeature() {
-        togglzRule.enable(LightblueMigrationFeatures.WRITE_CONSISTENCY_ENTITY);
-        Assert.assertTrue(LightblueMigrationFeatures.WRITE_CONSISTENCY_ENTITY.isActive());
+    public void testCheckWriteConsistencyFeature() {
+        togglzRule.enable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
+        Assert.assertTrue(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY.isActive());
     }
 
 }

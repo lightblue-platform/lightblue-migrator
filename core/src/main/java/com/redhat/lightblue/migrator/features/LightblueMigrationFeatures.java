@@ -17,10 +17,10 @@ public enum LightblueMigrationFeatures implements Feature {
     READ_DESTINATION_ENTITY,
     @Label("Write Destination Entity")
     WRITE_DESTINATION_ENTITY,
-    @Label("Read consistency Entity")
-    READ_CONSISTENCY_ENTITY,
-    @Label("Write consistency Entity")
-    WRITE_CONSISTENCY_ENTITY,;
+    @Label("Check Read Consistency")
+    CHECK_READ_CONSISTENCY,
+    @Label("Check Write Consistency")
+    CHECK_WRITE_CONSISTENCY,;
 
     public boolean isActive() {
         return FeatureContext.getFeatureManager().isActive(this);
