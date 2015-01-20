@@ -23,3 +23,6 @@ java -jar consistency-checker-1.0.0-alldeps.jar
 --destinationconfig=destination-lightblue-client.properties
 ```
 
+# License
+
+The license of lightblue is [GPLv3](https://www.gnu.org/licenses/gpl.html).  See LICENSE in root of project for the full text.
