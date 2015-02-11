@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -134,6 +133,7 @@ public class ConsistencyChecker implements Runnable{
                     ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
                     executors.add(jobExecutor);
                     for (MigrationJob job : jobs) {
+                        job.setJobConfiguration(configuration);
                         job.setOwner(getConsistencyCheckerName());
                         job.setHostName(getHostName());
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
@@ -174,7 +174,7 @@ public class ConsistencyChecker implements Runnable{
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-        List<MigrationJob> jobs = Collections.emptyList();
+        List<MigrationJob> jobs = new ArrayList<MigrationJob>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));

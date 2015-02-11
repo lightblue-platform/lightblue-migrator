@@ -37,7 +37,7 @@ public class MigrationJob implements Runnable {
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
     public MigrationJob() {
-
+        migrationConfiguration = new MigrationConfiguration();
     }
 
     public MigrationJob(MigrationConfiguration migrationConfiguration) {
