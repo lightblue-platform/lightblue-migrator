@@ -145,7 +145,7 @@ public class ConsistencyCheckerTest {
             @Override
             protected MigrationJob getNextAvailableJob() {
                 MigrationJob job = new MigrationJob();
-                job.setWhenAvailable(DateUtils.addSeconds(new Date(), 5));
+                job.setWhenAvailableDate(DateUtils.addSeconds(new Date(), 5));
                 return job;
             }
 

@@ -34,366 +34,366 @@ import com.redhat.lightblue.client.response.LightblueResponse;
 
 public class MigrationJob implements Runnable {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
-	public MigrationJob() {
+    public MigrationJob() {
 
-	}
+    }
 
-	public MigrationJob(MigrationConfiguration migrationConfiguration) {
-		this.migrationConfiguration = migrationConfiguration;
-	}
+    public MigrationJob(MigrationConfiguration migrationConfiguration) {
+        this.migrationConfiguration = migrationConfiguration;
+    }
 
-	private String sourceConfigPath;
-	private String destinationConfigPath;
-	
-	private LightblueClient sourceClient;
-	private LightblueClient destinationClient;
-	
-	// configuration for migrator
-	private MigrationConfiguration migrationConfiguration;
+    private String sourceConfigPath;
+    private String destinationConfigPath;
 
-	private List<MigrationJobRun> jobRuns;
+    private LightblueClient sourceClient;
+    private LightblueClient destinationClient;
 
-	MigrationJobRun currentRun;
-	
-	// information about migrator instance working job
-	private String owner;
-	private String hostName;
-	private String pid;
+    // configuration for migrator
+    private MigrationConfiguration migrationConfiguration;
 
-	// dates of data to migrate
-	private Date startDate;
-	private Date endDate;
+    private List<MigrationJobRun> jobRuns;
 
-	// when this job can be worked by migrator
-	private Date whenAvailable;
+    MigrationJobRun currentRun;
 
-	// how long we think it will take
-	private int expectedRunTime;
+    // information about migrator instance working job
+    private String owner;
+    private String hostName;
+    private String pid;
 
-	private boolean hasInconsistentDocuments;
+    // dates of data to migrate
+    private Date startDate;
+    private Date endDate;
 
-	public MigrationConfiguration getJobConfiguration() {
-		return migrationConfiguration;
-	}
+    // when this job can be worked by migrator
+    private Date whenAvailableDate;
 
-	public void setJobConfiguration(MigrationConfiguration jobConfiguration) {
-		this.migrationConfiguration = jobConfiguration;
-	}
+    // how long we think it will take
+    private int expectedRunTime;
 
-	private List<MigrationJobRun> getJobRuns() {
-		if (null == jobRuns) {
-			jobRuns = new ArrayList<>(1);
-		}
-		return jobRuns;
-	}
-	
-	public void setJobRuns(List<MigrationJobRun> jobRuns) {
-		this.jobRuns = jobRuns;
-  }
-	
-	public LightblueClient getSourceClient() {
-		return sourceClient;
-	}
+    private boolean hasInconsistentDocuments;
 
-	public void setSourceClient(LightblueClient client) {
-		this.sourceClient = client;
-	}
+    public MigrationConfiguration getJobConfiguration() {
+        return migrationConfiguration;
+    }
 
-	public LightblueClient getDestinationClient() {
-		return destinationClient;
-	}
+    public void setJobConfiguration(MigrationConfiguration jobConfiguration) {
+        this.migrationConfiguration = jobConfiguration;
+    }
 
-	public void setDestinationClient(LightblueClient client) {
-		this.destinationClient = client;
-	}
+    private List<MigrationJobRun> getJobRuns() {
+        if (null == jobRuns) {
+            jobRuns = new ArrayList<>(1);
+        }
+        return jobRuns;
+    }
 
-	public void setOverwriteDestinationDocuments(boolean overwriteDestinationDocuments) {
-		migrationConfiguration.setOverwriteDestinationDocuments(overwriteDestinationDocuments);
-	}
+    public void setJobRuns(List<MigrationJobRun> jobRuns) {
+        this.jobRuns = jobRuns;
+    }
 
-	public boolean shouldOverwriteDestinationDocuments() {
-		return migrationConfiguration.shouldOverwriteDestinationDocuments();
-	}
+    public LightblueClient getSourceClient() {
+        return sourceClient;
+    }
 
-	public String getSourceConfigPath() {
-		return sourceConfigPath;
-	}
+    public void setSourceClient(LightblueClient client) {
+        this.sourceClient = client;
+    }
 
-	public void setSourceConfigPath(String configPath) {
-		this.sourceConfigPath = configPath;
-	}
-	
-	public String getDestinationConfigPath() {
-		return destinationConfigPath;
-	}
+    public LightblueClient getDestinationClient() {
+        return destinationClient;
+    }
 
-	public void setDestinationConfigPath(String configPath) {
-		this.destinationConfigPath = configPath;
-	}
-	
-	/**
-	 * Returns true if there are any inconsistent documents
-	 * 
-	 * @return true if there are any inconsistent documents
-	 */
-	public boolean hasInconsistentDocuments() {
-		return hasInconsistentDocuments;
-	}
+    public void setDestinationClient(LightblueClient client) {
+        this.destinationClient = client;
+    }
 
-	public String getConfigurationName() {
-		return migrationConfiguration.getConfigurationName();
-	}
+    public void setOverwriteDestinationDocuments(boolean overwriteDestinationDocuments) {
+        migrationConfiguration.setOverwriteDestinationDocuments(overwriteDestinationDocuments);
+    }
 
-	public void setConfigurationName(String configurationName) {
-		this.migrationConfiguration.setConfigurationName(configurationName);
-	}
+    public boolean shouldOverwriteDestinationDocuments() {
+        return migrationConfiguration.shouldOverwriteDestinationDocuments();
+    }
 
-	public String getOwner() {
-		return owner;
-	}
+    public String getSourceConfigPath() {
+        return sourceConfigPath;
+    }
 
-	public void setOwner(String owner) {
-		this.owner = owner;
-	}
+    public void setSourceConfigPath(String configPath) {
+        this.sourceConfigPath = configPath;
+    }
 
-	public String getHostName() {
-		return hostName;
-	}
+    public String getDestinationConfigPath() {
+        return destinationConfigPath;
+    }
 
-	public void setHostName(String hostName) {
-		this.hostName = hostName;
-	}
+    public void setDestinationConfigPath(String configPath) {
+        this.destinationConfigPath = configPath;
+    }
 
-	public String getPid() {
-		return pid;
-	}
+    /**
+     * Returns true if there are any inconsistent documents
+     *
+     * @return true if there are any inconsistent documents
+     */
+    public boolean hasInconsistentDocuments() {
+        return hasInconsistentDocuments;
+    }
 
-	public void setPid(String pid) {
-		this.pid = pid;
-	}
+    public String getConfigurationName() {
+        return migrationConfiguration.getConfigurationName();
+    }
 
-	public Date getStartDate() {
-		return startDate;
-	}
+    public void setConfigurationName(String configurationName) {
+        this.migrationConfiguration.setConfigurationName(configurationName);
+    }
 
-	public void setStartDate(Date startDate) {
-		this.startDate = startDate;
-	}
+    public String getOwner() {
+        return owner;
+    }
 
-	public Date getEndDate() {
-		return endDate;
-	}
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
 
-	public void setEndDate(Date endDate) {
-		this.endDate = endDate;
-	}
+    public String getHostName() {
+        return hostName;
+    }
 
-	public Date getWhenAvailable() {
-		return whenAvailable;
-	}
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
 
-	public void setWhenAvailable(Date whenAvailable) {
-		this.whenAvailable = whenAvailable;
-	}
+    public String getPid() {
+        return pid;
+    }
 
-	public int getExpectedRunTime() {
-		return expectedRunTime;
-	}
+    public void setPid(String pid) {
+        this.pid = pid;
+    }
 
-	public void setExpectedRunTime(int expectedRunTime) {
-		this.expectedRunTime = expectedRunTime;
-	}
-	
-	public int getDocumentsProcessed() {
-		return currentRun.getDocumentsProcessed();
-	}
+    public Date getStartDate() {
+        return startDate;
+    }
 
-	public int getConsistentDocuments() {
-		return currentRun.getConsistentDocuments();
-	}
+    public void setStartDate(Date startDate) {
+        this.startDate = startDate;
+    }
 
-	public int getInconsistentDocuments() {
-		return currentRun.getInconsistentDocuments();
-	}
+    public Date getEndDate() {
+        return endDate;
+    }
 
-	public int getRecordsOverwritten() {
-		return currentRun.getRecordsOverwritten();
-	}
+    public void setEndDate(Date endDate) {
+        this.endDate = endDate;
+    }
 
-	@Override
-	public void run() {
-		LOGGER.info("MigrationJob started");
+    public Date getWhenAvailableDate() {
+        return whenAvailableDate;
+    }
 
-		currentRun = new MigrationJobRun();
-		currentRun.setOwner(owner);
-		currentRun.setHostName(hostName);
-		currentRun.setPid(pid);
-		currentRun.setActualStartDate(new Date());
-		getJobRuns().add(currentRun);
-		
-		saveJobDetails();
+    public void setWhenAvailableDate(Date whenAvailable) {
+        this.whenAvailableDate = whenAvailable;
+    }
 
-		configureClients();
+    public int getExpectedRunTime() {
+        return expectedRunTime;
+    }
 
-		Map<String, JsonNode> sourceDocuments = getSourceDocuments();
+    public void setExpectedRunTime(int expectedRunTime) {
+        this.expectedRunTime = expectedRunTime;
+    }
 
-		Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
+    public int getDocumentsProcessed() {
+        return currentRun.getDocumentsProcessed();
+    }
 
-		List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
+    public int getConsistentDocuments() {
+        return currentRun.getConsistentDocuments();
+    }
+
+    public int getInconsistentDocuments() {
+        return currentRun.getInconsistentDocuments();
+    }
+
+    public int getRecordsOverwritten() {
+        return currentRun.getRecordsOverwritten();
+    }
+
+    @Override
+    public void run() {
+        LOGGER.info("MigrationJob started");
+
+        currentRun = new MigrationJobRun();
+        currentRun.setOwner(owner);
+        currentRun.setHostName(hostName);
+        currentRun.setPid(pid);
+        currentRun.setActualStartDate(new Date());
+        getJobRuns().add(currentRun);
+
+        saveJobDetails();
+
+        configureClients();
+
+        Map<String, JsonNode> sourceDocuments = getSourceDocuments();
+
+        Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
+
+        List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
 
 
-		if (!documentsToOverwrite.isEmpty()) {
-			hasInconsistentDocuments = true;
-		}
+        if (!documentsToOverwrite.isEmpty()) {
+            hasInconsistentDocuments = true;
+        }
 
-		currentRun.setDocumentsProcessed(sourceDocuments.size());
-		currentRun.setConsistentDocuments(sourceDocuments.size() - documentsToOverwrite.size());
-		currentRun.setInconsistentDocuments(documentsToOverwrite.size());
+        currentRun.setDocumentsProcessed(sourceDocuments.size());
+        currentRun.setConsistentDocuments(sourceDocuments.size() - documentsToOverwrite.size());
+        currentRun.setInconsistentDocuments(documentsToOverwrite.size());
 
-		if (shouldOverwriteDestinationDocuments()) {
-			currentRun.setRecordsOverwritten(overwriteLightblue(documentsToOverwrite));
-		}
-		
-		currentRun.setCompleted(true);
-		currentRun.setActualEndDate(new Date());
-		
-		saveJobDetails();
+        if (shouldOverwriteDestinationDocuments()) {
+            currentRun.setRecordsOverwritten(overwriteLightblue(documentsToOverwrite));
+        }
 
-		LOGGER.info("MigrationJob completed");
-	}
+        currentRun.setCompleted(true);
+        currentRun.setActualEndDate(new Date());
 
-	private void configureClients() {
-		if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
-			sourceClient = new LightblueHttpClient();
-			destinationClient = new LightblueHttpClient();
-		} else {
-			sourceClient = new LightblueHttpClient(getSourceConfigPath());
-			destinationClient = new LightblueHttpClient(getDestinationConfigPath());
-		}
-	}
+        saveJobDetails();
 
-	private LightblueResponse saveJobDetails() {
-		DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-		saveRequest.setBody(this.toJson());
-		return saveDestinationData(saveRequest);
-	}
+        LOGGER.info("MigrationJob completed");
+    }
 
-	private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
-		DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-		StringBuilder body = new StringBuilder();
-		for (JsonNode document : documentsToOverwrite) {
-			body.append(document.toString());
-		}
-		saveRequest.setBody(body.toString());
-		LightblueResponse response = saveDestinationData(saveRequest);
-		return response.getJson().findValue("modifiedCount").asInt();
-	}
+    private void configureClients() {
+        if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
+            sourceClient = new LightblueHttpClient();
+            destinationClient = new LightblueHttpClient();
+        } else {
+            sourceClient = new LightblueHttpClient(getSourceConfigPath());
+            destinationClient = new LightblueHttpClient(getDestinationConfigPath());
+        }
+    }
 
-	protected Map<String, JsonNode>  getSourceDocuments() {
-		Map<String, JsonNode> sourceDocuments = new LinkedHashMap<>();
-		try {
-			DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
-			List<Query> conditions = new LinkedList<>();
-			conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
-			conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
-			sourceRequest.where(and(conditions));
-			sourceRequest.select(includeFieldRecursively("*"));
-			sourceDocuments = findSourceData(sourceRequest);
-		} catch (IOException e) {
-			LOGGER.error("Problem getting sourceDocuments", e);
-		}
-		return sourceDocuments;
-	}
+    private LightblueResponse saveJobDetails() {
+        DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
+        saveRequest.setBody(this.toJson());
+        return saveDestinationData(saveRequest);
+    }
 
-	protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
-		Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
-		try {
-			DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-			List<Query> requestConditions = new LinkedList<>();
-			for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
-				List<Query> docConditions = new LinkedList<>();
-				for(String keyField : getJobConfiguration().getDestinationEntityKeyFields()) {
-					ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
-					docConditions.add(docQuery);	
-				}	
-				requestConditions.add(and(docConditions));
-			}
-			destinationRequest.where(or(requestConditions));
-			destinationRequest.select(includeFieldRecursively("*"));
-			destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
-			destinationDocuments = findDestinationData(destinationRequest);
-		} catch (IOException e) {
-			LOGGER.error("Error getting destinationDocuments", e);
-		}
-		return destinationDocuments;
-	}
+    private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+        DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
+        StringBuilder body = new StringBuilder();
+        for (JsonNode document : documentsToOverwrite) {
+            body.append(document.toString());
+        }
+        saveRequest.setBody(body.toString());
+        LightblueResponse response = saveDestinationData(saveRequest);
+        return response.getJson().findValue("modifiedCount").asInt();
+    }
 
-	protected List<JsonNode> getDocumentsToOverwrite(Map<String, JsonNode> sourceDocuments, Map<String, JsonNode> destinationDocuments) {
-		List<JsonNode> documentsToOverwrite = new ArrayList<>();
-		for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
-			JsonNode destinationDocument = destinationDocuments.get(sourceDocument.getKey());
-			if(destinationDocument == null) {
-				documentsToOverwrite.add(sourceDocument.getValue());
-			} else if (!documentsConsistent(sourceDocument.getValue(), destinationDocument)) {
-				documentsToOverwrite.add(sourceDocument.getValue());
-			}
-		}
-		return documentsToOverwrite;
-	}
-	
-	protected boolean documentsConsistent(JsonNode sourceDocument, JsonNode destinationDocument) {
-		boolean consistent = true;
-		
-		Iterator<Entry<String, JsonNode>> nodeIterator = sourceDocument.fields();
-		
-		while (nodeIterator.hasNext()) {
-			Entry<String, JsonNode> sourceNode = nodeIterator.next();
-			
-			if(!getJobConfiguration().getComparisonExclusionPaths().contains(sourceNode.getKey())) {
-				if(!sourceNode.getValue().equals(destinationDocument.findValue(sourceNode.getKey()))) {
-					consistent = false;
-					break;
-				}	
-			}
-		}
-		return consistent;
-	}
-	
-	protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
-		return getJsonNodeMap(getSourceClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationEntityKeyFields());
-	}
-	
-	protected Map<String, JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
-		return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationEntityKeyFields());
-	}
+    protected Map<String, JsonNode>  getSourceDocuments() {
+        Map<String, JsonNode> sourceDocuments = new LinkedHashMap<>();
+        try {
+            DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
+            List<Query> conditions = new LinkedList<>();
+            conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
+            conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
+            sourceRequest.where(and(conditions));
+            sourceRequest.select(includeFieldRecursively("*"));
+            sourceDocuments = findSourceData(sourceRequest);
+        } catch (IOException e) {
+            LOGGER.error("Problem getting sourceDocuments", e);
+        }
+        return sourceDocuments;
+    }
 
-	protected LinkedHashMap<String, JsonNode> getJsonNodeMap(JsonNode[] results, List<String> entityKeyFields) {
-		LinkedHashMap<String, JsonNode> resultsMap = new LinkedHashMap<>();
-		for(JsonNode result : results) {
-			StringBuilder resultKey = new StringBuilder();
-			for(String keyField : entityKeyFields) {
-				resultKey.append(result.findValue(keyField)).append("|||");
-			}
-			resultsMap.put(resultKey.toString(), result);
-		}
-		return resultsMap;
-	}
-	
-	protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-		return getDestinationClient().data(saveRequest);
-	}
+    protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
+        Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
+        try {
+            DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
+            List<Query> requestConditions = new LinkedList<>();
+            for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+                List<Query> docConditions = new LinkedList<>();
+                for(String keyField : getJobConfiguration().getDestinationIdentityFields()) {
+                    ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
+                    docConditions.add(docQuery);
+                }
+                requestConditions.add(and(docConditions));
+            }
+            destinationRequest.where(or(requestConditions));
+            destinationRequest.select(includeFieldRecursively("*"));
+            destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
+            destinationDocuments = findDestinationData(destinationRequest);
+        } catch (IOException e) {
+            LOGGER.error("Error getting destinationDocuments", e);
+        }
+        return destinationDocuments;
+    }
 
-	private String toJson() {
+    protected List<JsonNode> getDocumentsToOverwrite(Map<String, JsonNode> sourceDocuments, Map<String, JsonNode> destinationDocuments) {
+        List<JsonNode> documentsToOverwrite = new ArrayList<>();
+        for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+            JsonNode destinationDocument = destinationDocuments.get(sourceDocument.getKey());
+            if(destinationDocument == null) {
+                documentsToOverwrite.add(sourceDocument.getValue());
+            } else if (!documentsConsistent(sourceDocument.getValue(), destinationDocument)) {
+                documentsToOverwrite.add(sourceDocument.getValue());
+            }
+        }
+        return documentsToOverwrite;
+    }
+
+    protected boolean documentsConsistent(JsonNode sourceDocument, JsonNode destinationDocument) {
+        boolean consistent = true;
+
+        Iterator<Entry<String, JsonNode>> nodeIterator = sourceDocument.fields();
+
+        while (nodeIterator.hasNext()) {
+            Entry<String, JsonNode> sourceNode = nodeIterator.next();
+
+            if(!getJobConfiguration().getComparisonExclusionPaths().contains(sourceNode.getKey())) {
+                if(!sourceNode.getValue().equals(destinationDocument.findValue(sourceNode.getKey()))) {
+                    consistent = false;
+                    break;
+                }
+            }
+        }
+        return consistent;
+    }
+
+    protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
+        return getJsonNodeMap(getSourceClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationIdentityFields());
+    }
+
+    protected Map<String, JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
+        return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationIdentityFields());
+    }
+
+    protected LinkedHashMap<String, JsonNode> getJsonNodeMap(JsonNode[] results, List<String> entityKeyFields) {
+        LinkedHashMap<String, JsonNode> resultsMap = new LinkedHashMap<>();
+        for(JsonNode result : results) {
+            StringBuilder resultKey = new StringBuilder();
+            for(String keyField : entityKeyFields) {
+                resultKey.append(result.findValue(keyField)).append("|||");
+            }
+            resultsMap.put(resultKey.toString(), result);
+        }
+        return resultsMap;
+    }
+
+    protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+        return getDestinationClient().data(saveRequest);
+    }
+
+    private String toJson() {
         StringBuilder json = new StringBuilder();
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			json.append(mapper.writeValueAsString(MigrationJob.class));
-		} catch (JsonProcessingException e) {
-			LOGGER.error("Error transforming to JSON", e);
-		}
-		return json.toString();
-	}
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            json.append(mapper.writeValueAsString(MigrationJob.class));
+        } catch (JsonProcessingException e) {
+            LOGGER.error("Error transforming to JSON", e);
+        }
+        return json.toString();
+    }
 
 }
