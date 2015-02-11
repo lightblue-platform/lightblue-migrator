@@ -53,9 +53,9 @@ public class MigrationJob implements Runnable {
     // configuration for migrator
     private MigrationConfiguration migrationConfiguration;
 
-    private List<MigrationJobRun> jobRuns;
+    private List<MigrationJobExecution> jobExecutions;
 
-    MigrationJobRun currentRun;
+    MigrationJobExecution currentRun;
 
     // information about migrator instance working job
     private String owner;
@@ -70,7 +70,7 @@ public class MigrationJob implements Runnable {
     private Date whenAvailableDate;
 
     // how long we think it will take
-    private int expectedRunTime;
+    private int expectedExecutionMilliseconds;
 
     private boolean hasInconsistentDocuments;
 
@@ -82,15 +82,15 @@ public class MigrationJob implements Runnable {
         this.migrationConfiguration = jobConfiguration;
     }
 
-    private List<MigrationJobRun> getJobRuns() {
-        if (null == jobRuns) {
-            jobRuns = new ArrayList<>(1);
+    private List<MigrationJobExecution> getJobRuns() {
+        if (null == jobExecutions) {
+          jobExecutions = new ArrayList<>(1);
         }
-        return jobRuns;
+        return jobExecutions;
     }
 
-    public void setJobRuns(List<MigrationJobRun> jobRuns) {
-        this.jobRuns = jobRuns;
+    public void setJobExecutions(List<MigrationJobExecution> jobExecutions) {
+        this.jobExecutions = jobExecutions;
     }
 
     public LightblueClient getSourceClient() {
@@ -198,44 +198,44 @@ public class MigrationJob implements Runnable {
         this.whenAvailableDate = whenAvailable;
     }
 
-    public int getExpectedRunTime() {
-        return expectedRunTime;
+    public int getExpectedExecutionMilliseconds() {
+        return expectedExecutionMilliseconds;
     }
 
-    public void setExpectedRunTime(int expectedRunTime) {
-        this.expectedRunTime = expectedRunTime;
+    public void setExpectedExecutionMilliseconds(int expectedExecutionMilliseconds) {
+        this.expectedExecutionMilliseconds = expectedExecutionMilliseconds;
     }
 
     public int getDocumentsProcessed() {
-        return currentRun.getDocumentsProcessed();
+        return currentRun.getProcessedDocumentCount();
     }
 
     public int getConsistentDocuments() {
-        return currentRun.getConsistentDocuments();
+        return currentRun.getConsistentDocumentCount();
     }
 
     public int getInconsistentDocuments() {
-        return currentRun.getInconsistentDocuments();
+        return currentRun.getInconsistentDocumentCount();
     }
 
     public int getRecordsOverwritten() {
-        return currentRun.getRecordsOverwritten();
+        return currentRun.getOverwrittenDocumentCount();
     }
 
     @Override
     public void run() {
         LOGGER.info("MigrationJob started");
 
-        currentRun = new MigrationJobRun();
-        currentRun.setOwner(owner);
+        currentRun = new MigrationJobExecution();
+        currentRun.setOwnerName(owner);
         currentRun.setHostName(hostName);
         currentRun.setPid(pid);
         currentRun.setActualStartDate(new Date());
         getJobRuns().add(currentRun);
 
-        saveJobDetails();
-
         configureClients();
+        
+        saveJobDetails();
 
         Map<String, JsonNode> sourceDocuments = getSourceDocuments();
 
@@ -248,15 +248,15 @@ public class MigrationJob implements Runnable {
             hasInconsistentDocuments = true;
         }
 
-        currentRun.setDocumentsProcessed(sourceDocuments.size());
-        currentRun.setConsistentDocuments(sourceDocuments.size() - documentsToOverwrite.size());
-        currentRun.setInconsistentDocuments(documentsToOverwrite.size());
+        currentRun.setProcessedDocumentCount(sourceDocuments.size());
+        currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
+        currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
 
         if (shouldOverwriteDestinationDocuments()) {
-            currentRun.setRecordsOverwritten(overwriteLightblue(documentsToOverwrite));
+            currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
         }
 
-        currentRun.setCompleted(true);
+        currentRun.setCompletedFlag(true);
         currentRun.setActualEndDate(new Date());
 
         saveJobDetails();
@@ -389,7 +389,7 @@ public class MigrationJob implements Runnable {
         StringBuilder json = new StringBuilder();
         ObjectMapper mapper = new ObjectMapper();
         try {
-            json.append(mapper.writeValueAsString(MigrationJob.class));
+            json.append(mapper.writeValueAsString(this));
         } catch (JsonProcessingException e) {
             LOGGER.error("Error transforming to JSON", e);
         }
