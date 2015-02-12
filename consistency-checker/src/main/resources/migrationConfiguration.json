@@ -165,7 +165,7 @@
                 "description": "source Entity Version for data being migrated"
             },
             "sourceTimestampPath" : {
-                "type": "date",
+                "type": "string",
                 "constraints": {
                     "required": true
                 },
