@@ -18,18 +18,23 @@ import java.util.Map.Entry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
+import com.redhat.lightblue.client.expression.update.AppendUpdate;
+import com.redhat.lightblue.client.expression.update.ObjectRValue;
+import com.redhat.lightblue.client.expression.update.RValue;
+import com.redhat.lightblue.client.expression.update.Update;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.projection.FieldProjection;
+import com.redhat.lightblue.client.projection.Projection;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
+import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 
 public class MigrationJob implements Runnable {
@@ -57,6 +62,8 @@ public class MigrationJob implements Runnable {
 
     MigrationJobExecution currentRun;
 
+    private String _id;
+   
     // information about migrator instance working job
     private String owner;
     private String hostName;
@@ -74,6 +81,14 @@ public class MigrationJob implements Runnable {
 
     private boolean hasInconsistentDocuments;
 
+    public String get_id() {
+      return _id;
+    }
+
+    public void set_id(String _id) {
+      this._id = _id;
+    }
+    
     public MigrationConfiguration getJobConfiguration() {
         return migrationConfiguration;
     }
@@ -82,7 +97,7 @@ public class MigrationJob implements Runnable {
         this.migrationConfiguration = jobConfiguration;
     }
 
-    private List<MigrationJobExecution> getJobRuns() {
+    private List<MigrationJobExecution> getJobExecutions() {
         if (null == jobExecutions) {
           jobExecutions = new ArrayList<>(1);
         }
@@ -231,7 +246,7 @@ public class MigrationJob implements Runnable {
         currentRun.setHostName(hostName);
         currentRun.setPid(pid);
         currentRun.setActualStartDate(new Date());
-        getJobRuns().add(currentRun);
+        getJobExecutions().add(currentRun);
 
         configureClients();
         
@@ -275,19 +290,26 @@ public class MigrationJob implements Runnable {
     }
 
     private LightblueResponse saveJobDetails() {
-        DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-        saveRequest.setBody(this.toJson());
-        return saveDestinationData(saveRequest);
+        DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
+        updateRequest.where(withValue("_id" + " = " + _id));
+        List<Update> updates = new ArrayList<>();
+        List<RValue> rvalues = new ArrayList<>();
+        rvalues.add(new ObjectRValue(jobExecutions));
+        updates.add(new AppendUpdate("jobExecutions", rvalues));
+        List<Projection> projections = new ArrayList<>();
+        projections.add(new FieldProjection("*", true, true));
+        updateRequest.setProjections(projections);
+        updateRequest.updates(updates);
+        return callLightblue(updateRequest);
     }
 
     private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
         DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-        StringBuilder body = new StringBuilder();
-        for (JsonNode document : documentsToOverwrite) {
-            body.append(document.toString());
-        }
-        saveRequest.setBody(body.toString());
-        LightblueResponse response = saveDestinationData(saveRequest);
+        saveRequest.create(documentsToOverwrite);
+        List<Projection> projections = new ArrayList<>();
+        projections.add(new FieldProjection("*", true, true));
+        saveRequest.returns(projections);
+        LightblueResponse response = callLightblue(saveRequest);
         return response.getJson().findValue("modifiedCount").asInt();
     }
 
@@ -350,7 +372,6 @@ public class MigrationJob implements Runnable {
 
         while (nodeIterator.hasNext()) {
             Entry<String, JsonNode> sourceNode = nodeIterator.next();
-
             if(!getJobConfiguration().getComparisonExclusionPaths().contains(sourceNode.getKey())) {
                 if(!sourceNode.getValue().equals(destinationDocument.findValue(sourceNode.getKey()))) {
                     consistent = false;
@@ -380,20 +401,10 @@ public class MigrationJob implements Runnable {
         }
         return resultsMap;
     }
-
-    protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
-        return getDestinationClient().data(saveRequest);
-    }
-
-    private String toJson() {
-        StringBuilder json = new StringBuilder();
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            json.append(mapper.writeValueAsString(this));
-        } catch (JsonProcessingException e) {
-            LOGGER.error("Error transforming to JSON", e);
-        }
-        return json.toString();
+    
+    protected LightblueResponse callLightblue(LightblueRequest request) {
+      LightblueResponse response = getDestinationClient().data(request);  
+      return response;
     }
 
 }

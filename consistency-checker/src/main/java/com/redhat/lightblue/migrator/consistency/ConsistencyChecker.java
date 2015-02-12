@@ -127,6 +127,7 @@ public class ConsistencyChecker implements Runnable{
 
             for (MigrationConfiguration configuration : configurations) {
                 configuration.setConfigFilePath(configPath);
+                configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
                 List<MigrationJob> jobs = getMigrationJobs(configuration);
 
                 if (!jobs.isEmpty()) {

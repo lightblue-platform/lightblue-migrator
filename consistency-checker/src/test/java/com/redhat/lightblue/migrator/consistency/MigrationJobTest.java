@@ -73,7 +73,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -128,7 +128,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -164,7 +164,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -202,7 +202,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -238,7 +238,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -275,7 +275,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -311,7 +311,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -347,7 +347,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -384,7 +384,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -420,7 +420,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;

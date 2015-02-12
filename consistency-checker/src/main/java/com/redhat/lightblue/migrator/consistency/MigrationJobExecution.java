@@ -61,7 +61,7 @@ public class MigrationJobExecution {
 		this.actualEndDate = actualEndDate;
 	}
 
-	public boolean isCompleted() {
+	public boolean isCompletedFlag() {
 		return completedFlag;
 	}
 

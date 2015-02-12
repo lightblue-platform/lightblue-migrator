@@ -6,6 +6,9 @@ public class MigrationConfiguration {
 
     private String configFilePath;
 
+    private String migrationConfigurationEntityVersion;
+    private String migrationJobEntityVersion;
+    
     private List<String> authorizedHostnames;
     private int threadCount;
 
@@ -31,7 +34,23 @@ public class MigrationConfiguration {
     public void setConfigFilePath(String configFilePath) {
         this.configFilePath = configFilePath;
     }
-
+  
+    public String getMigrationConfigurationEntityVersion() {
+      return migrationConfigurationEntityVersion;
+    }
+  
+    public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
+      this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
+    }
+  
+    public String getMigrationJobEntityVersion() {
+      return migrationJobEntityVersion;
+    }
+  
+    public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
+      this.migrationJobEntityVersion = migrationJobEntityVersion;
+    }
+    
     public List<String> getAuthorizedHostnames() {
         return authorizedHostnames;
     }
