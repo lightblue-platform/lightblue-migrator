@@ -81,7 +81,7 @@
                 },
                 "description": "Document end date for this migration job"
             },
-            "whenAvailableDate
+            "whenAvailableDate" : {
                 "type": "date",
                 "constraints": {
                     "required": true
