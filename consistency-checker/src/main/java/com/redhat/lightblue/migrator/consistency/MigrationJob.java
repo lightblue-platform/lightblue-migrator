@@ -267,7 +267,7 @@ public class MigrationJob implements Runnable {
         currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
         currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
 
-        if (shouldOverwriteDestinationDocuments()) {
+        if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
             currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
         }
 
