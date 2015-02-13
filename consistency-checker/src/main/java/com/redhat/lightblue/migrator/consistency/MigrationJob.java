@@ -63,7 +63,7 @@ public class MigrationJob implements Runnable {
     MigrationJobExecution currentRun;
 
     private String _id;
-   
+
     // information about migrator instance working job
     private String owner;
     private String hostName;
@@ -82,13 +82,13 @@ public class MigrationJob implements Runnable {
     private boolean hasInconsistentDocuments;
 
     public String get_id() {
-      return _id;
+        return _id;
     }
 
     public void set_id(String _id) {
-      this._id = _id;
+        this._id = _id;
     }
-    
+
     public MigrationConfiguration getJobConfiguration() {
         return migrationConfiguration;
     }
@@ -99,7 +99,7 @@ public class MigrationJob implements Runnable {
 
     private List<MigrationJobExecution> getJobExecutions() {
         if (null == jobExecutions) {
-          jobExecutions = new ArrayList<>(1);
+            jobExecutions = new ArrayList<>(1);
         }
         return jobExecutions;
     }
@@ -249,7 +249,7 @@ public class MigrationJob implements Runnable {
         getJobExecutions().add(currentRun);
 
         configureClients();
-        
+
         saveJobDetails();
 
         Map<String, JsonNode> sourceDocuments = getSourceDocuments();
@@ -305,7 +305,7 @@ public class MigrationJob implements Runnable {
 
     private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
         DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-        saveRequest.create(documentsToOverwrite);
+        saveRequest.create(documentsToOverwrite.toArray());
         List<Projection> projections = new ArrayList<>();
         projections.add(new FieldProjection("*", true, true));
         saveRequest.returns(projections);
@@ -401,10 +401,10 @@ public class MigrationJob implements Runnable {
         }
         return resultsMap;
     }
-    
+
     protected LightblueResponse callLightblue(LightblueRequest request) {
-      LightblueResponse response = getDestinationClient().data(request);  
-      return response;
+        LightblueResponse response = getDestinationClient().data(request);
+        return response;
     }
 
 }
