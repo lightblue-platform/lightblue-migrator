@@ -34,7 +34,7 @@ public class MigrationJobTest {
 		migrationJob = new MigrationJob(new MigrationConfiguration());
 		migrationJob.setSourceConfigPath(sourceConfigPath);
 		migrationJob.setDestinationConfigPath(destinationConfigPath);
-		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
+		migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
 	}
 
 	@Test
@@ -73,7 +73,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -128,7 +128,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -164,7 +164,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -202,7 +202,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -238,7 +238,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -275,7 +275,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -311,7 +311,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -347,7 +347,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -384,7 +384,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -420,7 +420,7 @@ public class MigrationJobTest {
 			}
 
 			@Override
-			protected LightblueResponse saveDestinationData(LightblueRequest saveRequest) {
+			protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
 				LightblueResponse response = new LightblueResponse();
 				ObjectMapper mapper = new ObjectMapper();
 				JsonNode node = null;
@@ -447,11 +447,11 @@ public class MigrationJobTest {
 		List<String> pathsToExclude = new ArrayList<String>();
 		pathsToExclude.add("lastUpdateTime");
 		jobConfiguration.setComparisonExclusionPaths(pathsToExclude);
-		jobConfiguration.setDestinationEntityKeyFields(new ArrayList<String>());
+		jobConfiguration.setDestinationIdentityFields(new ArrayList<String>());
 		jobConfiguration.setSourceTimestampPath("source-timestamp");
 		migrationJob.setJobConfiguration(jobConfiguration);
 		migrationJob.setOverwriteDestinationDocuments(true);
-		migrationJob.setJobRuns(new ArrayList<MigrationJobRun>());
+		migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
 		
 		LightblueClient client = new LightblueHttpClient();
 		migrationJob.setSourceClient(client);

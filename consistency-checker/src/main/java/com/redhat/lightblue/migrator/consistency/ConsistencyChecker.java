@@ -7,7 +7,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -128,12 +127,14 @@ public class ConsistencyChecker implements Runnable{
 
             for (MigrationConfiguration configuration : configurations) {
                 configuration.setConfigFilePath(configPath);
+                configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
                 List<MigrationJob> jobs = getMigrationJobs(configuration);
 
                 if (!jobs.isEmpty()) {
                     ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
                     executors.add(jobExecutor);
                     for (MigrationJob job : jobs) {
+                        job.setJobConfiguration(configuration);
                         job.setOwner(getConsistencyCheckerName());
                         job.setHostName(getHostName());
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
@@ -147,7 +148,7 @@ public class ConsistencyChecker implements Runnable{
             if (executors.isEmpty()) {
                 if(run && !Thread.interrupted()){
                     MigrationJob nextJob = getNextAvailableJob();
-                    long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
+                    long timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
                     try{
                         Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
                     }
@@ -174,7 +175,7 @@ public class ConsistencyChecker implements Runnable{
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-        List<MigrationJob> jobs = Collections.emptyList();
+        List<MigrationJob> jobs = new ArrayList<MigrationJob>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
@@ -187,7 +188,7 @@ public class ConsistencyChecker implements Runnable{
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
-        List<MigrationConfiguration> configurations = Collections.emptyList();
+        List<MigrationConfiguration> configurations = new ArrayList<MigrationConfiguration>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
             findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
@@ -203,8 +204,8 @@ public class ConsistencyChecker implements Runnable{
         MigrationJob job = null;
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
-            findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
+            findRequest.where(withValue("whenAvailableDate >= " + ClientConstants.getDateFormat().format(new Date())));
+            findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASC));
             findRequest.range(0, 1);
             findRequest.select(includeFieldRecursively("*"));
             job = client.data(findRequest, MigrationJob.class);
