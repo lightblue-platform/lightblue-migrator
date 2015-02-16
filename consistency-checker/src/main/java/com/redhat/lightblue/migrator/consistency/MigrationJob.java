@@ -395,7 +395,7 @@ public class MigrationJob implements Runnable {
         for(JsonNode result : results) {
             StringBuilder resultKey = new StringBuilder();
             for(String keyField : entityKeyFields) {
-                resultKey.append(result.findValue(keyField));
+                resultKey.append(result.findValue(keyField)).append("|||");
             }
             resultsMap.put(resultKey.toString(), result);
         }
