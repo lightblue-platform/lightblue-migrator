@@ -379,8 +379,8 @@ public class MigrationJob implements Runnable {
                 JsonNode sourceNode = sourceEntry.getValue();
                 JsonNode destinationNode = destinationDocument.findValue(sourceEntry.getKey());
 
-                if((sourceNode == null || JsonNodeType.NULL.equals(sourceNode.getNodeType())
-                        && (destinationNode == null || JsonNodeType.NULL.equals(destinationNode.getNodeType())))) {
+                if((sourceNode == null || JsonNodeType.NULL.equals(sourceNode.getNodeType()))
+                        && (destinationNode == null || JsonNodeType.NULL.equals(destinationNode.getNodeType()))) {
                     continue;
                 }
                 if(!sourceNode.equals(destinationNode)) {
