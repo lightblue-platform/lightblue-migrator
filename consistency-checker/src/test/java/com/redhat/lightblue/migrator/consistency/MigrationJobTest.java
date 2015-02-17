@@ -68,7 +68,7 @@ public class MigrationJobTest {
      * If source = NullNode and destinationValue = null, then consider equivalent.
      */
     @Test
-    public void testDocumentsConsistent_With_SourceNullNode_And_Destination_NullValue(){
+    public void testDocumentsConsistent_With_Source_NullNode_And_Destination_NullValue(){
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
         ObjectNode sourceNode = factory.objectNode();
         sourceNode.put("somekey", NullNode.getInstance());
@@ -79,10 +79,26 @@ public class MigrationJobTest {
     }
 
     /**
+     * If source = null and destinationValue = NullNode, then consider equivalent.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Source_NullValue_And_Destination_NullNode(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ObjectNode sourceNode = factory.objectNode();
+        String nullString = null;
+        sourceNode.put("somekey", nullString);
+
+        ObjectNode destNode = factory.objectNode();
+        destNode.put("somekey", NullNode.getInstance());
+
+        assertTrue(migrationJob.documentsConsistent(sourceNode, destNode));
+    }
+
+    /**
      * If source = NullNode and destinationValue has a value, then consider inconsistent.
      */
     @Test
-    public void testDocumentsConsistent_With_SourceNullNode_But_DestinationHasAValue(){
+    public void testDocumentsConsistent_With_Source_NullNode_But_Destination_HasAValue(){
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
         ObjectNode sourceNode = factory.objectNode();
         sourceNode.put("somekey", NullNode.getInstance());
@@ -94,7 +110,22 @@ public class MigrationJobTest {
     }
 
     /**
-     * If source = NullNode and destinationValue = null, then consider equivalent.
+     * If source has a value and destinationValue = NullNode, then consider inconsistent.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Source_HasAValue_But_Destination_NullNode(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ObjectNode sourceNode = factory.objectNode();
+        sourceNode.put("somekey", factory.textNode("someValue"));
+
+        ObjectNode destNode = factory.objectNode();
+        destNode.put("somekey", NullNode.getInstance());
+
+        assertFalse(migrationJob.documentsConsistent(sourceNode, destNode));
+    }
+
+    /**
+     * If source = some value and destinationValue = some other value, then consider equivalent.
      */
     @Test
     public void testDocumentsConsistent_SourceAndDestinationNotConsistent(){
