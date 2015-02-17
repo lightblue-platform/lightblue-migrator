@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
@@ -371,9 +372,18 @@ public class MigrationJob implements Runnable {
         Iterator<Entry<String, JsonNode>> nodeIterator = sourceDocument.fields();
 
         while (nodeIterator.hasNext()) {
-            Entry<String, JsonNode> sourceNode = nodeIterator.next();
-            if(!getJobConfiguration().getComparisonExclusionPaths().contains(sourceNode.getKey())) {
-                if(!sourceNode.getValue().equals(destinationDocument.findValue(sourceNode.getKey()))) {
+            Entry<String, JsonNode> sourceEntry = nodeIterator.next();
+
+            List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
+            if(excludes == null || !excludes.contains(sourceEntry.getKey())) {
+                JsonNode sourceNode = sourceEntry.getValue();
+                JsonNode destinationNode = destinationDocument.findValue(sourceEntry.getKey());
+
+                if((sourceNode == null || JsonNodeType.NULL.equals(sourceNode.getNodeType()))
+                        && (destinationNode == null || JsonNodeType.NULL.equals(destinationNode.getNodeType()))) {
+                    continue;
+                }
+                if(!sourceNode.equals(destinationNode)) {
                     consistent = false;
                     break;
                 }
