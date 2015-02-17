@@ -7,6 +7,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
@@ -65,63 +65,138 @@ public class MigrationJobTest {
     }
 
     /**
-     * If source = NullNode and destinationValue = null, then consider equivalent.
+     * If source and destination = null, then they match.
      */
     @Test
-    public void testDocumentsConsistent_With_Source_NullNode_And_Destination_NullValue(){
-        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        ObjectNode sourceNode = factory.objectNode();
-        sourceNode.put("somekey", NullNode.getInstance());
-
-        ObjectNode destNode = factory.objectNode();
-
-        assertTrue(migrationJob.documentsConsistent(sourceNode, destNode));
+    public void testDocumentsConsistent_With_Source_Null_And_Destination_Null(){
+        assertTrue(migrationJob.documentsConsistent(null, null));
     }
 
     /**
-     * If source = null and destinationValue = NullNode, then consider equivalent.
+     * If source has a value and destinationValue = null, then they do not match.
      */
     @Test
-    public void testDocumentsConsistent_With_Source_NullValue_And_Destination_NullNode(){
+    public void testDocumentsConsistent_With_Source_Value_And_Destination_NullValue(){
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        ObjectNode sourceNode = factory.objectNode();
-        String nullString = null;
-        sourceNode.put("somekey", nullString);
-
-        ObjectNode destNode = factory.objectNode();
-        destNode.put("somekey", NullNode.getInstance());
-
-        assertTrue(migrationJob.documentsConsistent(sourceNode, destNode));
+        assertFalse(migrationJob.documentsConsistent(factory.textNode("hi"), null));
     }
 
     /**
-     * If source = NullNode and destinationValue has a value, then consider inconsistent.
+     * If source = null and destinationValue having a value, then they do not match.
      */
     @Test
-    public void testDocumentsConsistent_With_Source_NullNode_But_Destination_HasAValue(){
+    public void testDocumentsConsistent_With_Source_NullValue_And_Destination_Value(){
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        ObjectNode sourceNode = factory.objectNode();
-        sourceNode.put("somekey", NullNode.getInstance());
-
-        ObjectNode destNode = factory.objectNode();
-        destNode.put("somekey", factory.textNode("someValue"));
-
-        assertFalse(migrationJob.documentsConsistent(sourceNode, destNode));
+        assertFalse(migrationJob.documentsConsistent(null, factory.textNode("hi")));
     }
 
     /**
-     * If source has a value and destinationValue = NullNode, then consider inconsistent.
+     * If source is an object but destinationValue is not, then they do not match.
      */
     @Test
-    public void testDocumentsConsistent_With_Source_HasAValue_But_Destination_NullNode(){
+    public void testDocumentsConsistent_With_Source_Object_And_Destination_Not_Object(){
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        ObjectNode sourceNode = factory.objectNode();
-        sourceNode.put("somekey", factory.textNode("someValue"));
+        assertFalse(migrationJob.documentsConsistent(factory.objectNode(), factory.textNode("hi")));
+    }
 
-        ObjectNode destNode = factory.objectNode();
-        destNode.put("somekey", NullNode.getInstance());
+    /**
+     * Source has more fields than Destination, fail.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Source_Having_More_Fields(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ObjectNode source = factory.objectNode();
+        source.put("fieldName", "fieldValue");
+        assertFalse(migrationJob.documentsConsistent(source, factory.objectNode()));
+    }
 
-        assertFalse(migrationJob.documentsConsistent(sourceNode, destNode));
+    /**
+     * Destination has more fields than Source, fail.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Destination_Having_More_Fields(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ObjectNode destination = factory.objectNode();
+        destination.put("fieldName", "fieldValue");
+        assertFalse(migrationJob.documentsConsistent(factory.objectNode(), destination));
+    }
+
+    /**
+     * Matching object values, pass
+     */
+    @Test
+    public void testDocumentsConsistent_With_Matching_Objects(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ObjectNode source = factory.objectNode();
+        source.put("fieldName", "fieldValue");
+
+        ObjectNode destination = factory.objectNode();
+        destination.put("fieldName", "fieldValue");
+
+        assertTrue(migrationJob.documentsConsistent(source, destination));
+    }
+
+    /**
+     * If source is an array but destinationValue is not, then they do not match.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Source_Array_And_Destination_Not_Array(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        assertFalse(migrationJob.documentsConsistent(factory.arrayNode(), factory.textNode("hi")));
+    }
+
+    /**
+     * Source has more elements than Destination, fail.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Source_Having_More_Elements(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ArrayNode source = factory.arrayNode();
+        source.add(factory.textNode("hi"));
+        assertFalse(migrationJob.documentsConsistent(source, factory.arrayNode()));
+    }
+
+    /**
+     * Matching array values, pass
+     */
+    @Test
+    public void testDocumentsConsistent_With_Matching_Arrays(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ArrayNode source = factory.arrayNode();
+        source.add(factory.textNode("hi"));
+
+        ArrayNode destination = factory.arrayNode();
+        destination.add(factory.textNode("hi"));
+
+        assertTrue(migrationJob.documentsConsistent(source, destination));
+    }
+
+    /**
+     * Array values out of order, fail
+     */
+    @Test
+    public void testDocumentsConsistent_With_Matching_Arrays_But_OutOfSequence(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ArrayNode source = factory.arrayNode();
+        source.add(factory.textNode("hi"));
+        source.add(factory.textNode("there"));
+
+        ArrayNode destination = factory.arrayNode();
+        destination.add(factory.textNode("there"));
+        destination.add(factory.textNode("hi"));
+
+        assertFalse(migrationJob.documentsConsistent(source, destination));
+    }
+
+    /**
+     * Destination has more elements than Source, fail.
+     */
+    @Test
+    public void testDocumentsConsistent_With_Destination_Having_More_Elements(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        ArrayNode destination = factory.arrayNode();
+        destination.add(factory.textNode("hi"));
+        assertFalse(migrationJob.documentsConsistent(factory.arrayNode(), destination));
     }
 
     /**
@@ -137,6 +212,33 @@ public class MigrationJobTest {
         destNode.put("somekey", factory.textNode("inconsistentValue"));
 
         assertFalse(migrationJob.documentsConsistent(sourceNode, destNode));
+    }
+
+    /**
+     * Technically the two values do not match, however the field in question
+     * is excluded and should pass.
+     */
+    @Test
+    public void testDocumentsConsistent_WithMultiLevelExclude(){
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+
+        ObjectNode sourceChild = factory.objectNode();
+        sourceChild.put("someChildKey", "hi");
+
+        ObjectNode sourceNode = factory.objectNode();
+        sourceNode.put("somekey", sourceChild);
+
+        ObjectNode destChild = factory.objectNode();
+        destChild.put("someChildKey", "there");
+
+        ObjectNode destNode = factory.objectNode();
+        destNode.put("somekey", destChild);
+
+        MigrationConfiguration jobConfiguration = new MigrationConfiguration();
+        jobConfiguration.setComparisonExclusionPaths(Arrays.asList("somekey.someChildKey"));
+        migrationJob.setJobConfiguration(jobConfiguration);
+
+        assertTrue(migrationJob.documentsConsistent(sourceNode, destNode));
     }
 
     @Test
