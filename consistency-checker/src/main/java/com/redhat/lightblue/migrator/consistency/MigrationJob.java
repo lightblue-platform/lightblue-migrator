@@ -374,7 +374,6 @@ public class MigrationJob implements Runnable {
     }
 
     //Recursive method
-    //Assumes top level element is not an Array for path purposes.
     private boolean doDocumentsConsistent(final JsonNode sourceDocument, final JsonNode destinationDocument, final String path) {
         List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
         if(excludes != null && excludes.contains(path)) {
