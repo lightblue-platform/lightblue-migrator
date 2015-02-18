@@ -414,9 +414,12 @@ public class MigrationJob implements Runnable {
             ObjectNode sourceObjNode = (ObjectNode) sourceDocument;
             ObjectNode destObjNode = (ObjectNode) destinationDocument;
 
+            //TODO: This check can be enforced after auto-generated fields are excluded from lightblue queries.
+            /*
             if(sourceObjNode.size() != destObjNode.size()){
                 return false;
             }
+             */
 
             Iterator<Entry<String, JsonNode>> nodeIterator = sourceObjNode.fields();
 
@@ -424,7 +427,7 @@ public class MigrationJob implements Runnable {
                 Entry<String, JsonNode> sourceEntry = nodeIterator.next();
 
                 JsonNode sourceNode = sourceEntry.getValue();
-                JsonNode destinationNode = destinationDocument.findValue(sourceEntry.getKey());
+                JsonNode destinationNode = destObjNode.get(sourceEntry.getKey());
 
                 String childPath = StringUtils.isEmpty(path) ? sourceEntry.getKey() : path + "." + sourceEntry.getKey();
 
