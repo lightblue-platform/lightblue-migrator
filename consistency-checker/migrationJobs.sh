@@ -20,7 +20,7 @@ while true; do
     next=$( date +%Y-%m-%d --date "$current +$NUM_DAYS day" );
     [ "$next" \< "$END_DATE" ] || next="$END_DATE"
     echo {
-    echo  \"_id\": \"termsJob_"$i"\",
+    echo  \"_id\": \""$ENTITY_NAME"Job_"$i"\",
     echo  \"objectType\": \"migrationJob\",
     echo  \"configurationName\": \""$ENTITY_NAME"\",
     echo  \"startDate\": \"$( date +%Y%m%d --date "$current")T00:00:00.000+0000\",
