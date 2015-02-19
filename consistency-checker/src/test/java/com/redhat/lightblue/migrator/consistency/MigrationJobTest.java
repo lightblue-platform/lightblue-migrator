@@ -319,6 +319,44 @@ public class MigrationJobTest {
         assertFalse(migrationJob.documentsConsistent(source, dest));
     }
 
+    /**
+     * Exclude "something" instead of "array.something" and verify documents are not consistent.
+     * Should fail.
+     */
+    @Test
+    public void testDocumentsConsistent_ComplexJson_WithTopLevelArray_ExcludeNotOnField_Fail() throws Exception{
+        ObjectMapper mapper = new ObjectMapper();
+
+        JsonNode source = mapper.readTree(
+                "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
+
+        JsonNode dest = mapper.readTree(
+                "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"z\"}]}]");
+
+        MigrationConfiguration jobConfiguration = new MigrationConfiguration();
+        jobConfiguration.setComparisonExclusionPaths(Arrays.asList("something"));
+        migrationJob.setJobConfiguration(jobConfiguration);
+
+        assertFalse(migrationJob.documentsConsistent(source, dest));
+    }
+
+    /**
+     * Have a different value for "something" at the top level, verify docs are not consistent
+     * Should fail.
+     */
+    @Test
+    public void testDocumentsConsistent_ComplexJson_WithTopLevelMismatch_fail() throws Exception{
+        ObjectMapper mapper = new ObjectMapper();
+
+        JsonNode source = mapper.readTree(
+                "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
+
+        JsonNode dest = mapper.readTree(
+                "[{\"field1\": \"value1\", \"somethingelse\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
+
+        assertFalse(migrationJob.documentsConsistent(source, dest));
+    }
+
     @Test
     public void testExecuteExistsInSourceAndDestination() {
         MigrationJob migrationJob = new MigrationJob() {
