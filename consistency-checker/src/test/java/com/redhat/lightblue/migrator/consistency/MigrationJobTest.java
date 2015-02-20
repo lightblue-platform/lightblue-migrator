@@ -320,7 +320,7 @@ public class MigrationJobTest {
     }
 
     /**
-     * Exclude "something" instead of "array.something" and verify documents are not consistent.
+     * Both something fields are mismatched, but only the top level is excluded.
      * Should fail.
      */
     @Test
@@ -331,7 +331,7 @@ public class MigrationJobTest {
                 "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
 
         JsonNode dest = mapper.readTree(
-                "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"z\"}]}]");
+                "[{\"field1\": \"value1\", \"something\": \"y\", \"array\": [{\"field2\": \"value2\",\"something\": \"z\"}]}]");
 
         MigrationConfiguration jobConfiguration = new MigrationConfiguration();
         jobConfiguration.setComparisonExclusionPaths(Arrays.asList("something"));
@@ -341,8 +341,8 @@ public class MigrationJobTest {
     }
 
     /**
-     * Have a different value for "something" at the top level, verify docs are not consistent
-     * Should fail.
+     * Top level something field is mismatched, but is also excluded.
+     * Should pass.
      */
     @Test
     public void testDocumentsConsistent_ComplexJson_WithTopLevelMismatch_fail() throws Exception{
@@ -352,9 +352,13 @@ public class MigrationJobTest {
                 "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
 
         JsonNode dest = mapper.readTree(
-                "[{\"field1\": \"value1\", \"somethingelse\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
+                "[{\"field1\": \"value1\", \"something\": \"y\", \"array\": [{\"field2\": \"value2\",\"something\": \"y\"}]}]");
 
-        assertFalse(migrationJob.documentsConsistent(source, dest));
+        MigrationConfiguration jobConfiguration = new MigrationConfiguration();
+        jobConfiguration.setComparisonExclusionPaths(Arrays.asList("something"));
+        migrationJob.setJobConfiguration(jobConfiguration);
+
+        assertTrue(migrationJob.documentsConsistent(source, dest));
     }
 
     @Test
