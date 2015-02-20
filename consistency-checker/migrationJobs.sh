@@ -43,9 +43,9 @@ done
 echo  ],
 echo  \"projection\": [
 echo    {
-echo      \"field\": \"*\",
+echo      \"field\": \"_id\",
 echo      \"include\": true,
-echo      \"recursive\": true
+echo      \"recursive\": false
 echo    }
 echo  ]
 echo  }
