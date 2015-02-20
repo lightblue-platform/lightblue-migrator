@@ -37,6 +37,7 @@ while true; do
     current="$next"
     [ "$next" \< "$END_DATE" ] || break
     let i=i+1
+    echo ,
 done
 
 echo  ],
