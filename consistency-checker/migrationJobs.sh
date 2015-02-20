@@ -8,7 +8,7 @@ AVAILABLE_DATE=$7
 
 if [ $1"x" == "x" ] || [ $2"x" == "x" ] || [ $3"x" == "x" ] || [ $4"x" == "x" ] || [ $5"x" == "x" ] || [ $6"x" == "x" ]; then
     echo "Usage: ./migrationJobs.sh <entityName> <startDate> <endDate> <frequency> <expectedExecutionTime> <createdBy> <availableDate>"
-    echo "Example: ./migrationsJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 2015-03-01"
+    echo "Example: ./migrationJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 2015-03-01"
     exit 1
 fi
 echo {
