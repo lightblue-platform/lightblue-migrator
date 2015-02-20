@@ -15,11 +15,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
@@ -367,29 +370,77 @@ public class MigrationJob implements Runnable {
     }
 
     protected boolean documentsConsistent(JsonNode sourceDocument, JsonNode destinationDocument) {
-        boolean consistent = true;
+        return doDocumentsConsistent(sourceDocument, destinationDocument, null);
+    }
 
-        Iterator<Entry<String, JsonNode>> nodeIterator = sourceDocument.fields();
+    //Recursive method
+    private boolean doDocumentsConsistent(final JsonNode sourceDocument, final JsonNode destinationDocument, final String path) {
+        List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
+        if(excludes != null && excludes.contains(path)) {
+            return true;
+        }
 
-        while (nodeIterator.hasNext()) {
-            Entry<String, JsonNode> sourceEntry = nodeIterator.next();
+        if(sourceDocument == null && destinationDocument == null){
+            return true;
+        }
+        else if(sourceDocument == null || destinationDocument == null){
+            return false;
+        }
 
-            List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
-            if(excludes == null || !excludes.contains(sourceEntry.getKey())) {
-                JsonNode sourceNode = sourceEntry.getValue();
-                JsonNode destinationNode = destinationDocument.findValue(sourceEntry.getKey());
+        if(JsonNodeType.ARRAY.equals(sourceDocument.getNodeType())){
+            if(!JsonNodeType.ARRAY.equals(destinationDocument.getNodeType())){
+                return false;
+            }
 
-                if((sourceNode == null || JsonNodeType.NULL.equals(sourceNode.getNodeType()))
-                        && (destinationNode == null || JsonNodeType.NULL.equals(destinationNode.getNodeType()))) {
-                    continue;
-                }
-                if(!sourceNode.equals(destinationNode)) {
-                    consistent = false;
-                    break;
+            ArrayNode sourceArray = (ArrayNode) sourceDocument;
+            ArrayNode destinationArray = (ArrayNode) destinationDocument;
+
+            if(sourceArray.size() != destinationArray.size()){
+                return false;
+            }
+
+            //assumed positions in the array should be the same, else inconsistent.
+            for(int x = 0; x < sourceArray.size(); x++){
+                if(!doDocumentsConsistent(sourceArray.get(x), destinationArray.get(x), path)){
+                    return false;
                 }
             }
         }
-        return consistent;
+        else if(JsonNodeType.OBJECT.equals(sourceDocument.getNodeType())){
+            if(!JsonNodeType.OBJECT.equals(destinationDocument.getNodeType())){
+                return false;
+            }
+
+            ObjectNode sourceObjNode = (ObjectNode) sourceDocument;
+            ObjectNode destObjNode = (ObjectNode) destinationDocument;
+
+            //TODO: This check can be enforced after auto-generated fields are excluded from lightblue queries.
+            /*
+            if(sourceObjNode.size() != destObjNode.size()){
+                return false;
+            }
+             */
+
+            Iterator<Entry<String, JsonNode>> nodeIterator = sourceObjNode.fields();
+
+            while (nodeIterator.hasNext()){
+                Entry<String, JsonNode> sourceEntry = nodeIterator.next();
+
+                JsonNode sourceNode = sourceEntry.getValue();
+                JsonNode destinationNode = destObjNode.get(sourceEntry.getKey());
+
+                String childPath = StringUtils.isEmpty(path) ? sourceEntry.getKey() : path + "." + sourceEntry.getKey();
+
+                if(!doDocumentsConsistent(sourceNode, destinationNode, childPath)){
+                    return false;
+                }
+            }
+        }
+        else{
+            return sourceDocument.equals(destinationDocument);
+        }
+
+        return true;
     }
 
     protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
