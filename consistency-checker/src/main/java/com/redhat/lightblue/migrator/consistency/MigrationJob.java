@@ -6,6 +6,7 @@ import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -282,7 +283,10 @@ public class MigrationJob implements Runnable {
             saveJobDetails();
         }
         catch(RuntimeException e){
-            LOGGER.error("Error while processing: " + getJobConfiguration(), e);
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss.SSSZ");
+            LOGGER.error("Error while processing: " + getJobConfiguration()
+                    + " with start date" + dateFormat.format(getStartDate())
+                    + " and end date" + dateFormat.format(getEndDate()), e);
         }
 
         LOGGER.info("MigrationJob completed");
