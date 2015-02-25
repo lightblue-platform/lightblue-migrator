@@ -245,40 +245,45 @@ public class MigrationJob implements Runnable {
     public void run() {
         LOGGER.info("MigrationJob started");
 
-        currentRun = new MigrationJobExecution();
-        currentRun.setOwnerName(owner);
-        currentRun.setHostName(hostName);
-        currentRun.setPid(pid);
-        currentRun.setActualStartDate(new Date());
-        getJobExecutions().add(currentRun);
+        try{
+            currentRun = new MigrationJobExecution();
+            currentRun.setOwnerName(owner);
+            currentRun.setHostName(hostName);
+            currentRun.setPid(pid);
+            currentRun.setActualStartDate(new Date());
+            getJobExecutions().add(currentRun);
 
-        configureClients();
+            configureClients();
 
-        saveJobDetails();
+            saveJobDetails();
 
-        Map<String, JsonNode> sourceDocuments = getSourceDocuments();
+            Map<String, JsonNode> sourceDocuments = getSourceDocuments();
 
-        Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
+            Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
 
-        List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
+            List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
 
 
-        if (!documentsToOverwrite.isEmpty()) {
-            hasInconsistentDocuments = true;
+            if (!documentsToOverwrite.isEmpty()) {
+                hasInconsistentDocuments = true;
+            }
+
+            currentRun.setProcessedDocumentCount(sourceDocuments.size());
+            currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
+            currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
+
+            if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
+                currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
+            }
+
+            currentRun.setCompletedFlag(true);
+            currentRun.setActualEndDate(new Date());
+
+            saveJobDetails();
         }
-
-        currentRun.setProcessedDocumentCount(sourceDocuments.size());
-        currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
-        currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
-
-        if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
-            currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
+        catch(RuntimeException e){
+            throw new RuntimeException("Error while processing: " + getJobConfiguration(), e);
         }
-
-        currentRun.setCompletedFlag(true);
-        currentRun.setActualEndDate(new Date());
-
-        saveJobDetails();
 
         LOGGER.info("MigrationJob completed");
     }
@@ -328,7 +333,7 @@ public class MigrationJob implements Runnable {
             sourceRequest.select(includeFieldRecursively("*"));
             sourceDocuments = findSourceData(sourceRequest);
         } catch (IOException e) {
-            LOGGER.error("Problem getting sourceDocuments", e);
+            throw new RuntimeException("Problem getting sourceDocuments", e);
         }
         return sourceDocuments;
     }
@@ -351,7 +356,7 @@ public class MigrationJob implements Runnable {
             destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
             destinationDocuments = findDestinationData(destinationRequest);
         } catch (IOException e) {
-            LOGGER.error("Error getting destinationDocuments", e);
+            throw new RuntimeException("Problem getting destinationDocuments", e);
         }
         return destinationDocuments;
     }
