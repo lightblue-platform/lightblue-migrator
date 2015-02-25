@@ -336,7 +336,7 @@ public class MigrationJob implements Runnable {
     protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
         if(sourceDocuments == null || sourceDocuments.isEmpty()){
-            LOGGER.warn("Unable to fetch any destination documents as there are no source documents");
+            LOGGER.info("Unable to fetch any destination documents as there are no source documents");
             return destinationDocuments;
         }
 
