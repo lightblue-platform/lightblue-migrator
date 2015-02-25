@@ -282,7 +282,7 @@ public class MigrationJob implements Runnable {
             saveJobDetails();
         }
         catch(RuntimeException e){
-            throw new RuntimeException("Error while processing: " + getJobConfiguration(), e);
+            LOGGER.error("Error while processing: " + getJobConfiguration(), e);
         }
 
         LOGGER.info("MigrationJob completed");
