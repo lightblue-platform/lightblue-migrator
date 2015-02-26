@@ -8,7 +8,7 @@ public class MigrationConfiguration {
 
     private String migrationConfigurationEntityVersion;
     private String migrationJobEntityVersion;
-    
+
     private List<String> authorizedHostnames;
     private int threadCount;
 
@@ -34,23 +34,23 @@ public class MigrationConfiguration {
     public void setConfigFilePath(String configFilePath) {
         this.configFilePath = configFilePath;
     }
-  
+
     public String getMigrationConfigurationEntityVersion() {
-      return migrationConfigurationEntityVersion;
+        return migrationConfigurationEntityVersion;
     }
-  
+
     public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
-      this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
+        this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
     }
-  
+
     public String getMigrationJobEntityVersion() {
-      return migrationJobEntityVersion;
+        return migrationJobEntityVersion;
     }
-  
+
     public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
-      this.migrationJobEntityVersion = migrationJobEntityVersion;
+        this.migrationJobEntityVersion = migrationJobEntityVersion;
     }
-    
+
     public List<String> getAuthorizedHostnames() {
         return authorizedHostnames;
     }
@@ -145,6 +145,26 @@ public class MigrationConfiguration {
 
     public boolean shouldOverwriteDestinationDocuments() {
         return overwriteDestinationDocuments;
+    }
+
+    @Override
+    public String toString() {
+        return "MigrationConfiguration [configFilePath=" + configFilePath
+                + ", migrationConfigurationEntityVersion="
+                + migrationConfigurationEntityVersion
+                + ", migrationJobEntityVersion=" + migrationJobEntityVersion
+                + ", authorizedHostnames=" + authorizedHostnames
+                + ", threadCount=" + threadCount + ", configurationName="
+                + configurationName + ", consistencyCheckerName="
+                + consistencyCheckerName + ", comparisonExclusionPaths="
+                + comparisonExclusionPaths + ", destinationEntityName="
+                + destinationEntityName + ", destinationEntityVersion="
+                + destinationEntityVersion + ", destinationIdentityFields="
+                + destinationIdentityFields + ", sourceEntityName="
+                + sourceEntityName + ", sourceEntityVersion="
+                + sourceEntityVersion + ", sourceTimestampPath="
+                + sourceTimestampPath + ", overwriteDestinationDocuments="
+                + overwriteDestinationDocuments + "]";
     }
 
 }
