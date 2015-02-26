@@ -35,6 +35,8 @@
     <module>core</module>
     <module>web</module>
     <module>consistency-checker</module>
+    <module>utils</module>
+    <module>test</module>
   </modules>
   <properties>
     <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
