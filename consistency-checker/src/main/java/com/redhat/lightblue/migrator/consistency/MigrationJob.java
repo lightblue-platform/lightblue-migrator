@@ -285,8 +285,8 @@ public class MigrationJob implements Runnable {
         catch(RuntimeException e){
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss.SSSZ");
             LOGGER.error("Error while processing: " + getJobConfiguration()
-                    + " with start date" + dateFormat.format(getStartDate())
-                    + " and end date" + dateFormat.format(getEndDate()), e);
+                    + " with start date " + dateFormat.format(getStartDate())
+                    + " and end date " + dateFormat.format(getEndDate()), e);
         }
 
         LOGGER.info("MigrationJob completed");
