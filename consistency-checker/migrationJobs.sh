@@ -1,7 +1,7 @@
 ENTITY_NAME=$1
 START_DATE=$2
 END_DATE=$3
-NUM_DAYS=$4
+NUM_HOURS=$4
 EXPECTED_EXECUTION_TIME=$5
 CREATED_BY=$6
 AVAILABLE_DATE=$7
@@ -17,21 +17,21 @@ i=0
 now=$(date)
 current="$START_DATE"
 while true; do
-    next=$( date +%Y-%m-%d --date "$current +$NUM_DAYS day" );
+    next=$( date +%Y-%m-%dT%H:%M:%S%z --date "$current +$NUM_HOURS hours" );
     [ "$next" \< "$END_DATE" ] || next="$END_DATE"
     echo {
     echo  \"_id\": \""$ENTITY_NAME"Job_"$i"\",
     echo  \"objectType\": \"migrationJob\",
     echo  \"configurationName\": \""$ENTITY_NAME"\",
-    echo  \"startDate\": \"$( date +%Y%m%d --date "$current")T00:00:00.000+0000\",
-    echo  \"endDate\": \"$( date +%Y%m%d --date "$next")T00:00:00.000+0000\",
-    [ $AVAILABLE_DATE"x" == "x" ] || echo  \"whenAvailableDate\" : \"$( date +%Y%m%d --date "$AVAILABLE_DATE")T00:00:00.000+0000\",
-    [ $AVAILABLE_DATE"x" != "x" ] || echo  \"whenAvailableDate\" : \"$( date +%Y%m%d --date "$next")T00:00:00.000+0000\",
+    echo  \"startDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$current")\",
+    echo  \"endDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$next")\",
+    [ $AVAILABLE_DATE"x" == "x" ] || echo  \"whenAvailableDate\" : \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$AVAILABLE_DATE")\",
+    [ $AVAILABLE_DATE"x" != "x" ] || echo  \"whenAvailableDate\" : \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$next")\",
     echo  \"expectedExecutionMilliseconds\" : $EXPECTED_EXECUTION_TIME,
     echo  \"jobExecutions\": [],
-    echo  \"creationDate\": \"$( date +%Y%m%d --date "$now")T00:00:00.000+0000\",
+    echo  \"creationDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$now")\",
     echo  \"createdBy\": \"$CREATED_BY\",
-    echo  \"lastUpdateDate\": \"$( date +%Y%m%d --date "$now")T00:00:00.000+0000\",
+    echo  \"lastUpdateDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$now")\",
     echo  \"lastUpdatedBy\": \"$CREATED_BY\"
     echo }
     current="$next"
