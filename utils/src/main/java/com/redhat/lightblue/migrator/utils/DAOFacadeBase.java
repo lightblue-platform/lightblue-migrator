@@ -25,13 +25,13 @@ import com.redhat.lightblue.migrator.features.LightblueMigrationConfiguration;
  *
  */
 @SuppressWarnings("all")
-public class DAOFacadeBase {
+public class DAOFacadeBase<D> {
 
     private static final Logger log = LoggerFactory.getLogger(LightblueMigrationConfiguration.class);
 
-    protected final Object legacyDAO, lightblueDAO;
+    protected final D legacyDAO, lightblueDAO;
 
-    public DAOFacadeBase(Object legacyDAO, Object lightblueDAO) {
+    public DAOFacadeBase(D legacyDAO, D lightblueDAO) {
         super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
