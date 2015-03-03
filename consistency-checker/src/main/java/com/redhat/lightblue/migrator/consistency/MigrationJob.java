@@ -48,6 +48,8 @@ public class MigrationJob implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
+    protected static final int BATCH_SIZE = 100;
+
     public MigrationJob() {
         migrationConfiguration = new MigrationConfiguration();
     }
@@ -351,7 +353,7 @@ public class MigrationJob implements Runnable {
             return destinationDocuments;
         }
 
-        if(sourceDocuments.size() <= 100){
+        if(sourceDocuments.size() <= BATCH_SIZE){
             return doDestinationDocumentFetch(sourceDocuments);
         }
 
@@ -359,7 +361,13 @@ public class MigrationJob implements Runnable {
         int position = 0;
         while(position <= keys.size()){
             Map<String, JsonNode> batch = new HashMap<String, JsonNode>();
-            List<String> subKeys = keys.subList(position, position += 100);
+
+            int limitedPosition = position + BATCH_SIZE;
+            if(limitedPosition > keys.size()){
+                limitedPosition = keys.size();
+            }
+
+            List<String> subKeys = keys.subList(position, limitedPosition);
             for(String subKey : subKeys){
                 batch.put(subKey, sourceDocuments.get(subKey));
             }
