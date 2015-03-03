@@ -8,7 +8,9 @@ import static com.redhat.lightblue.client.projection.FieldProjection.includeFiel
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -345,7 +347,31 @@ public class MigrationJob implements Runnable {
     protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
         if(sourceDocuments == null || sourceDocuments.isEmpty()){
-            LOGGER.info("Unable to fetch any destination documents as there are no source documents");
+            //LOGGER.info("Unable to fetch any destination documents as there are no source documents");
+            return destinationDocuments;
+        }
+
+        if(sourceDocuments.size() <= 100){
+            return doDestinationDocumentFetch(sourceDocuments);
+        }
+
+        List<String> keys = Arrays.asList(sourceDocuments.keySet().toArray(new String[0]));
+        int position = 0;
+        while(position <= keys.size()){
+            Map<String, JsonNode> batch = new HashMap<String, JsonNode>();
+            List<String> subKeys = keys.subList(position, position += 100);
+            for(String subKey : subKeys){
+                batch.put(subKey, sourceDocuments.get(subKey));
+            }
+            destinationDocuments.putAll(doDestinationDocumentFetch(batch));
+        }
+
+        return destinationDocuments;
+    }
+
+    private Map<String, JsonNode> doDestinationDocumentFetch(Map<String, JsonNode> sourceDocuments){
+        Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
+        if(sourceDocuments == null || sourceDocuments.isEmpty()){
             return destinationDocuments;
         }
 
