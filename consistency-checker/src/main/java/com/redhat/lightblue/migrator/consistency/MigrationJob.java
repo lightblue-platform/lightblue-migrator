@@ -8,7 +8,9 @@ import static com.redhat.lightblue.client.projection.FieldProjection.includeFiel
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -45,6 +47,8 @@ import com.redhat.lightblue.client.response.LightblueResponse;
 public class MigrationJob implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
+
+    protected static final int BATCH_SIZE = 100;
 
     public MigrationJob() {
         migrationConfiguration = new MigrationConfiguration();
@@ -346,6 +350,38 @@ public class MigrationJob implements Runnable {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
         if(sourceDocuments == null || sourceDocuments.isEmpty()){
             LOGGER.info("Unable to fetch any destination documents as there are no source documents");
+            return destinationDocuments;
+        }
+
+        if(sourceDocuments.size() <= BATCH_SIZE){
+            return doDestinationDocumentFetch(sourceDocuments);
+        }
+
+        List<String> keys = Arrays.asList(sourceDocuments.keySet().toArray(new String[0]));
+        int position = 0;
+        while(position < keys.size()){
+            int limitedPosition = position + BATCH_SIZE;
+            if(limitedPosition > keys.size()){
+                limitedPosition = keys.size();
+            }
+
+            List<String> subKeys = keys.subList(position, limitedPosition);
+            Map<String, JsonNode> batch = new HashMap<String, JsonNode>();
+            for(String subKey : subKeys){
+                batch.put(subKey, sourceDocuments.get(subKey));
+            }
+
+            Map<String, JsonNode> batchRestuls = doDestinationDocumentFetch(batch);
+            destinationDocuments.putAll(batchRestuls);
+            position = limitedPosition;
+        }
+
+        return destinationDocuments;
+    }
+
+    private Map<String, JsonNode> doDestinationDocumentFetch(Map<String, JsonNode> sourceDocuments){
+        Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
+        if(sourceDocuments == null || sourceDocuments.isEmpty()){
             return destinationDocuments;
         }
 
