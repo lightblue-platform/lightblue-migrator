@@ -1,16 +1,25 @@
 package com.redhat.lightblue.migrator.consistency;
 
 import static com.redhat.lightblue.util.test.FileUtil.readFile;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,15 +41,18 @@ public class MigrationJobTest {
     private final String sourceConfigPath = "source-lightblue-client.properties";
     private final String destinationConfigPath = "destination-lightblue-client.properties";
 
-    MigrationJob migrationJob;
+    protected MigrationJob migrationJob;
+    protected LightblueClient destinationClientMock;
 
     @Before
     public void setup() {
-        migrationJob = new MigrationJob();
         migrationJob = new MigrationJob(new MigrationConfiguration());
         migrationJob.setSourceConfigPath(sourceConfigPath);
         migrationJob.setDestinationConfigPath(destinationConfigPath);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
+
+        destinationClientMock = mock(LightblueClient.class);
+        migrationJob.setDestinationClient(destinationClientMock);
     }
 
     @Test
@@ -359,6 +371,108 @@ public class MigrationJobTest {
         migrationJob.setJobConfiguration(jobConfiguration);
 
         assertTrue(migrationJob.documentsConsistent(source, dest));
+    }
+
+    @Test
+    public void testGetDestinationDocuments_UnderBatchingLimit() throws IOException{
+        String key = "id";
+        String value = "uniqueId";
+
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        migrationJob.getJobConfiguration().setDestinationIdentityFields(Arrays.asList(key));
+
+        ObjectNode document = factory.objectNode();
+        document.put(key, factory.textNode(value));
+
+        Map<String, JsonNode> sourceDocuments = new HashMap<>();
+        sourceDocuments.put(value, document);
+
+        JsonNode[] destinationDocuments = new JsonNode[]{document};
+        when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class))).thenReturn(destinationDocuments);
+
+        Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
+        verify(destinationClientMock);
+
+        assertNotNull(actual);
+        assertTrue(actual.containsKey("\"" + value + "\"|||"));
+
+        assertEquals(sourceDocuments.get(value), actual.get("\"" + value + "\"|||"));
+    }
+
+    @Test
+    public void testGetDestinationDocuments_OverBatchingLimit_MultipleOfLimit() throws IOException{
+        String key = "id";
+        String value = "uniqueId";
+
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        migrationJob.getJobConfiguration().setDestinationIdentityFields(Arrays.asList(key));
+
+        Map<String, JsonNode> sourceDocuments = new HashMap<>();
+        for(int x = 0; x < (MigrationJob.BATCH_SIZE * 2); x++){
+            ObjectNode document = factory.objectNode();
+            document.put(key, factory.textNode(value + x));
+            sourceDocuments.put(value + x, document);
+        }
+
+        ObjectNode dd1 = factory.objectNode();
+        dd1.put(key, value + 1);
+        JsonNode[] destinationDocumentsBatch1 = new JsonNode[]{dd1};
+        ObjectNode dd2 = factory.objectNode();
+        dd2.put(key, value + 101);
+        JsonNode[] destinationDocumentsBatch2 = new JsonNode[]{dd2};
+        when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class)))
+        .thenReturn(destinationDocumentsBatch1)
+        .thenReturn(destinationDocumentsBatch2);
+
+        Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
+        verify(destinationClientMock);
+
+        assertNotNull(actual);
+        assertTrue(actual.containsKey("\"" + value + "1\"|||"));
+        assertTrue(actual.containsKey("\"" + value + "101\"|||"));
+    }
+
+    @Test
+    public void testGetDestinationDocuments_OverBatchingLimit() throws IOException{
+        String key = "id";
+        String value = "uniqueId";
+
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+        migrationJob.getJobConfiguration().setDestinationIdentityFields(Arrays.asList(key));
+
+        Map<String, JsonNode> sourceDocuments = new HashMap<>();
+        for(int x = 0; x < (MigrationJob.BATCH_SIZE + 1); x++){
+            ObjectNode document = factory.objectNode();
+            document.put(key, factory.textNode(value + x));
+            sourceDocuments.put(value + x, document);
+        }
+
+        ObjectNode dd1 = factory.objectNode();
+        dd1.put(key, value + 1);
+        JsonNode[] destinationDocumentsBatch1 = new JsonNode[]{dd1};
+        ObjectNode dd2 = factory.objectNode();
+        dd2.put(key, value + 101);
+        JsonNode[] destinationDocumentsBatch2 = new JsonNode[]{dd2};
+        when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class)))
+        .thenReturn(destinationDocumentsBatch1)
+        .thenReturn(destinationDocumentsBatch2);
+
+        Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
+        verify(destinationClientMock);
+
+        assertNotNull(actual);
+        assertTrue(actual.containsKey("\"" + value + "1\"|||"));
+        assertTrue(actual.containsKey("\"" + value + "101\"|||"));
+    }
+
+    @Test
+    public void testGetDestinationDocuments_NullMap(){
+        assertTrue(migrationJob.getDestinationDocuments(null).isEmpty());
+    }
+
+    @Test
+    public void testGetDestinationDocuments_EmptyMap(){
+        assertTrue(migrationJob.getDestinationDocuments(new HashMap<String, JsonNode>()).isEmpty());
     }
 
     @Test

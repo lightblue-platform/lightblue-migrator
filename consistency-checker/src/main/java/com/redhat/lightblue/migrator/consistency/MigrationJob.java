@@ -359,19 +359,21 @@ public class MigrationJob implements Runnable {
 
         List<String> keys = Arrays.asList(sourceDocuments.keySet().toArray(new String[0]));
         int position = 0;
-        while(position <= keys.size()){
-            Map<String, JsonNode> batch = new HashMap<String, JsonNode>();
-
+        while(position < keys.size()){
             int limitedPosition = position + BATCH_SIZE;
             if(limitedPosition > keys.size()){
                 limitedPosition = keys.size();
             }
 
             List<String> subKeys = keys.subList(position, limitedPosition);
+            Map<String, JsonNode> batch = new HashMap<String, JsonNode>();
             for(String subKey : subKeys){
                 batch.put(subKey, sourceDocuments.get(subKey));
             }
-            destinationDocuments.putAll(doDestinationDocumentFetch(batch));
+
+            Map<String, JsonNode> batchRestuls = doDestinationDocumentFetch(batch);
+            destinationDocuments.putAll(batchRestuls);
+            position = limitedPosition;
         }
 
         return destinationDocuments;
