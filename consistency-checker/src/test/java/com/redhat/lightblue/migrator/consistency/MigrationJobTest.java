@@ -8,7 +8,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
@@ -391,7 +390,6 @@ public class MigrationJobTest {
         when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class))).thenReturn(destinationDocuments);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
-        verify(destinationClientMock);
 
         assertNotNull(actual);
         assertTrue(actual.containsKey("\"" + value + "\"|||"));
@@ -425,7 +423,6 @@ public class MigrationJobTest {
         .thenReturn(destinationDocumentsBatch2);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
-        verify(destinationClientMock);
 
         assertNotNull(actual);
         assertTrue(actual.containsKey("\"" + value + "1\"|||"));
@@ -458,7 +455,6 @@ public class MigrationJobTest {
         .thenReturn(destinationDocumentsBatch2);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
-        verify(destinationClientMock);
 
         assertNotNull(actual);
         assertTrue(actual.containsKey("\"" + value + "1\"|||"));
