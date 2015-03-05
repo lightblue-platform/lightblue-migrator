@@ -320,7 +320,30 @@ public class MigrationJob implements Runnable {
         return callLightblue(updateRequest);
     }
 
-    private int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    protected int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+        if(documentsToOverwrite.size() <= BATCH_SIZE){
+            return doOverwriteLightblue(documentsToOverwrite);
+        }
+
+        int totalModified = 0;
+        int position = 0;
+
+        while(position < documentsToOverwrite.size()){
+            int limitedPosition = position + BATCH_SIZE;
+            if(limitedPosition > documentsToOverwrite.size()){
+                limitedPosition = documentsToOverwrite.size();
+            }
+
+            List<JsonNode> subList = documentsToOverwrite.subList(position, limitedPosition);
+            totalModified += doOverwriteLightblue(subList);
+
+            position = limitedPosition;
+        }
+
+        return totalModified;
+    }
+
+    private int doOverwriteLightblue(List<JsonNode> documentsToOverwrite) {
         DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
         saveRequest.create(documentsToOverwrite.toArray());
         List<Projection> projections = new ArrayList<>();
