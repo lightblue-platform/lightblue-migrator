@@ -472,6 +472,48 @@ public class MigrationJobTest {
     }
 
     @Test
+    public void testOverwriteLightblue_OverBatchingLimit_MultipleOfLimit() throws IOException{
+        String key = "id";
+        String value = "uniqueId";
+
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+
+        List<JsonNode> documentsToOverwrite = new ArrayList<JsonNode>();
+        for(int x = 0; x < (MigrationJob.BATCH_SIZE * 2); x++){
+            ObjectNode document = factory.objectNode();
+            document.put(key, factory.textNode(value + x));
+            documentsToOverwrite.add(document);
+        }
+
+        when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
+
+        int actual = migrationJob.overwriteLightblue(documentsToOverwrite);
+
+        assertEquals(4, actual);
+    }
+
+    @Test
+    public void testOverwriteLightblue_OverBatchingLimit() throws IOException{
+        String key = "id";
+        String value = "uniqueId";
+
+        JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
+
+        List<JsonNode> documentsToOverwrite = new ArrayList<JsonNode>();
+        for(int x = 0; x < (MigrationJob.BATCH_SIZE + 1); x++){
+            ObjectNode document = factory.objectNode();
+            document.put(key, factory.textNode(value + x));
+            documentsToOverwrite.add(document);
+        }
+
+        when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
+
+        int actual = migrationJob.overwriteLightblue(documentsToOverwrite);
+
+        assertEquals(4, actual);
+    }
+
+    @Test
     public void testExecuteExistsInSourceAndDestination() {
         MigrationJob migrationJob = new MigrationJob() {
             @Override
