@@ -538,6 +538,9 @@ public class MigrationJob implements Runnable {
 
     protected LightblueResponse callLightblue(LightblueRequest request) {
         LightblueResponse response = getDestinationClient().data(request);
+        if(response.hasError()){
+            throw new RuntimeException("Error returned in response " + response.getText() + " for request " + request.getBody());
+        }
         return response;
     }
 
