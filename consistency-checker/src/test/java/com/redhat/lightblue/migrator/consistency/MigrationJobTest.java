@@ -478,7 +478,7 @@ public class MigrationJobTest {
 
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
 
-        List<JsonNode> documentsToOverwrite = new ArrayList<JsonNode>();
+        List<JsonNode> documentsToOverwrite = new ArrayList<>();
         for(int x = 0; x < (MigrationJob.BATCH_SIZE * 2); x++){
             ObjectNode document = factory.objectNode();
             document.put(key, factory.textNode(value + x));
@@ -499,7 +499,7 @@ public class MigrationJobTest {
 
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
 
-        List<JsonNode> documentsToOverwrite = new ArrayList<JsonNode>();
+        List<JsonNode> documentsToOverwrite = new ArrayList<>();
         for(int x = 0; x < (MigrationJob.BATCH_SIZE + 1); x++){
             ObjectNode document = factory.objectNode();
             document.put(key, factory.textNode(value + x));
@@ -532,7 +532,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
                     // TODO Auto-generated catch block
                     e.printStackTrace();
@@ -587,7 +587,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -623,7 +623,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -661,7 +661,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -697,7 +697,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -734,7 +734,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -770,7 +770,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -806,7 +806,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -843,7 +843,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -879,7 +879,7 @@ public class MigrationJobTest {
                 ObjectMapper mapper = new ObjectMapper();
                 JsonNode node = null;
                 try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\"}");
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -898,7 +898,7 @@ public class MigrationJobTest {
 
     private void configureMigrationJob(MigrationJob migrationJob) {
         MigrationConfiguration jobConfiguration = new MigrationConfiguration();
-        List<String> pathsToExclude = new ArrayList<String>();
+        List<String> pathsToExclude = new ArrayList<>();
         pathsToExclude.add("lastUpdateTime");
         jobConfiguration.setComparisonExclusionPaths(pathsToExclude);
         jobConfiguration.setDestinationIdentityFields(new ArrayList<String>());

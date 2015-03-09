@@ -4,101 +4,100 @@ import java.util.Date;
 
 public class MigrationJobExecution {
 
-	private String ownerName;
-	private String hostName;
-	private String pid;
-	
-	// actual run times for job
-	private Date actualStartDate;
-	private Date actualEndDate;
+    private String ownerName;
+    private String hostName;
+    private String pid;
 
-	// did job complete successfully?
-	private boolean completedFlag;
+    // actual run times for job
+    private Date actualStartDate;
+    private Date actualEndDate;
 
-	// summary info on what the job did
-	private int processedDocumentCount;
-	private int consistentDocumentCount;
-	private int inconsistentDocumentCount;
-	private int overwrittenDocumentCount;
-	
-	public String getOwnerName() {
-		return ownerName;
-	}
+    // did job complete successfully?
+    private boolean completedFlag = false;
 
-	public void setOwnerName(String ownerName) {
-		this.ownerName = ownerName;
-	}
+    // summary info on what the job did
+    private int processedDocumentCount = 0;
+    private int consistentDocumentCount = 0;
+    private int inconsistentDocumentCount = 0;
+    private int overwrittenDocumentCount = 0;
 
-	public String getHostName() {
-		return hostName;
-	}
+    public String getOwnerName() {
+        return ownerName;
+    }
 
-	public void setHostName(String hostName) {
-		this.hostName = hostName;
-	}
+    public void setOwnerName(String ownerName) {
+        this.ownerName = ownerName;
+    }
 
-	public String getPid() {
-		return pid;
-	}
+    public String getHostName() {
+        return hostName;
+    }
 
-	public void setPid(String pid) {
-		this.pid = pid;
-	}
-	
-	public Date getActualStartDate() {
-		return actualStartDate;
-	}
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
+    }
 
-	public void setActualStartDate(Date actualStartDate) {
-		this.actualStartDate = actualStartDate;
-	}
+    public String getPid() {
+        return pid;
+    }
 
-	public Date getActualEndDate() {
-		return actualEndDate;
-	}
+    public void setPid(String pid) {
+        this.pid = pid;
+    }
 
-	public void setActualEndDate(Date actualEndDate) {
-		this.actualEndDate = actualEndDate;
-	}
+    public Date getActualStartDate() {
+        return actualStartDate;
+    }
 
-	public boolean isCompletedFlag() {
-		return completedFlag;
-	}
+    public void setActualStartDate(Date actualStartDate) {
+        this.actualStartDate = actualStartDate;
+    }
 
-	public void setCompletedFlag(boolean completedFlag) {
-		this.completedFlag = completedFlag;
-	}
+    public Date getActualEndDate() {
+        return actualEndDate;
+    }
 
-	public int getProcessedDocumentCount() {
-		return processedDocumentCount;
-	}
+    public void setActualEndDate(Date actualEndDate) {
+        this.actualEndDate = actualEndDate;
+    }
 
-	public void setProcessedDocumentCount(int processedDocumentCount) {
-		this.processedDocumentCount = processedDocumentCount;
-	}
+    public boolean isCompletedFlag() {
+        return completedFlag;
+    }
 
-	public int getConsistentDocumentCount() {
-		return consistentDocumentCount;
-	}
+    public void setCompletedFlag(boolean completedFlag) {
+        this.completedFlag = completedFlag;
+    }
 
-	public void setConsistentDocumentCount(int consistentDocumentCount) {
-		this.consistentDocumentCount = consistentDocumentCount;
-	}
+    public int getProcessedDocumentCount() {
+        return processedDocumentCount;
+    }
 
-	public int getInconsistentDocumentCount() {
-		return inconsistentDocumentCount;
-	}
+    public void setProcessedDocumentCount(int processedDocumentCount) {
+        this.processedDocumentCount = processedDocumentCount;
+    }
 
-	public void setInconsistentDocumentCount(int inconsistentDocumentCount) {
-		this.inconsistentDocumentCount = inconsistentDocumentCount;
-	}
+    public int getConsistentDocumentCount() {
+        return consistentDocumentCount;
+    }
 
-	public int getOverwrittenDocumentCount() {
-		return overwrittenDocumentCount;
-	}
+    public void setConsistentDocumentCount(int consistentDocumentCount) {
+        this.consistentDocumentCount = consistentDocumentCount;
+    }
 
-	public void setOverwrittenDocumentCount(int overwrittenDocumentCount) {
-		this.overwrittenDocumentCount = overwrittenDocumentCount;
-	}
-	
+    public int getInconsistentDocumentCount() {
+        return inconsistentDocumentCount;
+    }
+
+    public void setInconsistentDocumentCount(int inconsistentDocumentCount) {
+        this.inconsistentDocumentCount = inconsistentDocumentCount;
+    }
+
+    public int getOverwrittenDocumentCount() {
+        return overwrittenDocumentCount;
+    }
+
+    public void setOverwrittenDocumentCount(int overwrittenDocumentCount) {
+        this.overwrittenDocumentCount = overwrittenDocumentCount;
+    }
 }

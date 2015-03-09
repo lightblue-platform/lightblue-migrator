@@ -29,8 +29,8 @@ public class ConsistencyChecker implements Runnable{
 
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
-    public static final int MAX_JOB_WAIT_TIME = 86400000; // 24 hours
-    public static final int MAX_THREAD_WAIT_TIME = 21600; // 6 hours
+    public static final int MAX_JOB_WAIT_TIME_MSEC = 24 * 60 *60 * 1000; // 24 hours
+    public static final int MAX_THREAD_WAIT_TIME_MSEC = 6 * 60 * 60 * 1000; // 6 hours
 
     private String consistencyCheckerName;
     private String hostName;
@@ -150,7 +150,7 @@ public class ConsistencyChecker implements Runnable{
                     MigrationJob nextJob = getNextAvailableJob();
                     long timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
                     try{
-                        Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
+                        Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME_MSEC) ? MAX_JOB_WAIT_TIME_MSEC : timeUntilNextJob);
                     }
                     catch (InterruptedException e){
                         run = false;
@@ -163,7 +163,7 @@ public class ConsistencyChecker implements Runnable{
                 if((!Thread.interrupted())){
                     try{
                         for (ExecutorService executor : executors) {
-                            executor.awaitTermination(MAX_THREAD_WAIT_TIME, TimeUnit.MILLISECONDS);
+                            executor.awaitTermination(MAX_THREAD_WAIT_TIME_MSEC, TimeUnit.MILLISECONDS);
                         }
                     }
                     catch (InterruptedException e) {
@@ -175,7 +175,7 @@ public class ConsistencyChecker implements Runnable{
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-        List<MigrationJob> jobs = new ArrayList<MigrationJob>();
+        List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
@@ -188,7 +188,7 @@ public class ConsistencyChecker implements Runnable{
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
-        List<MigrationConfiguration> configurations = new ArrayList<MigrationConfiguration>();
+        List<MigrationConfiguration> configurations = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
             findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));

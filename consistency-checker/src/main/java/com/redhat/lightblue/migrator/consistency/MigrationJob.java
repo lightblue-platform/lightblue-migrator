@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
@@ -23,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -44,12 +46,17 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.util.ClientConstants;
 
 public class MigrationJob implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
 
     protected static final int BATCH_SIZE = 100;
+
+    protected static final ObjectMapper mapper = new ObjectMapper()
+            .setDateFormat(ClientConstants.getDateFormat())
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     public MigrationJob() {
         migrationConfiguration = new MigrationConfiguration();
@@ -251,7 +258,7 @@ public class MigrationJob implements Runnable {
     public void run() {
         LOGGER.info("MigrationJob started");
 
-        try{
+        try {
             currentRun = new MigrationJobExecution();
             currentRun.setOwnerName(owner);
             currentRun.setHostName(hostName);
@@ -261,37 +268,67 @@ public class MigrationJob implements Runnable {
 
             configureClients();
 
-            saveJobDetails(true);
+            LightblueResponse response = saveJobDetails(true);
 
-            Map<String, JsonNode> sourceDocuments = getSourceDocuments();
+            boolean processJob = true;
 
-            Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
+            // verify this job is the first active thread processing the thread.
+            // first extract processed data as MigrationJob
+            JsonNode node = response.getJson().path("processed");
+            try {
+                MigrationJob[] jobs = mapper.readValue(node.traverse(), MigrationJob[].class);
 
-            List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
-
-
-            if (!documentsToOverwrite.isEmpty()) {
-                hasInconsistentDocuments = true;
+                // should only be one job returned, verify
+                if (jobs.length > 1) {
+                    throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
+                }
+                
+                // first incomplete job execution must be for this execution else we don't process it
+                for (MigrationJobExecution mje : jobs[0].getJobExecutions()) {
+                    if (!mje.isCompletedFlag()) {
+                        if (!pid.equals(mje.getPid())) {
+                            // we're not the one processing this guy!
+                            processJob = false;
+                        }
+                        break;
+                    }
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Error parsing lightblue response: " + response.getJson().toString(), e);
             }
 
-            currentRun.setProcessedDocumentCount(sourceDocuments.size());
-            currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
-            currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
+            if (processJob) {
+                Map<String, JsonNode> sourceDocuments = getSourceDocuments();
 
-            if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
-                currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
+                Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
+
+                List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
+
+                if (!documentsToOverwrite.isEmpty()) {
+                    hasInconsistentDocuments = true;
+                }
+
+                currentRun.setProcessedDocumentCount(sourceDocuments.size());
+                currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
+                currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
+
+                if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
+                    currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
+                }
             }
 
             currentRun.setCompletedFlag(true);
             currentRun.setActualEndDate(new Date());
 
+            // always save to say we're done.
+            // if we didn't process this will show that nothing was actually done and it was quick
             saveJobDetails(false);
-        }
-        catch(RuntimeException e){
+        } catch (RuntimeException e) {
+            // would be nice to reference DataType.DATE_FORMAT_STR in core..
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss.SSSZ");
-            LOGGER.error("Error while processing: " + getJobConfiguration()
-                    + " with start date " + dateFormat.format(getStartDate())
-                    + " and end date " + dateFormat.format(getEndDate()), e);
+            LOGGER.error(String.format("Error while processing: %s with start date %s and end date %s",
+                    getJobConfiguration(), (getStartDate() == null ? "null" : dateFormat.format(getStartDate())),
+                    (getEndDate() == null ? "null" : dateFormat.format(getEndDate()))), e);
         }
 
         LOGGER.info("MigrationJob completed");
@@ -315,9 +352,9 @@ public class MigrationJob implements Runnable {
         projections.add(new FieldProjection("*", true, true));
         updateRequest.setProjections(projections);
 
-        List<Update> updates = new ArrayList<Update>();
-        if(isInitialSave){
-            updates.add(new AppendUpdate("jobExecutions", new ObjectRValue(new HashMap<Object,Object>())));
+        List<Update> updates = new ArrayList<>();
+        if (isInitialSave) {
+            updates.add(new AppendUpdate("jobExecutions", new ObjectRValue(new HashMap<>())));
         }
 
         updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName", new ObjectRValue(currentRun.getOwnerName()))));
@@ -336,16 +373,16 @@ public class MigrationJob implements Runnable {
     }
 
     protected int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
-        if(documentsToOverwrite.size() <= BATCH_SIZE){
+        if (documentsToOverwrite.size() <= BATCH_SIZE) {
             return doOverwriteLightblue(documentsToOverwrite);
         }
 
         int totalModified = 0;
         int position = 0;
 
-        while(position < documentsToOverwrite.size()){
+        while (position < documentsToOverwrite.size()) {
             int limitedPosition = position + BATCH_SIZE;
-            if(limitedPosition > documentsToOverwrite.size()){
+            if (limitedPosition > documentsToOverwrite.size()) {
                 limitedPosition = documentsToOverwrite.size();
             }
 
@@ -368,7 +405,7 @@ public class MigrationJob implements Runnable {
         return response.getJson().findValue("modifiedCount").asInt();
     }
 
-    protected Map<String, JsonNode>  getSourceDocuments() {
+    protected Map<String, JsonNode> getSourceDocuments() {
         Map<String, JsonNode> sourceDocuments = new LinkedHashMap<>();
         try {
             DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
@@ -386,26 +423,26 @@ public class MigrationJob implements Runnable {
 
     protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
-        if(sourceDocuments == null || sourceDocuments.isEmpty()){
+        if (sourceDocuments == null || sourceDocuments.isEmpty()) {
             LOGGER.info("Unable to fetch any destination documents as there are no source documents");
             return destinationDocuments;
         }
 
-        if(sourceDocuments.size() <= BATCH_SIZE){
+        if (sourceDocuments.size() <= BATCH_SIZE) {
             return doDestinationDocumentFetch(sourceDocuments);
         }
 
         List<String> keys = Arrays.asList(sourceDocuments.keySet().toArray(new String[0]));
         int position = 0;
-        while(position < keys.size()){
+        while (position < keys.size()) {
             int limitedPosition = position + BATCH_SIZE;
-            if(limitedPosition > keys.size()){
+            if (limitedPosition > keys.size()) {
                 limitedPosition = keys.size();
             }
 
             List<String> subKeys = keys.subList(position, limitedPosition);
-            Map<String, JsonNode> batch = new HashMap<String, JsonNode>();
-            for(String subKey : subKeys){
+            Map<String, JsonNode> batch = new HashMap<>();
+            for (String subKey : subKeys) {
                 batch.put(subKey, sourceDocuments.get(subKey));
             }
 
@@ -417,18 +454,18 @@ public class MigrationJob implements Runnable {
         return destinationDocuments;
     }
 
-    private Map<String, JsonNode> doDestinationDocumentFetch(Map<String, JsonNode> sourceDocuments){
+    private Map<String, JsonNode> doDestinationDocumentFetch(Map<String, JsonNode> sourceDocuments) {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
-        if(sourceDocuments == null || sourceDocuments.isEmpty()){
+        if (sourceDocuments == null || sourceDocuments.isEmpty()) {
             return destinationDocuments;
         }
 
         try {
             DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
             List<Query> requestConditions = new LinkedList<>();
-            for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+            for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
                 List<Query> docConditions = new LinkedList<>();
-                for(String keyField : getJobConfiguration().getDestinationIdentityFields()) {
+                for (String keyField : getJobConfiguration().getDestinationIdentityFields()) {
                     ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
                     docConditions.add(docQuery);
                 }
@@ -446,9 +483,9 @@ public class MigrationJob implements Runnable {
 
     protected List<JsonNode> getDocumentsToOverwrite(Map<String, JsonNode> sourceDocuments, Map<String, JsonNode> destinationDocuments) {
         List<JsonNode> documentsToOverwrite = new ArrayList<>();
-        for(Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+        for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
             JsonNode destinationDocument = destinationDocuments.get(sourceDocument.getKey());
-            if(destinationDocument == null) {
+            if (destinationDocument == null) {
                 documentsToOverwrite.add(sourceDocument.getValue());
             } else if (!documentsConsistent(sourceDocument.getValue(), destinationDocument)) {
                 documentsToOverwrite.add(sourceDocument.getValue());
@@ -464,38 +501,36 @@ public class MigrationJob implements Runnable {
     //Recursive method
     private boolean doDocumentsConsistent(final JsonNode sourceDocument, final JsonNode destinationDocument, final String path) {
         List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
-        if(excludes != null && excludes.contains(path)) {
+        if (excludes != null && excludes.contains(path)) {
             return true;
         }
 
-        if(sourceDocument == null && destinationDocument == null){
+        if (sourceDocument == null && destinationDocument == null) {
             return true;
-        }
-        else if(sourceDocument == null || destinationDocument == null){
+        } else if (sourceDocument == null || destinationDocument == null) {
             return false;
         }
 
-        if(JsonNodeType.ARRAY.equals(sourceDocument.getNodeType())){
-            if(!JsonNodeType.ARRAY.equals(destinationDocument.getNodeType())){
+        if (JsonNodeType.ARRAY.equals(sourceDocument.getNodeType())) {
+            if (!JsonNodeType.ARRAY.equals(destinationDocument.getNodeType())) {
                 return false;
             }
 
             ArrayNode sourceArray = (ArrayNode) sourceDocument;
             ArrayNode destinationArray = (ArrayNode) destinationDocument;
 
-            if(sourceArray.size() != destinationArray.size()){
+            if (sourceArray.size() != destinationArray.size()) {
                 return false;
             }
 
             //assumed positions in the array should be the same, else inconsistent.
-            for(int x = 0; x < sourceArray.size(); x++){
-                if(!doDocumentsConsistent(sourceArray.get(x), destinationArray.get(x), path)){
+            for (int x = 0; x < sourceArray.size(); x++) {
+                if (!doDocumentsConsistent(sourceArray.get(x), destinationArray.get(x), path)) {
                     return false;
                 }
             }
-        }
-        else if(JsonNodeType.OBJECT.equals(sourceDocument.getNodeType())){
-            if(!JsonNodeType.OBJECT.equals(destinationDocument.getNodeType())){
+        } else if (JsonNodeType.OBJECT.equals(sourceDocument.getNodeType())) {
+            if (!JsonNodeType.OBJECT.equals(destinationDocument.getNodeType())) {
                 return false;
             }
 
@@ -504,14 +539,13 @@ public class MigrationJob implements Runnable {
 
             //TODO: This check can be enforced after auto-generated fields are excluded from lightblue queries.
             /*
-            if(sourceObjNode.size() != destObjNode.size()){
-                return false;
-            }
+             if(sourceObjNode.size() != destObjNode.size()){
+             return false;
+             }
              */
-
             Iterator<Entry<String, JsonNode>> nodeIterator = sourceObjNode.fields();
 
-            while (nodeIterator.hasNext()){
+            while (nodeIterator.hasNext()) {
                 Entry<String, JsonNode> sourceEntry = nodeIterator.next();
 
                 JsonNode sourceNode = sourceEntry.getValue();
@@ -519,12 +553,11 @@ public class MigrationJob implements Runnable {
 
                 String childPath = StringUtils.isEmpty(path) ? sourceEntry.getKey() : path + "." + sourceEntry.getKey();
 
-                if(!doDocumentsConsistent(sourceNode, destinationNode, childPath)){
+                if (!doDocumentsConsistent(sourceNode, destinationNode, childPath)) {
                     return false;
                 }
             }
-        }
-        else{
+        } else {
             return sourceDocument.equals(destinationDocument);
         }
 
@@ -541,9 +574,9 @@ public class MigrationJob implements Runnable {
 
     protected LinkedHashMap<String, JsonNode> getJsonNodeMap(JsonNode[] results, List<String> entityKeyFields) {
         LinkedHashMap<String, JsonNode> resultsMap = new LinkedHashMap<>();
-        for(JsonNode result : results) {
+        for (JsonNode result : results) {
             StringBuilder resultKey = new StringBuilder();
-            for(String keyField : entityKeyFields) {
+            for (String keyField : entityKeyFields) {
                 resultKey.append(result.findValue(keyField)).append("|||");
             }
             resultsMap.put(resultKey.toString(), result);
@@ -553,7 +586,7 @@ public class MigrationJob implements Runnable {
 
     protected LightblueResponse callLightblue(LightblueRequest request) {
         LightblueResponse response = getDestinationClient().data(request);
-        if(response.hasError()){
+        if (response.hasError()) {
             throw new RuntimeException("Error returned in response " + response.getText() + " for request " + request.getBody());
         }
         return response;
