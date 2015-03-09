@@ -32,7 +32,8 @@ import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
 import com.redhat.lightblue.client.expression.update.AppendUpdate;
 import com.redhat.lightblue.client.expression.update.ObjectRValue;
-import com.redhat.lightblue.client.expression.update.RValue;
+import com.redhat.lightblue.client.expression.update.PathValuePair;
+import com.redhat.lightblue.client.expression.update.SetUpdate;
 import com.redhat.lightblue.client.expression.update.Update;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.projection.FieldProjection;
@@ -260,7 +261,7 @@ public class MigrationJob implements Runnable {
 
             configureClients();
 
-            saveJobDetails();
+            saveJobDetails(true);
 
             Map<String, JsonNode> sourceDocuments = getSourceDocuments();
 
@@ -284,7 +285,7 @@ public class MigrationJob implements Runnable {
             currentRun.setCompletedFlag(true);
             currentRun.setActualEndDate(new Date());
 
-            saveJobDetails();
+            saveJobDetails(false);
         }
         catch(RuntimeException e){
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss.SSSZ");
@@ -306,17 +307,31 @@ public class MigrationJob implements Runnable {
         }
     }
 
-    private LightblueResponse saveJobDetails() {
+    private LightblueResponse saveJobDetails(boolean isInitialSave) {
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
-        List<Update> updates = new ArrayList<>();
-        List<RValue> rvalues = new ArrayList<>();
-        rvalues.add(new ObjectRValue(jobExecutions));
-        updates.add(new AppendUpdate("jobExecutions", rvalues));
+
         List<Projection> projections = new ArrayList<>();
         projections.add(new FieldProjection("*", true, true));
         updateRequest.setProjections(projections);
+
+        List<Update> updates = new ArrayList<Update>();
+        if(isInitialSave){
+            updates.add(new AppendUpdate("jobExecutions", new ObjectRValue(new HashMap<Object,Object>())));
+        }
+
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName", new ObjectRValue(currentRun.getOwnerName()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.hostName", new ObjectRValue(currentRun.getHostName()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.pid", new ObjectRValue(currentRun.getPid()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.actualStartDate", new ObjectRValue(currentRun.getActualStartDate()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.processedDocumentCount", new ObjectRValue(currentRun.getProcessedDocumentCount()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.consistentDocumentCount", new ObjectRValue(currentRun.getConsistentDocumentCount()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.overwrittenDocumentCount", new ObjectRValue(currentRun.getOverwrittenDocumentCount()))));
         updateRequest.updates(updates);
+
         return callLightblue(updateRequest);
     }
 
