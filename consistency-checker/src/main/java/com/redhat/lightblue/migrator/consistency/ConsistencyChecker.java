@@ -1,5 +1,8 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.expression.query.ArrayQuery.withSubfield;
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.UnaryLogicalQuery.not;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
@@ -178,7 +181,9 @@ public class ConsistencyChecker implements Runnable{
         List<MigrationJob> jobs = new ArrayList<MigrationJob>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
+            findRequest.where(and(
+                    withValue("configurationName = " + configuration.getConfigurationName()),
+                    not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
         } catch (IOException e) {
