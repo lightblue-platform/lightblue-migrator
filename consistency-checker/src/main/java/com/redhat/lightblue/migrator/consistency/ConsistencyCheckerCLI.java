@@ -12,7 +12,7 @@ import org.slf4j.LoggerFactory;
 
 public final class ConsistencyCheckerCLI {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyCheckerCLI.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyCheckerCLI.class);
 
     private ConsistencyCheckerCLI() {
 
