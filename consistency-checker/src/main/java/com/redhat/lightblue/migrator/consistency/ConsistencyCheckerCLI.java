@@ -7,8 +7,12 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ConsistencyCheckerCLI {
+
+    public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyCheckerCLI.class);
 
     private ConsistencyCheckerCLI() {
 
@@ -18,13 +22,13 @@ public final class ConsistencyCheckerCLI {
         ConsistencyChecker checker =  buildConsistencyChecker(args);
 
         try{
-            ConsistencyChecker.LOGGER.info("Starting ConsistencyChecker");
+            LOGGER.info("Starting ConsistencyChecker");
             checker.run();
-            ConsistencyChecker.LOGGER.info("Finished ConsistencyChecker");
+            LOGGER.info("Finished ConsistencyChecker");
             System.exit(0);
         }
         catch (Exception e) {
-            ConsistencyChecker.LOGGER.error("Error running ConsistencyChecker", e);
+            LOGGER.error("Error running ConsistencyChecker", e);
             System.exit(1);
         }
     }
