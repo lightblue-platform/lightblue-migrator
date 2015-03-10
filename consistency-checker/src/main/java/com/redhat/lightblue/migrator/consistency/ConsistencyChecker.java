@@ -31,6 +31,7 @@ public class ConsistencyChecker implements Runnable{
 
     public static final int MAX_JOB_WAIT_TIME = 86400000; // 24 hours
     public static final int MAX_THREAD_WAIT_TIME = 21600; // 6 hours
+    public static final int DEFAULT_WAIT = 30000;         // 30 minutes
 
     private String consistencyCheckerName;
     private String hostName;
@@ -148,7 +149,10 @@ public class ConsistencyChecker implements Runnable{
             if (executors.isEmpty()) {
                 if(run && !Thread.interrupted()){
                     MigrationJob nextJob = getNextAvailableJob();
-                    long timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
+                    long timeUntilNextJob = DEFAULT_WAIT;
+                    if(nextJob != null){
+                        timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
+                    }
                     try{
                         Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
                     }
