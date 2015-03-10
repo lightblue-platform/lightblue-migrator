@@ -7,7 +7,6 @@ import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -33,7 +32,6 @@ import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
 import com.redhat.lightblue.client.expression.update.AppendUpdate;
-import com.redhat.lightblue.client.expression.update.ForeachUpdate;
 import com.redhat.lightblue.client.expression.update.ObjectRValue;
 import com.redhat.lightblue.client.expression.update.PathValuePair;
 import com.redhat.lightblue.client.expression.update.SetUpdate;
@@ -48,10 +46,17 @@ import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.text.DateFormat;
 
 public class MigrationJob implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MigrationJob.class);
+
+    /**
+     * How long an executing job runs before we decide it's dead and mark that
+     * execution as complete. Currently 60 minutes.
+     */
+    private static final int JOB_EXECUTION_TIMEOUT_MSEC = 60 * 60 * 1000;
 
     protected static final int BATCH_SIZE = 100;
 
@@ -268,47 +273,12 @@ public class MigrationJob implements Runnable {
             getJobExecutions().add(currentRun);
 
             configureClients();
-            int jobExecutionPsn = -1;
 
-            LightblueResponse response = saveJobDetails(jobExecutionPsn);
+            LightblueResponse response = saveJobDetails(-1);
 
-            boolean processJob = true;
-
-            // verify this job is the first active thread processing the thread.
-            // first extract processed data as MigrationJob
-            JsonNode node = response.getJson().path("processed");
-            try {
-                MigrationJob[] jobs = mapper.readValue(node.traverse(), MigrationJob[].class);
-
-                // should only be one job returned, verify
-                if (jobs.length > 1) {
-                    throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
-                }
-
-                // first incomplete job execution must be for this execution else we don't process it
-                int i = 0;
-                for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
-                    // if we find an execution that is not our pid but is active
-                    // in the array before ours, we do not get to process
-                    if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
-                        // we're not the one processing this guy!
-                        processJob = false;
-                    }
-
-                    // find our job's execution in the array
-                    // once we find our job, we can stop looping, we've decided
-                    // already if this execution gets to be processed or not.
-                    if (pid.equals(execution.getPid())) {
-                        jobExecutionPsn = i;
-                        break;
-                    }
-                    
-                    // increment position in array
-                    i++;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Error parsing lightblue response: " + response.getJson().toString(), e);
-            }
+            Object[] x = shouldProcessJob(response);
+            boolean processJob = (Boolean) x[0];
+            int jobExecutionPsn = (Integer) x[1];
 
             if (processJob) {
                 Map<String, JsonNode> sourceDocuments = getSourceDocuments();
@@ -338,13 +308,71 @@ public class MigrationJob implements Runnable {
 
         } catch (RuntimeException e) {
             // would be nice to reference DataType.DATE_FORMAT_STR in core..
-            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss.SSSZ");
+            DateFormat dateFormat = ClientConstants.getDateFormat();
             LOGGER.error(String.format("Error while processing: %s with start date %s and end date %s",
                     getJobConfiguration(), (getStartDate() == null ? "null" : dateFormat.format(getStartDate())),
                     (getEndDate() == null ? "null" : dateFormat.format(getEndDate()))), e);
         }
 
         LOGGER.info("MigrationJob completed");
+    }
+
+    /**
+     * Return array with two elements indicating if the job should process and
+     * what the index of the jobExecution is.
+     *
+     * @param response
+     * @return object array where index 0 is a Boolean indicating if the job
+     * should be processed, index 1 is an Integer indicating the position in the
+     * jobExecutions array for this job execution attempt
+     */
+    private Object[] shouldProcessJob(LightblueResponse response) {
+        boolean processJob = true;
+        int jobExecutionPsn = -1;
+
+        // verify this job is the first active thread processing the thread.
+        // first extract processed data as MigrationJob
+        JsonNode node = response.getJson().path("processed");
+        try {
+            MigrationJob[] jobs = mapper.readValue(node.traverse(), MigrationJob[].class);
+
+            // should only be one job returned, verify
+            if (jobs.length > 1) {
+                throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
+            }
+
+            // first incomplete job execution must be for this execution else we don't process it
+            int i = 0;
+            for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
+                // if we find an execution that is not our pid but is active
+                // in the array before ours, we do not get to process
+                if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
+                    // check if this is a dead job
+                    if (System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
+                        // job is dead, mark it complete
+                        markExecutionComplete(i);
+                    } else {
+                        // we're not the one processing this guy!
+                        processJob = false;
+                    }
+                }
+
+                // find our job's execution in the array
+                // once we find our job, we can stop looping, we've decided
+                // already if this execution gets to be processed or not.
+                if (pid.equals(execution.getPid())) {
+                    jobExecutionPsn = i;
+                    break;
+                }
+
+                // increment position in array
+                i++;
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Error parsing lightblue response: " + response.getJson().toString(), e);
+        }
+
+        return new Object[]{processJob, jobExecutionPsn};
     }
 
     private void configureClients() {
