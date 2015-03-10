@@ -33,6 +33,7 @@ import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
 import com.redhat.lightblue.client.expression.update.AppendUpdate;
+import com.redhat.lightblue.client.expression.update.ForeachUpdate;
 import com.redhat.lightblue.client.expression.update.ObjectRValue;
 import com.redhat.lightblue.client.expression.update.PathValuePair;
 import com.redhat.lightblue.client.expression.update.SetUpdate;
@@ -96,7 +97,7 @@ public class MigrationJob implements Runnable {
     // how long we think it will take
     private int expectedExecutionMilliseconds;
 
-    private boolean hasInconsistentDocuments;
+    private boolean hasInconsistentDocuments = false;
 
     public String get_id() {
         return _id;
@@ -267,8 +268,9 @@ public class MigrationJob implements Runnable {
             getJobExecutions().add(currentRun);
 
             configureClients();
+            int jobExecutionPsn = -1;
 
-            LightblueResponse response = saveJobDetails(true);
+            LightblueResponse response = saveJobDetails(jobExecutionPsn);
 
             boolean processJob = true;
 
@@ -282,16 +284,27 @@ public class MigrationJob implements Runnable {
                 if (jobs.length > 1) {
                     throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
                 }
-                
+
                 // first incomplete job execution must be for this execution else we don't process it
-                for (MigrationJobExecution mje : jobs[0].getJobExecutions()) {
-                    if (!mje.isCompletedFlag()) {
-                        if (!pid.equals(mje.getPid())) {
-                            // we're not the one processing this guy!
-                            processJob = false;
-                        }
+                int i = 0;
+                for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
+                    // if we find an execution that is not our pid but is active
+                    // in the array before ours, we do not get to process
+                    if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
+                        // we're not the one processing this guy!
+                        processJob = false;
+                    }
+
+                    // find our job's execution in the array
+                    // once we find our job, we can stop looping, we've decided
+                    // already if this execution gets to be processed or not.
+                    if (pid.equals(execution.getPid())) {
+                        jobExecutionPsn = i;
                         break;
                     }
+                    
+                    // increment position in array
+                    i++;
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Error parsing lightblue response: " + response.getJson().toString(), e);
@@ -315,14 +328,14 @@ public class MigrationJob implements Runnable {
                 if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
                     currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
                 }
+                currentRun.setCompletedFlag(true);
+                currentRun.setActualEndDate(new Date());
+                saveJobDetails(jobExecutionPsn);
+            } else {
+                // just mark complete and set actual end date
+                markExecutionComplete(jobExecutionPsn);
             }
 
-            currentRun.setCompletedFlag(true);
-            currentRun.setActualEndDate(new Date());
-
-            // always save to say we're done.
-            // if we didn't process this will show that nothing was actually done and it was quick
-            saveJobDetails(false);
         } catch (RuntimeException e) {
             // would be nice to reference DataType.DATE_FORMAT_STR in core..
             SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd'T'HH:mm:ss.SSSZ");
@@ -344,7 +357,7 @@ public class MigrationJob implements Runnable {
         }
     }
 
-    private LightblueResponse saveJobDetails(boolean isInitialSave) {
+    private LightblueResponse markExecutionComplete(int jobExecutionPsn) {
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
 
@@ -353,20 +366,44 @@ public class MigrationJob implements Runnable {
         updateRequest.setProjections(projections);
 
         List<Update> updates = new ArrayList<>();
-        if (isInitialSave) {
+
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        updateRequest.updates(updates);
+
+        return callLightblue(updateRequest);
+    }
+
+    /**
+     *
+     * @param jobExecutionPsn if this is the initial save, set to -1
+     * @return
+     */
+    private LightblueResponse saveJobDetails(int jobExecutionPsn) {
+        DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
+        updateRequest.where(withValue("_id" + " = " + _id));
+
+        List<Projection> projections = new ArrayList<>();
+        projections.add(new FieldProjection("*", true, true));
+        updateRequest.setProjections(projections);
+
+        List<Update> updates = new ArrayList<>();
+        if (jobExecutionPsn < 0) {
             updates.add(new AppendUpdate("jobExecutions", new ObjectRValue(new HashMap<>())));
+            jobExecutionPsn = -1;
         }
 
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName", new ObjectRValue(currentRun.getOwnerName()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.hostName", new ObjectRValue(currentRun.getHostName()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.pid", new ObjectRValue(currentRun.getPid()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.actualStartDate", new ObjectRValue(currentRun.getActualStartDate()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.processedDocumentCount", new ObjectRValue(currentRun.getProcessedDocumentCount()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.consistentDocumentCount", new ObjectRValue(currentRun.getConsistentDocumentCount()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions.-1.overwrittenDocumentCount", new ObjectRValue(currentRun.getOverwrittenDocumentCount()))));
+        // TODO update specific job execution...
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".ownerName", new ObjectRValue(currentRun.getOwnerName()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".hostName", new ObjectRValue(currentRun.getHostName()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".pid", new ObjectRValue(currentRun.getPid()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualStartDate", new ObjectRValue(currentRun.getActualStartDate()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".processedDocumentCount", new ObjectRValue(currentRun.getProcessedDocumentCount()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".consistentDocumentCount", new ObjectRValue(currentRun.getConsistentDocumentCount()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".overwrittenDocumentCount", new ObjectRValue(currentRun.getOverwrittenDocumentCount()))));
         updateRequest.updates(updates);
 
         return callLightblue(updateRequest);
