@@ -22,17 +22,18 @@ import org.slf4j.LoggerFactory;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
 
-public class ConsistencyChecker implements Runnable{
+public class ConsistencyChecker implements Runnable {
 
     LightblueClient client;
 
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
-    public static final int MAX_JOB_WAIT_TIME_MSEC = 24 * 60 *60 * 1000; // 24 hours
+    public static final int MAX_JOB_WAIT_TIME_MSEC = 24 * 60 * 60 * 1000; // 24 hours
     public static final int MAX_THREAD_WAIT_TIME_MSEC = 6 * 60 * 60 * 1000; // 6 hours
     public static final int DEFAULT_WAIT = 30000;         // 30 minutes
 
@@ -119,11 +120,13 @@ public class ConsistencyChecker implements Runnable{
 
         LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
 
+        LightblueHttpClient httpClient;
         if (configPath != null) {
-            client = new LightblueHttpClient(configPath);
+            httpClient = new LightblueHttpClient(configPath);
         } else {
-            client = new LightblueHttpClient();
+            httpClient = new LightblueHttpClient();
         }
+        client = new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
 
         while (run && !Thread.interrupted()) {
             List<ExecutorService> executors = new ArrayList<>();
@@ -150,16 +153,15 @@ public class ConsistencyChecker implements Runnable{
             }
 
             if (executors.isEmpty()) {
-                if(run && !Thread.interrupted()){
+                if (run && !Thread.interrupted()) {
                     MigrationJob nextJob = getNextAvailableJob();
                     long timeUntilNextJob = DEFAULT_WAIT;
-                    if(nextJob != null){
+                    if (nextJob != null) {
                         timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
                     }
-                    try{
+                    try {
                         Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME_MSEC) ? MAX_JOB_WAIT_TIME_MSEC : timeUntilNextJob);
-                    }
-                    catch (InterruptedException e){
+                    } catch (InterruptedException e) {
                         run = false;
                     }
                 }
@@ -167,13 +169,12 @@ public class ConsistencyChecker implements Runnable{
                 for (ExecutorService executor : executors) {
                     executor.shutdown();
                 }
-                if((!Thread.interrupted())){
-                    try{
+                if ((!Thread.interrupted())) {
+                    try {
                         for (ExecutorService executor : executors) {
                             executor.awaitTermination(MAX_THREAD_WAIT_TIME_MSEC, TimeUnit.MILLISECONDS);
                         }
-                    }
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         run = false;
                     }
                 }

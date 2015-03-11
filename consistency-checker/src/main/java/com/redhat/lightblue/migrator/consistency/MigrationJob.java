@@ -38,6 +38,7 @@ import com.redhat.lightblue.client.expression.update.PathValuePair;
 import com.redhat.lightblue.client.expression.update.SetUpdate;
 import com.redhat.lightblue.client.expression.update.Update;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.projection.FieldProjection;
 import com.redhat.lightblue.client.projection.Projection;
 import com.redhat.lightblue.client.request.LightblueRequest;
@@ -377,13 +378,17 @@ public class MigrationJob implements Runnable {
     }
 
     private void configureClients() {
+        LightblueHttpClient source;
+        LightblueHttpClient destination;
         if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
-            sourceClient = new LightblueHttpClient();
-            destinationClient = new LightblueHttpClient();
+            source = new LightblueHttpClient();
+            destination = new LightblueHttpClient();
         } else {
-            sourceClient = new LightblueHttpClient(getSourceConfigPath());
-            destinationClient = new LightblueHttpClient(getDestinationConfigPath());
+            source = new LightblueHttpClient(getSourceConfigPath());
+            destination = new LightblueHttpClient(getDestinationConfigPath());
         }
+        sourceClient = new LightblueHystrixClient(source, "migrator", "sourceClient");
+        destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
     }
 
     private LightblueResponse markExecutionComplete(int jobExecutionPsn) {
