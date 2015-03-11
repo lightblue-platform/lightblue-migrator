@@ -262,7 +262,7 @@ public class MigrationJob implements Runnable {
 
     @Override
     public void run() {
-        LOGGER.info("MigrationJob started");
+        LOGGER.debug("MigrationJob started");
 
         try {
             currentRun = new MigrationJobExecution();
@@ -315,7 +315,7 @@ public class MigrationJob implements Runnable {
                     (getEndDate() == null ? "null" : dateFormat.format(getEndDate()))), e);
         }
 
-        LOGGER.info("MigrationJob completed");
+        LOGGER.debug("MigrationJob completed");
     }
 
     /**
@@ -490,7 +490,7 @@ public class MigrationJob implements Runnable {
     protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
         if (sourceDocuments == null || sourceDocuments.isEmpty()) {
-            LOGGER.info("Unable to fetch any destination documents as there are no source documents");
+            LOGGER.debug("Unable to fetch any destination documents as there are no source documents");
             return destinationDocuments;
         }
 
