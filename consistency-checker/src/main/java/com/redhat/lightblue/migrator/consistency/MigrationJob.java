@@ -1,12 +1,12 @@
 package com.redhat.lightblue.migrator.consistency;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -22,6 +22,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -46,7 +47,6 @@ import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.util.ClientConstants;
-import java.text.DateFormat;
 
 public class MigrationJob implements Runnable {
 
@@ -309,7 +309,8 @@ public class MigrationJob implements Runnable {
         } catch (RuntimeException e) {
             // would be nice to reference DataType.DATE_FORMAT_STR in core..
             DateFormat dateFormat = ClientConstants.getDateFormat();
-            LOGGER.error(String.format("Error while processing: %s with start date %s and end date %s",
+            LOGGER.error(String.format("Error while processing job %s with %s for start date %s and end date %s",
+                    _id,
                     getJobConfiguration(), (getStartDate() == null ? "null" : dateFormat.format(getStartDate())),
                     (getEndDate() == null ? "null" : dateFormat.format(getEndDate()))), e);
         }
