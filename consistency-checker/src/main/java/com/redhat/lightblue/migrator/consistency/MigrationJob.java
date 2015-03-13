@@ -277,6 +277,7 @@ public class MigrationJob implements Runnable {
             configureClients();
 
             LightblueResponse response = saveJobDetails(-1);
+            LOGGER.debug("Start Save Response: {}", response.getText());
 
             Object[] x = shouldProcessJob(response);
             boolean processJob = (Boolean) x[0];
@@ -303,9 +304,11 @@ public class MigrationJob implements Runnable {
                 currentRun.setCompletedFlag(true);
                 currentRun.setActualEndDate(new Date());
                 saveJobDetails(jobExecutionPsn);
+                LOGGER.debug("Success Save Response: {}", response.getText());
             } else {
                 // just mark complete and set actual end date
-                markExecutionComplete(jobExecutionPsn);
+                LightblueResponse responseMarkExecutionConplete = markExecutionComplete(jobExecutionPsn);
+                LOGGER.debug("No Run Mark Updated Response: {}", responseMarkExecutionConplete.getText());
             }
 
         } catch (RuntimeException e) {
@@ -350,7 +353,8 @@ public class MigrationJob implements Runnable {
                     // check if this is a dead job
                     if (System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
                         // job is dead, mark it complete
-                        markExecutionComplete(i);
+                        LightblueResponse responseMarkDead = markExecutionComplete(i);
+                        LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
                     } else {
                         // we're not the one processing this guy!
                         processJob = false;
@@ -403,6 +407,7 @@ public class MigrationJob implements Runnable {
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
         updateRequest.updates(updates);
 
+        LOGGER.debug("Marking Execution Complete: {}", updateRequest.getBody());
         return callLightblue(updateRequest);
     }
 
@@ -437,6 +442,8 @@ public class MigrationJob implements Runnable {
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".overwrittenDocumentCount", new ObjectRValue(currentRun.getOverwrittenDocumentCount()))));
         updateRequest.updates(updates);
+
+        LOGGER.debug("save: {}", updateRequest.getBody());
 
         return callLightblue(updateRequest);
     }
