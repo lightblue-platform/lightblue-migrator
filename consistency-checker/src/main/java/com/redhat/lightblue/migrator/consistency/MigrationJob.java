@@ -47,6 +47,7 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import com.redhat.lightblue.client.util.ClientConstants;
 
 public class MigrationJob implements Runnable {
@@ -335,11 +336,8 @@ public class MigrationJob implements Runnable {
         boolean processJob = true;
         int jobExecutionPsn = -1;
 
-        // verify this job is the first active thread processing the thread.
-        // first extract processed data as MigrationJob
-        JsonNode node = response.getJson().path("processed");
         try {
-            MigrationJob[] jobs = mapper.readValue(node.traverse(), MigrationJob[].class);
+            MigrationJob[] jobs = response.parseProcessed(MigrationJob[].class);
 
             // should only be one job returned, verify
             if (jobs.length > 1) {
@@ -374,7 +372,7 @@ public class MigrationJob implements Runnable {
                 // increment position in array
                 i++;
             }
-        } catch (IOException e) {
+        } catch (LightblueResponseParseException e) {
             throw new RuntimeException("Error parsing lightblue response: " + response.getJson().toString(), e);
         }
 
@@ -480,7 +478,7 @@ public class MigrationJob implements Runnable {
         projections.add(new FieldProjection("*", true, true));
         saveRequest.returns(projections);
         LightblueResponse response = callLightblue(saveRequest);
-        return response.getJson().findValue("modifiedCount").asInt();
+        return response.parseModifiedCount();
     }
 
     protected Map<String, JsonNode> getSourceDocuments() {
