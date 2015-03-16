@@ -5,15 +5,16 @@ NUM_HOURS=$4
 EXPECTED_EXECUTION_TIME=$5
 CREATED_BY=$6
 AVAILABLE_DATE=$7
+STARTING_ID=$8
 
 if [ $1"x" == "x" ] || [ $2"x" == "x" ] || [ $3"x" == "x" ] || [ $4"x" == "x" ] || [ $5"x" == "x" ] || [ $6"x" == "x" ]; then
-    echo "Usage: ./migrationJobs.sh <entityName> <startDate> <endDate> <frequency> <expectedExecutionTime> <createdBy> <availableDate>"
-    echo "Example: ./migrationJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 2015-03-01"
+    echo "Usage: ./migrationJobs.sh <entityName> <startDate> <endDate> <frequency> <expectedExecutionTime> <createdBy> <availableDate> <startingId>"
+    echo "Example: ./migrationJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 2015-03-01 0"
     exit 1
 fi
 echo {
 echo  \"data\": [
-i=0
+i=$STARTING_ID
 now=$(date)
 current="$START_DATE"
 while true; do
