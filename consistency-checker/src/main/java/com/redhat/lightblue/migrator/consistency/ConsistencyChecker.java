@@ -151,6 +151,8 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             }
+            
+            LOGGER.info("Done setting up job executors");
 
             if (executors.isEmpty()) {
                 if (run && !Thread.interrupted()) {
@@ -183,10 +185,13 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             }
+            
+            LOGGER.info("Job executors done");
         }
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
+        LOGGER.info("Loading jobs for {}", configuration.getConfigurationName());
         List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
