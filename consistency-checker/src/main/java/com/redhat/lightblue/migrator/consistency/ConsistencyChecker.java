@@ -192,7 +192,7 @@ public class ConsistencyChecker implements Runnable {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             findRequest.where(and(
                     withValue("configurationName = " + configuration.getConfigurationName()),
-                    withValue("whenAvailableDate >= " + ClientConstants.getDateFormat().format(new Date())),
+                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
                     not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
