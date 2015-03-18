@@ -33,9 +33,9 @@ public class ConsistencyChecker implements Runnable {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
-    public static final int MAX_JOB_WAIT_TIME_MSEC = 24 * 60 * 60 * 1000; // 24 hours
-    public static final int MAX_THREAD_WAIT_TIME_MSEC = 6 * 60 * 60 * 1000; // 6 hours
-    public static final int DEFAULT_WAIT = 30000;         // 30 minutes
+    public static final int MAX_JOB_WAIT_MSEC = 24 * 60 * 60 * 1000; // 24 hours
+    public static final int MAX_THREAD_WAIT_MSEC = 6 * 60 * 60 * 1000; // 6 hours
+    public static final int DEFAULT_JOB_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
 
     private String consistencyCheckerName;
     private String hostName;
@@ -155,12 +155,16 @@ public class ConsistencyChecker implements Runnable {
             if (executors.isEmpty()) {
                 if (run && !Thread.interrupted()) {
                     MigrationJob nextJob = getNextAvailableJob();
-                    long timeUntilNextJob = DEFAULT_WAIT;
-                    if (nextJob != null) {
+                    long timeUntilNextJob = DEFAULT_JOB_WAIT_MSEC;
+                    if (nextJob != null && nextJob.getWhenAvailableDate() != null) {
                         timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
                     }
+                    if (timeUntilNextJob > MAX_JOB_WAIT_MSEC) {
+                        timeUntilNextJob = MAX_JOB_WAIT_MSEC;
+                    }
                     try {
-                        Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME_MSEC) ? MAX_JOB_WAIT_TIME_MSEC : timeUntilNextJob);
+                        LOGGER.info("Waiting for next job, sleeping for {} msec", timeUntilNextJob);
+                        Thread.sleep(timeUntilNextJob);
                     } catch (InterruptedException e) {
                         run = false;
                     }
@@ -172,7 +176,7 @@ public class ConsistencyChecker implements Runnable {
                 if ((!Thread.interrupted())) {
                     try {
                         for (ExecutorService executor : executors) {
-                            executor.awaitTermination(MAX_THREAD_WAIT_TIME_MSEC, TimeUnit.MILLISECONDS);
+                            executor.awaitTermination(MAX_THREAD_WAIT_MSEC, TimeUnit.MILLISECONDS);
                         }
                     } catch (InterruptedException e) {
                         run = false;
@@ -210,6 +214,10 @@ public class ConsistencyChecker implements Runnable {
         return configurations;
     }
 
+    /**
+     * Gets the next job available for processing.
+     * @return 
+     */
     protected MigrationJob getNextAvailableJob() {
         MigrationJob job = null;
         try {
