@@ -3,7 +3,7 @@ package com.redhat.lightblue.migrator.consistency;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
+import static com.redhat.lightblue.client.projection.FieldProjection.*;
 
 import java.io.IOException;
 import java.text.DateFormat;
@@ -14,7 +14,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -27,7 +26,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
@@ -49,6 +47,7 @@ import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.util.List;
 
 public class MigrationJob implements Runnable {
 
@@ -562,82 +561,94 @@ public class MigrationJob implements Runnable {
         for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
             JsonNode destinationDocument = destinationDocuments.get(sourceDocument.getKey());
             if (destinationDocument == null) {
+                // doc never existed in dest, don't log, just overwrite
                 documentsToOverwrite.add(sourceDocument.getValue());
-            } else if (!documentsConsistent(sourceDocument.getValue(), destinationDocument)) {
-                documentsToOverwrite.add(sourceDocument.getValue());
+            } else {
+                List<String> inconsistentPaths = getInconsistentPaths(sourceDocument.getValue(), destinationDocument);
+                if (inconsistentPaths.size() > 0) {
+                    // log what was inconsistent and add to docs to overwrite
+                    List<String> idValues = new ArrayList<>();
+                    for (String idField : migrationConfiguration.getDestinationIdentityFields()) {
+                        //TODO this assumes keys at root, this might not always be true.  fix it..
+                        idValues.add(sourceDocument.getValue().get(idField).asText());
+                    }
+
+                    LOGGER.warn("INCONSISTENT: Doc identified by fields [{}] with values [{}] has inconsistent paths: {}",
+                            StringUtils.join(migrationConfiguration.getDestinationIdentityFields(), ","),
+                            StringUtils.join(idValues, ","),
+                            StringUtils.join(inconsistentPaths, ","));
+
+                    documentsToOverwrite.add(sourceDocument.getValue());
+                }
             }
         }
         return documentsToOverwrite;
     }
 
-    protected boolean documentsConsistent(JsonNode sourceDocument, JsonNode destinationDocument) {
-        return doDocumentsConsistent(sourceDocument, destinationDocument, null);
+    /**
+     *
+     * @param sourceDocument
+     * @param destinationDocument
+     * @return list of inconsistent paths
+     */
+    protected List<String> getInconsistentPaths(JsonNode sourceDocument, JsonNode destinationDocument) {
+        List<String> inconsistentPaths = new ArrayList<>();
+        doInconsistentPaths(inconsistentPaths, sourceDocument, destinationDocument, null);
+        return inconsistentPaths;
     }
 
     //Recursive method
-    private boolean doDocumentsConsistent(final JsonNode sourceDocument, final JsonNode destinationDocument, final String path) {
+    private void doInconsistentPaths(List<String> inconsistentPaths, final JsonNode sourceDocument, final JsonNode destinationDocument, final String path) {
         List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
         if (excludes != null && excludes.contains(path)) {
-            return true;
+            return;
         }
 
         if (sourceDocument == null && destinationDocument == null) {
-            return true;
+            return;
         } else if (sourceDocument == null || destinationDocument == null) {
-            return false;
+            inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+            return;
         }
 
+        // for each field compare to destination
         if (JsonNodeType.ARRAY.equals(sourceDocument.getNodeType())) {
             if (!JsonNodeType.ARRAY.equals(destinationDocument.getNodeType())) {
-                return false;
+                inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+                return;
             }
 
             ArrayNode sourceArray = (ArrayNode) sourceDocument;
             ArrayNode destinationArray = (ArrayNode) destinationDocument;
 
             if (sourceArray.size() != destinationArray.size()) {
-                return false;
+                inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+                return;
             }
 
-            //assumed positions in the array should be the same, else inconsistent.
+            // compare array contents
             for (int x = 0; x < sourceArray.size(); x++) {
-                if (!doDocumentsConsistent(sourceArray.get(x), destinationArray.get(x), path)) {
-                    return false;
-                }
+                doInconsistentPaths(inconsistentPaths, sourceArray.get(x), destinationArray.get(x), path);
             }
         } else if (JsonNodeType.OBJECT.equals(sourceDocument.getNodeType())) {
             if (!JsonNodeType.OBJECT.equals(destinationDocument.getNodeType())) {
-                return false;
+                inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+                return;
             }
 
-            ObjectNode sourceObjNode = (ObjectNode) sourceDocument;
-            ObjectNode destObjNode = (ObjectNode) destinationDocument;
+            // compare object contents
+            Iterator<Entry<String, JsonNode>> itr = sourceDocument.fields();
 
-            //TODO: This check can be enforced after auto-generated fields are excluded from lightblue queries.
-            /*
-             if(sourceObjNode.size() != destObjNode.size()){
-             return false;
-             }
-             */
-            Iterator<Entry<String, JsonNode>> nodeIterator = sourceObjNode.fields();
+            while (itr.hasNext()) {
+                Entry<String, JsonNode> entry = itr.next();
 
-            while (nodeIterator.hasNext()) {
-                Entry<String, JsonNode> sourceEntry = nodeIterator.next();
-
-                JsonNode sourceNode = sourceEntry.getValue();
-                JsonNode destinationNode = destObjNode.get(sourceEntry.getKey());
-
-                String childPath = StringUtils.isEmpty(path) ? sourceEntry.getKey() : path + "." + sourceEntry.getKey();
-
-                if (!doDocumentsConsistent(sourceNode, destinationNode, childPath)) {
-                    return false;
-                }
+                doInconsistentPaths(inconsistentPaths, entry.getValue(), destinationDocument.get(entry.getKey()),
+                        StringUtils.isEmpty(path) ? entry.getKey() : path + "." + entry.getKey());
             }
-        } else {
-            return sourceDocument.equals(destinationDocument);
+
+        } else if (!sourceDocument.asText().equals(destinationDocument.asText())) {
+            inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
         }
-
-        return true;
     }
 
     protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {

@@ -36,7 +36,6 @@ import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import static com.redhat.lightblue.migrator.consistency.MigrationJob.mapper;
 import com.redhat.lightblue.util.test.FileUtil;
-import java.util.UUID;
 
 public class MigrationJobTest {
 
@@ -84,7 +83,8 @@ public class MigrationJobTest {
      */
     @Test
     public void testDocumentsConsistent_With_Source_Null_And_Destination_Null() {
-        assertTrue(migrationJob.documentsConsistent(null, null));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(null, null);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     /**
@@ -94,7 +94,9 @@ public class MigrationJobTest {
     @Test
     public void testDocumentsConsistent_With_Source_Value_And_Destination_NullValue() {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        assertFalse(migrationJob.documentsConsistent(factory.textNode("hi"), null));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(factory.textNode("hi"), null);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
     }
 
     /**
@@ -104,7 +106,9 @@ public class MigrationJobTest {
     @Test
     public void testDocumentsConsistent_With_Source_NullValue_And_Destination_Value() {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        assertFalse(migrationJob.documentsConsistent(null, factory.textNode("hi")));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(null, factory.textNode("hi"));
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
     }
 
     /**
@@ -114,7 +118,9 @@ public class MigrationJobTest {
     @Test
     public void testDocumentsConsistent_With_Source_Object_And_Destination_Not_Object() {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        assertFalse(migrationJob.documentsConsistent(factory.objectNode(), factory.textNode("hi")));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(factory.objectNode(), factory.textNode("hi"));
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
     }
 
     /**
@@ -125,7 +131,10 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
         ObjectNode source = factory.objectNode();
         source.put("fieldName", "fieldValue");
-        assertFalse(migrationJob.documentsConsistent(source, factory.objectNode()));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, factory.objectNode());
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
+        assertEquals("fieldName", inconsistentPaths.get(0));
     }
 
     /**
@@ -137,7 +146,10 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
         ObjectNode destination = factory.objectNode();
         destination.put("fieldName", "fieldValue");
-        assertFalse(migrationJob.documentsConsistent(factory.objectNode(), destination));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(factory.objectNode(), destination);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
+        assertEquals("fieldName", inconsistentPaths.get(0));
     }
 
     /**
@@ -152,7 +164,8 @@ public class MigrationJobTest {
         ObjectNode destination = factory.objectNode();
         destination.put("fieldName", "fieldValue");
 
-        assertTrue(migrationJob.documentsConsistent(source, destination));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, destination);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     /**
@@ -162,7 +175,9 @@ public class MigrationJobTest {
     @Test
     public void testDocumentsConsistent_With_Source_Array_And_Destination_Not_Array() {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
-        assertFalse(migrationJob.documentsConsistent(factory.arrayNode(), factory.textNode("hi")));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(factory.arrayNode(), factory.textNode("hi"));
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
     }
 
     /**
@@ -173,7 +188,9 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
         ArrayNode source = factory.arrayNode();
         source.add(factory.textNode("hi"));
-        assertFalse(migrationJob.documentsConsistent(source, factory.arrayNode()));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, factory.arrayNode());
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
     }
 
     /**
@@ -188,7 +205,8 @@ public class MigrationJobTest {
         ArrayNode destination = factory.arrayNode();
         destination.add(factory.textNode("hi"));
 
-        assertTrue(migrationJob.documentsConsistent(source, destination));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, destination);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     /**
@@ -205,7 +223,9 @@ public class MigrationJobTest {
         destination.add(factory.textNode("there"));
         destination.add(factory.textNode("hi"));
 
-        assertFalse(migrationJob.documentsConsistent(source, destination));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, destination);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(2, inconsistentPaths.size());
     }
 
     /**
@@ -216,7 +236,9 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
         ArrayNode destination = factory.arrayNode();
         destination.add(factory.textNode("hi"));
-        assertFalse(migrationJob.documentsConsistent(factory.arrayNode(), destination));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(factory.arrayNode(), destination);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
     }
 
     /**
@@ -232,7 +254,10 @@ public class MigrationJobTest {
         ObjectNode destNode = factory.objectNode();
         destNode.put("somekey", factory.textNode("inconsistentValue"));
 
-        assertFalse(migrationJob.documentsConsistent(sourceNode, destNode));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(sourceNode, destNode);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
+        assertEquals("somekey", inconsistentPaths.get(0));
     }
 
     /**
@@ -259,7 +284,8 @@ public class MigrationJobTest {
         jobConfiguration.setComparisonExclusionPaths(Arrays.asList("somekey.someChildKey"));
         migrationJob.setJobConfiguration(jobConfiguration);
 
-        assertTrue(migrationJob.documentsConsistent(sourceNode, destNode));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(sourceNode, destNode);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     /**
@@ -280,7 +306,8 @@ public class MigrationJobTest {
         jobConfiguration.setComparisonExclusionPaths(Arrays.asList("array.something"));
         migrationJob.setJobConfiguration(jobConfiguration);
 
-        assertTrue(migrationJob.documentsConsistent(source, dest));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, dest);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     /**
@@ -297,7 +324,10 @@ public class MigrationJobTest {
         JsonNode dest = mapper.readTree(
                 "{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"z\"}]}");
 
-        assertFalse(migrationJob.documentsConsistent(source, dest));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, dest);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
+        assertEquals("array.something", inconsistentPaths.get(0));
     }
 
     /**
@@ -318,7 +348,8 @@ public class MigrationJobTest {
         jobConfiguration.setComparisonExclusionPaths(Arrays.asList("array.something"));
         migrationJob.setJobConfiguration(jobConfiguration);
 
-        assertTrue(migrationJob.documentsConsistent(source, dest));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, dest);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     /**
@@ -335,7 +366,10 @@ public class MigrationJobTest {
         JsonNode dest = mapper.readTree(
                 "[{\"field1\": \"value1\", \"something\": \"x\", \"array\": [{\"field2\": \"value2\",\"something\": \"z\"}]}]");
 
-        assertFalse(migrationJob.documentsConsistent(source, dest));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, dest);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
+        assertEquals("array.something", inconsistentPaths.get(0));
     }
 
     /**
@@ -356,7 +390,10 @@ public class MigrationJobTest {
         jobConfiguration.setComparisonExclusionPaths(Arrays.asList("something"));
         migrationJob.setJobConfiguration(jobConfiguration);
 
-        assertFalse(migrationJob.documentsConsistent(source, dest));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, dest);
+        assertFalse(inconsistentPaths.isEmpty());
+        assertEquals(1, inconsistentPaths.size());
+        assertEquals("array.something", inconsistentPaths.get(0));
     }
 
     /**
@@ -377,7 +414,8 @@ public class MigrationJobTest {
         jobConfiguration.setComparisonExclusionPaths(Arrays.asList("something"));
         migrationJob.setJobConfiguration(jobConfiguration);
 
-        assertTrue(migrationJob.documentsConsistent(source, dest));
+        List<String> inconsistentPaths = migrationJob.getInconsistentPaths(source, dest);
+        assertTrue(inconsistentPaths.isEmpty());
     }
 
     @Test
@@ -523,7 +561,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceAndDestination() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("singleFindResponse.json");
@@ -537,7 +575,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -578,7 +616,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestination() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("singleFindResponse.json");
@@ -592,7 +630,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
@@ -614,7 +652,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("singleFindResponse.json");
@@ -628,7 +666,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
@@ -652,7 +690,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInDestinationButNotSource() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("emptyFindResponse.json");
@@ -666,7 +704,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -688,7 +726,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInSourceAndDestination() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("multipleFindResponse.json");
@@ -702,7 +740,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -725,7 +763,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInSourceButNotDestination() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("multipleFindResponse.json");
@@ -739,7 +777,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -761,7 +799,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInDestinationButNotSource() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("emptyFindResponse.json");
@@ -775,7 +813,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -797,7 +835,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleSameExceptForTimestamp() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("multipleFindResponseSource.json");
@@ -811,7 +849,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -833,7 +871,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("singleFindResponse.json");
@@ -847,7 +885,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -869,7 +907,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
                 return getProcessedContentsFrom("multipleFindResponse.json");
@@ -883,7 +921,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                ObjectMapper mapper = new ObjectMapper();
+                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -930,12 +968,14 @@ public class MigrationJobTest {
     }
 
     /**
-     * This job is the first of two to execute and therefore should process the job.
-     * @throws Exception 
+     * This job is the first of two to execute and therefore should process the
+     * job.
+     *
+     * @throws Exception
      */
     @Test
     public void testMultipleJobExecutors_first() throws Exception {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             // array of responses to return
             private String[] jsonResponses = new String[]{
                 // initial job save
@@ -945,7 +985,7 @@ public class MigrationJobTest {
                 // final job save
                 FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
             };
-            
+
             private int jsonResponsesPsn = 0;
 
             @Override
@@ -983,16 +1023,16 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
     }
-    
+
     /**
-     * This job is the second to attempt to process it and therefore it should 
+     * This job is the second to attempt to process it and therefore it should
      * not actually do anything.
-     * 
-     * @throws Exception 
+     *
+     * @throws Exception
      */
     @Test
     public void testMultipleJobExecutors_second() throws Exception {
-        MigrationJob migrationJob = new MigrationJob() {
+        migrationJob = new MigrationJob() {
             // array of responses to return
             private String[] jsonResponses = new String[]{
                 // initial job save
@@ -1000,7 +1040,7 @@ public class MigrationJobTest {
                 // final job save (since this is a noop, there is nothing in the middle)
                 FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
             };
-            
+
             private int jsonResponsesPsn = 0;
 
             @Override
@@ -1037,4 +1077,5 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }}
+    }
+}
