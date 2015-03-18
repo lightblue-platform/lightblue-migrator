@@ -4,39 +4,45 @@ END_DATE=$3
 NUM_HOURS=$4
 EXPECTED_EXECUTION_TIME=$5
 CREATED_BY=$6
-AVAILABLE_DATE=$7
-STARTING_ID=$8
+STARTING_ID=$7
 
 if [ $1"x" == "x" ] || [ $2"x" == "x" ] || [ $3"x" == "x" ] || [ $4"x" == "x" ] || [ $5"x" == "x" ] || [ $6"x" == "x" ]; then
-    echo "Usage: ./migrationJobs.sh <entityName> <startDate> <endDate> <frequency> <expectedExecutionTime> <createdBy> <availableDate> <startingId>"
-    echo "Example: ./migrationJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 2015-03-01 0"
+    echo "Usage: ./migrationJobs.sh <entityName> <startDate> <endDate> <frequency> <expectedExecutionTime> <createdBy> [<startingId>]"
+    echo "Example: ./migrationJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 0"
     exit 1
 fi
+
+if [ "${STARTING_ID}x" == "x" ]; then
+    STARTING_ID=0
+fi
+
+STRING_DATE_FORMAT="+%Y-%m-%dT%H:%M:%S%z"
+OUTPUT_DATE_FORMAT="+%Y%m%dT%H:%M:%S.000%z"
+
 echo {
 echo  \"data\": [
 i=$STARTING_ID
-now=$(date)
-current="$START_DATE"
+now=$(date $OUTPUT_DATE_FORMAT)
+startDate=$( date $STRING_DATE_FORMAT --date "$START_DATE" )
 while true; do
-    next=$( date +%Y-%m-%dT%H:%M:%S%z --date "$current +$NUM_HOURS hours" );
-    [ "$next" \< "$END_DATE" ] || next="$END_DATE"
+    endDate=$( date $STRING_DATE_FORMAT --date "$startDate +$NUM_HOURS hours" );
+    whenAvailableDate=$( date $STRING_DATE_FORMAT --date "$endDate +1 minutes" );
     echo {
     echo  \"_id\": \""$ENTITY_NAME"Job_"$i"\",
     echo  \"objectType\": \"migrationJob\",
     echo  \"configurationName\": \""$ENTITY_NAME"\",
-    echo  \"startDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$current")\",
-    echo  \"endDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$next")\",
-    [ $AVAILABLE_DATE"x" == "x" ] || echo  \"whenAvailableDate\" : \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$AVAILABLE_DATE")\",
-    [ $AVAILABLE_DATE"x" != "x" ] || echo  \"whenAvailableDate\" : \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$next")\",
+    echo  \"startDate\": \"$(date $OUTPUT_DATE_FORMAT --date "$startDate")\",
+    echo  \"endDate\": \"$(date $OUTPUT_DATE_FORMAT --date "$endDate")\",
+    echo  \"whenAvailableDate\": \"$(date $OUTPUT_DATE_FORMAT --date "$whenAvailableDate")\",
     echo  \"expectedExecutionMilliseconds\" : $EXPECTED_EXECUTION_TIME,
     echo  \"jobExecutions\": [],
-    echo  \"creationDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$now")\",
+    echo  \"creationDate\": \"$now\",
     echo  \"createdBy\": \"$CREATED_BY\",
-    echo  \"lastUpdateDate\": \"$( date +%Y%m%dT%H:%M:%S.000%z --date "$now")\",
+    echo  \"lastUpdateDate\": \"$now\",
     echo  \"lastUpdatedBy\": \"$CREATED_BY\"
     echo }
-    current="$next"
-    [ "$next" \< "$END_DATE" ] || break
+    startDate="$endDate"
+    [ "$endDate" \< "$END_DATE" ] || break
     let i=i+1
     echo ,
 done
