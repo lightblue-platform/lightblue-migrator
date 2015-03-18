@@ -133,6 +133,10 @@ public class ConsistencyChecker implements Runnable {
             List<MigrationConfiguration> configurations = getJobConfigurations();
 
             for (MigrationConfiguration configuration : configurations) {
+                if (configuration.getThreadCount() < 1) {
+                    continue;
+                }
+
                 configuration.setConfigFilePath(configPath);
                 configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
                 List<MigrationJob> jobs = getMigrationJobs(configuration);
