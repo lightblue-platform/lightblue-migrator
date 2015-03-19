@@ -154,6 +154,8 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             }
+            
+            LOGGER.info("Done setting up job executors");
 
             if (executors.isEmpty()) {
                 if (run && !Thread.interrupted()) {
@@ -163,6 +165,7 @@ public class ConsistencyChecker implements Runnable {
                         timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
                     }
                     if (timeUntilNextJob > MAX_JOB_WAIT_MSEC) {
+                        timeUntilNextJob = MAX_JOB_WAIT_MSEC;
                         LOGGER.info("Time to next job ({} msec) is greater than max wait time ({} msec}. Defaulting to max.", timeUntilNextJob, MAX_JOB_WAIT_MSEC);
                     }
                     try {
@@ -186,15 +189,19 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             }
+            
+            LOGGER.info("Job executors done");
         }
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
+        LOGGER.info("Loading jobs for {}", configuration.getConfigurationName());
         List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             findRequest.where(and(
                     withValue("configurationName = " + configuration.getConfigurationName()),
+                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
                     not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
@@ -227,7 +234,7 @@ public class ConsistencyChecker implements Runnable {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             findRequest.where(withValue("whenAvailableDate >= " + ClientConstants.getDateFormat().format(new Date())));
             findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASC));
-            findRequest.range(0, 1);
+            findRequest.range(0, 0); // range is inclusive
             findRequest.select(includeFieldRecursively("*"));
             job = client.data(findRequest, MigrationJob.class);
         } catch (IOException e) {
