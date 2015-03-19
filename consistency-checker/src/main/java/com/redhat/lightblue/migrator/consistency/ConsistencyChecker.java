@@ -204,6 +204,8 @@ public class ConsistencyChecker implements Runnable {
                     withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
                     not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
+
+            LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
@@ -217,6 +219,8 @@ public class ConsistencyChecker implements Runnable {
             DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
             findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
             findRequest.select(includeFieldRecursively("*"));
+
+            LOGGER.debug("Finding Job Configurations: {}", findRequest.getBody());
             configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationConfigurations", e);
@@ -236,6 +240,8 @@ public class ConsistencyChecker implements Runnable {
             findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASC));
             findRequest.range(0, 0); // range is inclusive
             findRequest.select(includeFieldRecursively("*"));
+
+            LOGGER.debug("Get next job: {}", findRequest.getBody());
             job = client.data(findRequest, MigrationJob.class);
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJob", e);
