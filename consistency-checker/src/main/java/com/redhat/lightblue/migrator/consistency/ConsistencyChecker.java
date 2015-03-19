@@ -197,7 +197,9 @@ public class ConsistencyChecker implements Runnable {
                     withValue("configurationName = " + configuration.getConfigurationName()),
                     not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
+            LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+            LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
