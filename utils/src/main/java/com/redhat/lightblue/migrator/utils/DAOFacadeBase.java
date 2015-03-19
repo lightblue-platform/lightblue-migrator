@@ -3,6 +3,7 @@ package com.redhat.lightblue.migrator.utils;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -125,6 +126,10 @@ public class DAOFacadeBase<D> {
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
+    public <T> List<T> callDAOReadMethodReturnList(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+        return (List<T>)callDAOReadMethod(returnedType, methodName, types, values);
+    }
+
     /**
      * Call dao method which reads data. Won't work if method has primitive parameters.
      *
@@ -203,6 +208,19 @@ public class DAOFacadeBase<D> {
         }
 
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
+    }
+
+    /**
+     * Call dao method which writes data. Won't work if method has primitive parameters.
+     *
+     * @param returnedType type of the returned object
+     * @param methodName method name to call
+     * @param values List of parameters
+     * @return Object returned by dao
+     * @throws Exception
+     */
+    public <T> T callDAOWriteMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+        return callDAOWriteMethod(returnedType, methodName, toClasses(values), values);
     }
 
 }
