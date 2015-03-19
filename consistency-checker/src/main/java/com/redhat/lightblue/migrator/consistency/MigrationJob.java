@@ -573,7 +573,13 @@ public class MigrationJob implements Runnable {
                         idValues.add(sourceDocument.getValue().get(idField).asText());
                     }
 
-                    LOGGER.warn("INCONSISTENT: Doc identified by fields [{}] with values [{}] has inconsistent paths: {}",
+                    // log as key=value to make parsing easy
+                    // fields to log: config name, job id, dest entity name & version, id field names & values, list of inconsistent paths
+                    LOGGER.error("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\"",
+                            migrationConfiguration.getConfigurationName(),
+                            migrationConfiguration.getDestinationEntityName(),
+                            migrationConfiguration.getDestinationEntityVersion(),
+                            this._id,
                             StringUtils.join(migrationConfiguration.getDestinationIdentityFields(), ","),
                             StringUtils.join(idValues, ","),
                             StringUtils.join(inconsistentPaths, ","));
