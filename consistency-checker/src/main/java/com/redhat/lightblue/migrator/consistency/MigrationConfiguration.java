@@ -4,128 +4,167 @@ import java.util.List;
 
 public class MigrationConfiguration {
 
-	private String configFilePath;
+    private String configFilePath;
 
-	private String hostName;
-	private int threadCount;
+    private String migrationConfigurationEntityVersion;
+    private String migrationJobEntityVersion;
 
-	private String configurationName;
-	private String consistencyCheckerName;
+    private List<String> authorizedHostnames;
+    private int threadCount;
 
-	private List<String> comparisonExclusionPaths;
-	
-	private String destinationEntityName;
-	private String destinationEntityVersion;
-	private List<String> destinationEntityKeyFields;
+    private String configurationName;
+    private String consistencyCheckerName;
 
-	private String sourceEntityName;
-	private String sourceEntityVersion;
-	private String sourceTimestampPath;
+    private List<String> comparisonExclusionPaths;
 
-	private boolean overwriteDestinationDocuments = false;
+    private String destinationEntityName;
+    private String destinationEntityVersion;
+    private List<String> destinationIdentityFields;
 
-	public String getConfigFilePath() {
-		return configFilePath;
-	}
+    private String sourceEntityName;
+    private String sourceEntityVersion;
+    private String sourceTimestampPath;
 
-	public void setConfigFilePath(String configFilePath) {
-		this.configFilePath = configFilePath;
-	}
+    private boolean overwriteDestinationDocuments = false;
 
-	public String getHostName() {
-		return hostName;
-	}
+    public String getConfigFilePath() {
+        return configFilePath;
+    }
 
-	public void setHostName(String hostName) {
-		this.hostName = hostName;
-	}
+    public void setConfigFilePath(String configFilePath) {
+        this.configFilePath = configFilePath;
+    }
 
-	public int getThreadCount() {
-		return threadCount;
-	}
+    public String getMigrationConfigurationEntityVersion() {
+        return migrationConfigurationEntityVersion;
+    }
 
-	public void setThreadCount(int threadCount) {
-		this.threadCount = threadCount;
-	}
+    public void setMigrationConfigurationEntityVersion(String migrationConfigurationEntityVersion) {
+        this.migrationConfigurationEntityVersion = migrationConfigurationEntityVersion;
+    }
 
-	public String getConfigurationName() {
-		return configurationName;
-	}
+    public String getMigrationJobEntityVersion() {
+        return migrationJobEntityVersion;
+    }
 
-	public void setConfigurationName(String configurationName) {
-		this.configurationName = configurationName;
-	}
-	
-	public void setConsistencyCheckerName(String name) {
-		this.consistencyCheckerName = name;
-	}
+    public void setMigrationJobEntityVersion(String migrationJobEntityVersion) {
+        this.migrationJobEntityVersion = migrationJobEntityVersion;
+    }
 
-	public String getConsistencyCheckerName() {
-		return consistencyCheckerName;
-	}
+    public List<String> getAuthorizedHostnames() {
+        return authorizedHostnames;
+    }
 
-	public List<String> getComparisonExclusionPaths() {
-		return comparisonExclusionPaths;
-	}
+    public void setAuthorizedHostnames(List<String> hostName) {
+        this.authorizedHostnames = hostName;
+    }
 
-	public void setComparisonExclusionPaths(List<String> comparisonExclusionPaths) {
-		this.comparisonExclusionPaths = comparisonExclusionPaths;
-	}
-	
-	public String getDestinationEntityName() {
-		return destinationEntityName;
-	}
-	
-	public void setDestinationEntityName(String destinationEntityName) {
-		this.destinationEntityName = destinationEntityName;
-	}
+    public int getThreadCount() {
+        return threadCount;
+    }
 
-	public String getDestinationEntityVersion() {
-		return destinationEntityVersion;
-	}
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
+    }
 
-	public void setDestinationEntityVersion(String destinationEntityVersion) {
-		this.destinationEntityVersion = destinationEntityVersion;
-	}
+    public String getConfigurationName() {
+        return configurationName;
+    }
 
-	public List<String> getDestinationEntityKeyFields() {
-		return destinationEntityKeyFields;
-	}
+    public void setConfigurationName(String configurationName) {
+        this.configurationName = configurationName;
+    }
 
-	public void setDestinationEntityKeyFields(List<String> destinationEntityKeyFields) {
-		this.destinationEntityKeyFields = destinationEntityKeyFields;
-	}
+    public void setConsistencyCheckerName(String name) {
+        this.consistencyCheckerName = name;
+    }
 
-	public String getSourceEntityName() {
-		return sourceEntityName;
-	}
+    public String getConsistencyCheckerName() {
+        return consistencyCheckerName;
+    }
 
-	public void setSourceEntityName(String sourceEntityName) {
-		this.sourceEntityName = sourceEntityName;
-	}
+    public List<String> getComparisonExclusionPaths() {
+        return comparisonExclusionPaths;
+    }
 
-	public String getSourceEntityVersion() {
-		return sourceEntityVersion;
-	}
+    public void setComparisonExclusionPaths(List<String> comparisonExclusionPaths) {
+        this.comparisonExclusionPaths = comparisonExclusionPaths;
+    }
 
-	public void setSourceEntityVersion(String sourceEntityVersion) {
-		this.sourceEntityVersion = sourceEntityVersion;
-	}
+    public String getDestinationEntityName() {
+        return destinationEntityName;
+    }
 
-	public String getSourceTimestampPath() {
-		return sourceTimestampPath;
-	}
+    public void setDestinationEntityName(String destinationEntityName) {
+        this.destinationEntityName = destinationEntityName;
+    }
 
-	public void setSourceTimestampPath(String sourceTimestampPath) {
-		this.sourceTimestampPath = sourceTimestampPath;
-	}
+    public String getDestinationEntityVersion() {
+        return destinationEntityVersion;
+    }
 
-	public void setOverwriteDestinationDocuments(boolean overwriteDestinationDocuments) {
-		this.overwriteDestinationDocuments = overwriteDestinationDocuments;
-	}
+    public void setDestinationEntityVersion(String destinationEntityVersion) {
+        this.destinationEntityVersion = destinationEntityVersion;
+    }
 
-	public boolean shouldOverwriteDestinationDocuments() {
-		return overwriteDestinationDocuments;
-	}
+    public List<String> getDestinationIdentityFields() {
+        return destinationIdentityFields;
+    }
+
+    public void setDestinationIdentityFields(List<String> destinationEntityKeyFields) {
+        this.destinationIdentityFields = destinationEntityKeyFields;
+    }
+
+    public String getSourceEntityName() {
+        return sourceEntityName;
+    }
+
+    public void setSourceEntityName(String sourceEntityName) {
+        this.sourceEntityName = sourceEntityName;
+    }
+
+    public String getSourceEntityVersion() {
+        return sourceEntityVersion;
+    }
+
+    public void setSourceEntityVersion(String sourceEntityVersion) {
+        this.sourceEntityVersion = sourceEntityVersion;
+    }
+
+    public String getSourceTimestampPath() {
+        return sourceTimestampPath;
+    }
+
+    public void setSourceTimestampPath(String sourceTimestampPath) {
+        this.sourceTimestampPath = sourceTimestampPath;
+    }
+
+    public void setOverwriteDestinationDocuments(boolean overwriteDestinationDocuments) {
+        this.overwriteDestinationDocuments = overwriteDestinationDocuments;
+    }
+
+    public boolean shouldOverwriteDestinationDocuments() {
+        return overwriteDestinationDocuments;
+    }
+
+    @Override
+    public String toString() {
+        return "MigrationConfiguration [configFilePath=" + configFilePath
+                + ", migrationConfigurationEntityVersion="
+                + migrationConfigurationEntityVersion
+                + ", migrationJobEntityVersion=" + migrationJobEntityVersion
+                + ", authorizedHostnames=" + authorizedHostnames
+                + ", threadCount=" + threadCount + ", configurationName="
+                + configurationName + ", consistencyCheckerName="
+                + consistencyCheckerName + ", comparisonExclusionPaths="
+                + comparisonExclusionPaths + ", destinationEntityName="
+                + destinationEntityName + ", destinationEntityVersion="
+                + destinationEntityVersion + ", destinationIdentityFields="
+                + destinationIdentityFields + ", sourceEntityName="
+                + sourceEntityName + ", sourceEntityVersion="
+                + sourceEntityVersion + ", sourceTimestampPath="
+                + sourceTimestampPath + ", overwriteDestinationDocuments="
+                + overwriteDestinationDocuments + "]";
+    }
 
 }

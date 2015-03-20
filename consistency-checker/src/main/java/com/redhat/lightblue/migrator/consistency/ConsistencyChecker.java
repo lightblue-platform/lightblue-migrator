@@ -1,5 +1,8 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.expression.query.ArrayQuery.withSubfield;
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.UnaryLogicalQuery.not;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
@@ -7,7 +10,6 @@ import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -20,18 +22,19 @@ import org.slf4j.LoggerFactory;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
 
-public class ConsistencyChecker implements Runnable{
+public class ConsistencyChecker implements Runnable {
 
     LightblueClient client;
 
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
-    public static final int MAX_JOB_WAIT_TIME = 86400000; // 24 hours
-    public static final int MAX_THREAD_WAIT_TIME = 21600; // 6 hours
+    public static final int MAX_JOB_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
+    public static final int MAX_THREAD_WAIT_MSEC = 5 * 60 * 1000; // 5 minutes
 
     private String consistencyCheckerName;
     private String hostName;
@@ -116,24 +119,32 @@ public class ConsistencyChecker implements Runnable{
 
         LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
 
+        LightblueHttpClient httpClient;
         if (configPath != null) {
-            client = new LightblueHttpClient(configPath);
+            httpClient = new LightblueHttpClient(configPath);
         } else {
-            client = new LightblueHttpClient();
+            httpClient = new LightblueHttpClient();
         }
+        client = new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
 
         while (run && !Thread.interrupted()) {
             List<ExecutorService> executors = new ArrayList<>();
             List<MigrationConfiguration> configurations = getJobConfigurations();
 
             for (MigrationConfiguration configuration : configurations) {
+                if (configuration.getThreadCount() < 1) {
+                    continue;
+                }
+
                 configuration.setConfigFilePath(configPath);
+                configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
                 List<MigrationJob> jobs = getMigrationJobs(configuration);
 
                 if (!jobs.isEmpty()) {
                     ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
                     executors.add(jobExecutor);
                     for (MigrationJob job : jobs) {
+                        job.setJobConfiguration(configuration);
                         job.setOwner(getConsistencyCheckerName());
                         job.setHostName(getHostName());
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
@@ -143,15 +154,24 @@ public class ConsistencyChecker implements Runnable{
                     }
                 }
             }
+            
+            LOGGER.info("Done setting up job executors");
 
             if (executors.isEmpty()) {
-                if(run && !Thread.interrupted()){
+                if (run && !Thread.interrupted()) {
                     MigrationJob nextJob = getNextAvailableJob();
-                    long timeUntilNextJob = nextJob.getWhenAvailable().getTime() - new Date().getTime();
-                    try{
-                        Thread.sleep((timeUntilNextJob > MAX_JOB_WAIT_TIME) ? MAX_JOB_WAIT_TIME : timeUntilNextJob);
+                    long timeUntilNextJob = MAX_JOB_WAIT_MSEC;
+                    if (nextJob != null && nextJob.getWhenAvailableDate() != null) {
+                        timeUntilNextJob = nextJob.getWhenAvailableDate().getTime() - new Date().getTime();
                     }
-                    catch (InterruptedException e){
+                    if (timeUntilNextJob > MAX_JOB_WAIT_MSEC) {
+                        timeUntilNextJob = MAX_JOB_WAIT_MSEC;
+                        LOGGER.info("Time to next job ({} msec) is greater than max wait time ({} msec}. Defaulting to max.", timeUntilNextJob, MAX_JOB_WAIT_MSEC);
+                    }
+                    try {
+                        LOGGER.info("Waiting for next job, sleeping for {} msec", timeUntilNextJob);
+                        Thread.sleep(timeUntilNextJob);
+                    } catch (InterruptedException e) {
                         run = false;
                     }
                 }
@@ -159,27 +179,35 @@ public class ConsistencyChecker implements Runnable{
                 for (ExecutorService executor : executors) {
                     executor.shutdown();
                 }
-                if((!Thread.interrupted())){
-                    try{
+                if ((!Thread.interrupted())) {
+                    try {
                         for (ExecutorService executor : executors) {
-                            executor.awaitTermination(MAX_THREAD_WAIT_TIME, TimeUnit.MILLISECONDS);
+                            executor.awaitTermination(MAX_THREAD_WAIT_MSEC, TimeUnit.MILLISECONDS);
                         }
-                    }
-                    catch (InterruptedException e) {
+                    } catch (InterruptedException e) {
                         run = false;
                     }
                 }
             }
+            
+            LOGGER.info("Job executors done");
         }
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
-        List<MigrationJob> jobs = Collections.emptyList();
+        LOGGER.info("Loading jobs for {}", configuration.getConfigurationName());
+        List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("configurationName = " + configuration.getConfigurationName()));
+            findRequest.where(and(
+                    withValue("configurationName = " + configuration.getConfigurationName()),
+                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
+                    not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
+
+            LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+            LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
@@ -187,11 +215,13 @@ public class ConsistencyChecker implements Runnable{
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
-        List<MigrationConfiguration> configurations = Collections.emptyList();
+        List<MigrationConfiguration> configurations = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
             findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
             findRequest.select(includeFieldRecursively("*"));
+
+            LOGGER.debug("Finding Job Configurations: {}", findRequest.getBody());
             configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationConfigurations", e);
@@ -199,14 +229,20 @@ public class ConsistencyChecker implements Runnable{
         return configurations;
     }
 
+    /**
+     * Gets the next job available for processing.
+     * @return 
+     */
     protected MigrationJob getNextAvailableJob() {
         MigrationJob job = null;
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("whenAvailable >= " + ClientConstants.getDateFormat().format(new Date())));
-            findRequest.sort(new SortCondition("whenAvailable", SortDirection.ASC));
-            findRequest.range(0, 1);
+            findRequest.where(withValue("whenAvailableDate >= " + ClientConstants.getDateFormat().format(new Date())));
+            findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASC));
+            findRequest.range(0, 0); // range is inclusive
             findRequest.select(includeFieldRecursively("*"));
+
+            LOGGER.debug("Get next job: {}", findRequest.getBody());
             job = client.data(findRequest, MigrationJob.class);
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJob", e);

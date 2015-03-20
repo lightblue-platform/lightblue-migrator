@@ -18,12 +18,12 @@ public class LightblueMigration {
         return LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY.isActive();
     }
 
-    public static boolean shouldReadConsistencyEntity() {
-        return LightblueMigrationFeatures.READ_CONSISTENCY_ENTITY.isActive();
+    public static boolean shouldCheckReadConsistency() {
+        return LightblueMigrationFeatures.CHECK_READ_CONSISTENCY.isActive();
     }
 
-    public static boolean shouldWriteConsistencyEntity() {
-        return LightblueMigrationFeatures.WRITE_CONSISTENCY_ENTITY.isActive();
+    public static boolean shouldCheckWriteConsistency() {
+        return LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY.isActive();
     }
 
 }

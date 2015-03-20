@@ -7,15 +7,15 @@
     <version>0.0.1-SNAPSHOT</version>
   </parent>
   <groupId>com.redhat.lightblue.migrator</groupId>
-  <artifactId>lightblue-migrator-core</artifactId>
+  <artifactId>lightblue-migrator-utils</artifactId>
   <packaging>jar</packaging>
   <version>0.0.1-SNAPSHOT</version>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <dependencies>
     <dependency>
-      <groupId>org.jboss.spec</groupId>
-      <artifactId>jboss-javaee-6.0</artifactId>
-      <type>pom</type>
+      <groupId>com.redhat.lightblue.migrator</groupId>
+      <artifactId>lightblue-migrator-core</artifactId>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
@@ -30,19 +30,8 @@
       <artifactId>togglz-servlet</artifactId>
     </dependency>
     <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.togglz</groupId>
-      <artifactId>togglz-testing</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.togglz</groupId>
-      <artifactId>togglz-junit</artifactId>
-      <scope>test</scope>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
   </dependencies>
   <build>

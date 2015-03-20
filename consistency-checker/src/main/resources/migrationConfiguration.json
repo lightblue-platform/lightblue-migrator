@@ -83,13 +83,13 @@
                 "description": "Name of the consistency checker responsible for this configuration"
             },
             "authorizedHostnames": { 
-	            "type": "array",
-	            "items": {
-	                "type": "string"
-	            },
-	            "minItems": 1,
-	            "uniqueItems": true,
-	            "constraints": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                },
+                "minItems": 1,
+                "uniqueItems": true,
+                "constraints": {
                     "required": true
                 },
                 "description": "hosts authorized to run this migration"
@@ -100,6 +100,13 @@
                     "required": true
                 },
                 "description": "Number of threads that should be devoted to migrator jobs"
+            },
+            "overwriteDestinationDocuments": {
+                "type": "boolean",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Controls whether or not documents are overwritten (allows for no-op migration)"
             },
             "comparisonExclusionPaths": {
                 "type": "array",
@@ -165,7 +172,7 @@
                 "description": "source Entity Version for data being migrated"
             },
             "sourceTimestampPath" : {
-                "type": "date",
+                "type": "string",
                 "constraints": {
                     "required": true
                 },

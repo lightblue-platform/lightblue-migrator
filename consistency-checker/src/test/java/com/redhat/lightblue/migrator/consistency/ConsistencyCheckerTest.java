@@ -8,11 +8,15 @@ import org.apache.commons.lang.time.DateUtils;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 
 public class ConsistencyCheckerTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyCheckerTest.class);
 
     private final String checkerName = "testChecker";
     private final String hostname = "http://lightblue.io";
@@ -115,8 +119,8 @@ public class ConsistencyCheckerTest {
                         MigrationJob job = new MigrationJob() {
                             @Override
                             public void run() {
-                                LOGGER.info("MigrationJob started");
-                                LOGGER.info("MigrationJob completed");
+                                ConsistencyCheckerTest.LOGGER.info("MigrationJob started");
+                                ConsistencyCheckerTest.LOGGER.info("MigrationJob completed");
                             }
                         };
                         jobs.add(job);
@@ -145,7 +149,7 @@ public class ConsistencyCheckerTest {
             @Override
             protected MigrationJob getNextAvailableJob() {
                 MigrationJob job = new MigrationJob();
-                job.setWhenAvailable(DateUtils.addSeconds(new Date(), 5));
+                job.setWhenAvailableDate(DateUtils.addSeconds(new Date(), 5));
                 return job;
             }
 
