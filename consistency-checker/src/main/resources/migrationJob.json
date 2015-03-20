@@ -6,7 +6,10 @@
             "datasource": "mongodata"
         },
         "enums": [
-            
+          {
+            "name": "jobStatusType",
+            "values":[ "STARTING","RUNNING","RUNNING_ASYNC","COMPLETED_SUCCESS","COMPLETED_PARTIAL","COMPLETED_FAILED","ABORTED_DUPLICATE","ABORTED_TIMEOUT","ABORTED_AUTH","ABORTED_UNKNOWN","UNKNOWN" ]
+          }
         ],
         "indexes": [
             {
@@ -134,9 +137,10 @@
                             "description": "Actual end date for this migration job"
                         },
                         "jobStatus": {
-                            "enum":[ "NEW","READY","STARTING","RUNNING","RUNNING_ASYNC","FINISHING","COMPLETED_SUCCESS","COMPLETED_PARTIAL","COMPLETED_FAILED","ABORTING","ABORTED_DUPLICATE","ABORTED_TIMEOUT","ABORTED_AUTH","ABORTED_UNKNOWN","UNKNOWN" ],
+                            "type": "string",
                             "constraints": {
-                                "required": true
+                                "required": true,
+                                "enum": "jobStatusType"
                             },
                             "description": "Indicates the status of the execution of this job"
                         },

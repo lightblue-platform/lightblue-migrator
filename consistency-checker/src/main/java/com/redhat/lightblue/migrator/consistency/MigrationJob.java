@@ -699,13 +699,4 @@ public class MigrationJob implements Runnable {
         }
         return response;
     }
-
-    public static void main(String[] args) {
-
-        JobStatus[] values = JobStatus.values();
-        for (JobStatus value : values) {
-            System.out.print("\""+value+"\",");
-        }
-    }
-
 }
