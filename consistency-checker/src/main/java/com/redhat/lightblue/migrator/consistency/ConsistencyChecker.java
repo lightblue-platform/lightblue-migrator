@@ -205,7 +205,9 @@ public class ConsistencyChecker implements Runnable {
             findRequest.where(and(
                     withValue("configurationName = " + configuration.getConfigurationName()),
                     withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                    not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
+                    not(withSubfield("jobExecutions", withValue("jobStatus = 'COMPLETED_SUCCESS'"))),
+                    not(withSubfield("jobExecutions", withValue("jobStatus = 'COMPLETED_PARTIAL'")))
+            ));
             findRequest.select(includeFieldRecursively("*"));
 
             // only pick up the first MAX_JOBS_PER_ENTITY jobs

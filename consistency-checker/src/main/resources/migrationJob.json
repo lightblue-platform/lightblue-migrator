@@ -133,12 +133,12 @@
                             },
                             "description": "Actual end date for this migration job"
                         },
-                        "completedFlag": {
-                            "type": "boolean",
+                        "jobStatus": {
+                            "enum":[ "NEW","READY","STARTING","RUNNING","RUNNING_ASYNC","FINISHING","COMPLETED_SUCCESS","COMPLETED_PARTIAL","COMPLETED_FAILED","ABORTING","ABORTED_DUPLICATE","ABORTED_TIMEOUT","ABORTED_AUTH","ABORTED_UNKNOWN","UNKNOWN" ],
                             "constraints": {
                                 "required": true
                             },
-                            "description": "Indicates whether or not this job successfully completed"
+                            "description": "Indicates the status of the execution of this job"
                         },
                         "processedDocumentCount": {
                             "type": "integer",

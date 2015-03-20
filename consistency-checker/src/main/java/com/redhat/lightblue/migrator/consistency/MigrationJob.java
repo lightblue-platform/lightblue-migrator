@@ -301,7 +301,7 @@ public class MigrationJob implements Runnable {
                 if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
                     currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
                 }
-                currentRun.setCompletedFlag(true);
+                currentRun.setJobStatus(JobStatus.COMPLETED_SUCCESS);
                 currentRun.setActualEndDate(new Date());
                 saveJobDetails(jobExecutionPsn);
                 LOGGER.debug("Success Save Response: {}", response.getText());
@@ -341,6 +341,24 @@ public class MigrationJob implements Runnable {
         // should only be one job returned, verify
         if (jobs.length > 1) {
             throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
+        }
+
+        // first incomplete job execution must be for this execution else we don't process it
+        int i = 0;
+        for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
+            // if we find an execution that is not our pid but is active
+            // in the array before ours, we do not get to process
+            if (!execution.getJobStatus().isCompleted() && !pid.equals(execution.getPid())) {
+                // check if this is a dead job
+                if (System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
+                    // job is dead, mark it complete
+                    LightblueResponse responseMarkDead = markExecutionComplete(i);
+                    LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
+                } else {
+                    // we're not the one processing this guy!
+                    processJob = false;
+                }
+            }
         }
 
         // first incomplete job execution must be for this execution else we don't process it
@@ -404,7 +422,7 @@ public class MigrationJob implements Runnable {
         currentRun.setCompletedFlag(true);
 
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.getJobStatus().isCompleted()))));
         updateRequest.updates(updates);
 
         LOGGER.debug("Marking Execution Complete: {}", updateRequest.getBody());
@@ -436,7 +454,7 @@ public class MigrationJob implements Runnable {
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".pid", new ObjectRValue(currentRun.getPid()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualStartDate", new ObjectRValue(currentRun.getActualStartDate()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.getJobStatus().isCompleted()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".processedDocumentCount", new ObjectRValue(currentRun.getProcessedDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".consistentDocumentCount", new ObjectRValue(currentRun.getConsistentDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
@@ -680,6 +698,14 @@ public class MigrationJob implements Runnable {
             throw new RuntimeException("Error returned in response " + response.getText() + " for request " + request.getBody());
         }
         return response;
+    }
+
+    public static void main(String[] args) {
+
+        JobStatus[] values = JobStatus.values();
+        for (JobStatus value : values) {
+            System.out.print("\""+value+"\",");
+        }
     }
 
 }
