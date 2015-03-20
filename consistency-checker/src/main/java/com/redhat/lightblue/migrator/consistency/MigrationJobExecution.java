@@ -12,8 +12,7 @@ public class MigrationJobExecution {
     private Date actualStartDate;
     private Date actualEndDate;
 
-    // did job complete successfully?
-    private boolean completedFlag = false;
+    private JobStatus jobStatus = JobStatus.NEW;
 
     // summary info on what the job did
     private int processedDocumentCount = 0;
@@ -61,14 +60,6 @@ public class MigrationJobExecution {
         this.actualEndDate = actualEndDate;
     }
 
-    public boolean isCompletedFlag() {
-        return completedFlag;
-    }
-
-    public void setCompletedFlag(boolean completedFlag) {
-        this.completedFlag = completedFlag;
-    }
-
     public int getProcessedDocumentCount() {
         return processedDocumentCount;
     }
@@ -99,5 +90,13 @@ public class MigrationJobExecution {
 
     public void setOverwrittenDocumentCount(int overwrittenDocumentCount) {
         this.overwrittenDocumentCount = overwrittenDocumentCount;
+    }
+
+    public JobStatus getJobStatus() {
+        return jobStatus;
+    }
+
+    public void setJobStatus(JobStatus jobStatus) {
+        this.jobStatus = jobStatus;
     }
 }
