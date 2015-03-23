@@ -167,6 +167,13 @@
                                 "required": true
                             },
                             "description": "Number of documents that were overwritten in destination"
+                        },
+                        "sourceQuery": {
+                            "type": "string",
+                            "constraints": {
+                                "required": false
+                            },
+                            "description": "The query used to load data from source"
                         }
                     },
                     "type": "object"
