@@ -121,7 +121,7 @@ public class MigrationJob implements Runnable {
         this.migrationConfiguration = jobConfiguration;
     }
 
-    private List<MigrationJobExecution> getJobExecutions() {
+    protected List<MigrationJobExecution> getJobExecutions() {
         if (null == jobExecutions) {
             jobExecutions = new ArrayList<>(1);
         }
@@ -440,6 +440,10 @@ public class MigrationJob implements Runnable {
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".consistentDocumentCount", new ObjectRValue(currentRun.getConsistentDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".overwrittenDocumentCount", new ObjectRValue(currentRun.getOverwrittenDocumentCount()))));
+
+        if (currentRun.getSourceQuery() != null && !currentRun.getSourceQuery().isEmpty()) {
+            updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".sourceQuery", new ObjectRValue(currentRun.getSourceQuery()))));
+        }
         updateRequest.updates(updates);
 
         LOGGER.debug("save: {}", updateRequest.getBody());
@@ -489,6 +493,7 @@ public class MigrationJob implements Runnable {
             conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
             sourceRequest.where(and(conditions));
             sourceRequest.select(includeFieldRecursively("*"));
+            currentRun.setSourceQuery(sourceRequest.getBody());
             sourceDocuments = findSourceData(sourceRequest);
         } catch (IOException e) {
             throw new RuntimeException("Problem getting sourceDocuments", e);

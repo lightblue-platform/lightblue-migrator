@@ -759,6 +759,11 @@ public class MigrationJobTest {
         Assert.assertEquals(2, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        
+        // verify source query is set
+        Assert.assertNotNull(migrationJob.getJobExecutions());
+        Assert.assertEquals(1, migrationJob.getJobExecutions().size());
+        Assert.assertNotNull(migrationJob.getJobExecutions().get(0).getSourceQuery());
     }
 
     @Test
