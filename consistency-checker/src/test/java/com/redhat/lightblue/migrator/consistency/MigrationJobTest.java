@@ -947,7 +947,7 @@ public class MigrationJobTest {
         pathsToExclude.add("lastUpdateTime");
         jobConfiguration.setComparisonExclusionPaths(pathsToExclude);
         jobConfiguration.setDestinationIdentityFields(new ArrayList<String>());
-        jobConfiguration.setSourceTimestampPath("source-timestamp");
+        jobConfiguration.setSourceTimestampPath("sourceTimestamp");
         migrationJob.setJobConfiguration(jobConfiguration);
         migrationJob.setOverwriteDestinationDocuments(true);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
