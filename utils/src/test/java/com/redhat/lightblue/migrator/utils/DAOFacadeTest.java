@@ -21,11 +21,13 @@ public class DAOFacadeTest {
 
     @Mock CountryDAO legacyDAO;
     @Mock CountryDAO lightblueDAO;
+    @Mock EntityIdStore entityIdStore;
     CountryDAO facade;
 
     @Before
     public void setup() {
         facade = new DAOFacadeExample(legacyDAO, lightblueDAO);
+        ((DAOFacadeBase)facade).setEntityIdStore(entityIdStore);
     }
 
     /* Read tests */
@@ -143,6 +145,33 @@ public class DAOFacadeTest {
 
     /* insert tests */
 
-    // TODO: implement insert tests
+    @Test
+    public void initialPhaseCreate() {
+        LightblueMigrationPhase.initialPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        facade.createCountry(pl);
+
+        Mockito.verifyZeroInteractions(lightblueDAO);
+        Mockito.verify(legacyDAO).createCountry(pl);
+    }
+
+    @Test
+    public void dualWritePhaseCreateConsistentTest() {
+        LightblueMigrationPhase.dualWritePhase(togglzRule);
+
+        Country pl = new Country("PL");
+        Country createdByLegacy = new Country(101l, "PL"); // has id set
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(createdByLegacy);
+
+        Country createdCountry = facade.createCountry(pl);
+        Assert.assertEquals(101l, createdCountry.getId());
+
+        Mockito.verify(entityIdStore).storeId(101l);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(lightblueDAO).createCountry(createdByLegacy); // DAOFacadeExample should set the id
+    }
 
 }

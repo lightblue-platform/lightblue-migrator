@@ -3,6 +3,13 @@ package com.redhat.lightblue.migrator.utils;
 
 public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements CountryDAO {
 
+    public final EntityIdExtractor<Country> entityIdExtractor = new EntityIdExtractor<Country>() {
+        @Override
+        public Long extractId(Country entity) {
+            return entity.getId();
+        }
+    };
+
     public DAOFacadeExample(CountryDAO legacyDAO, CountryDAO lightblueDAO) {
         super(legacyDAO, lightblueDAO);
     }
@@ -10,11 +17,10 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
     @Override
     public Country createCountry(Country country) {
         try {
-            return callDAOWriteMethod(Country.class, "createCountry", country);
+            return callDAOCreateMethod(entityIdExtractor, Country.class, "createCountry", country);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
-
     }
 
     @Override

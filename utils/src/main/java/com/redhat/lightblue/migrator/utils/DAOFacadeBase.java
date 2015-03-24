@@ -3,9 +3,9 @@ package com.redhat.lightblue.migrator.utils;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
@@ -31,6 +31,12 @@ public class DAOFacadeBase<D> {
     private static final Logger log = LoggerFactory.getLogger(LightblueMigrationConfiguration.class);
 
     protected final D legacyDAO, lightblueDAO;
+
+    private EntityIdStore entityIdStore = null;
+
+    public void setEntityIdStore(EntityIdStore entityIdStore) {
+        this.entityIdStore = entityIdStore;
+    }
 
     public DAOFacadeBase(D legacyDAO, D lightblueDAO) {
         super();
@@ -221,6 +227,72 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOWriteMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
         return callDAOWriteMethod(returnedType, methodName, toClasses(values), values);
+    }
+
+    /**
+     * Call dao method which creates data.
+     *
+     * @param returnedType type of the returned object
+     * @param methodName method name to call
+     * @param types List of parameter types
+     * @param values List of parameters
+     * @return Object returned by dao
+     * @throws Exception
+     */
+    public <T> T callDAOCreateMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+        log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+
+        T legacyEntity = null, lightblueEntity = null;
+
+        if (LightblueMigration.shouldWriteSourceEntity()) {
+            // insert to oracle, synchronously
+            log.debug("."+methodName+" creating in legacy");
+            Method method = legacyDAO.getClass().getMethod(methodName,types);
+            legacyEntity = (T) method.invoke(legacyDAO, values);
+        }
+
+        if (LightblueMigration.shouldWriteDestinationEntity()) {
+            log.debug("."+methodName+" creating in lightblue");
+
+            if (entityIdStore != null) {
+                Long id = entityIdExtractor.extractId(legacyEntity);
+                entityIdStore.storeId(id);
+            }
+
+            Method method = lightblueDAO.getClass().getMethod(methodName, types);
+            lightblueEntity = (T) method.invoke(lightblueDAO, values);
+
+        }
+
+        if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
+            // make sure that response from lightblue and oracle are the same
+            log.debug("."+methodName+" checking returned entity's consistency");
+
+            if (lightblueEntity == null && legacyEntity == null) {
+                return null;
+            }
+
+            if (lightblueEntity == null && legacyEntity != null) {
+                logInconsistency(returnedType.getName(), methodName, values);
+                return legacyEntity;
+            }
+
+            // check if entities match
+            if (Objects.equals(lightblueEntity, legacyEntity)) {
+                // return lightblue data if they are
+                return lightblueEntity;
+            } else {
+                // return oracle data if they aren't and log data inconsistency
+                logInconsistency(returnedType.getName(), methodName, values);
+                return legacyEntity;
+            }
+        }
+
+        return lightblueEntity != null ? lightblueEntity : legacyEntity;
+    }
+
+    public <T> T callDAOCreateMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+        return callDAOCreateMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 
 }

@@ -1,11 +1,23 @@
 package com.redhat.lightblue.migrator.utils;
 
+import java.util.Objects;
+
 public class Country {
 
     private String name, iso2Code, iso3Code;
+    private Long id;
+
+    public long getId() {
+        return id;
+    }
 
     public Country(String iso2Code) {
+        this(null, iso2Code);
+    }
+
+    public Country(Long id, String iso2Code) {
         super();
+        this.id = id;
         this.iso2Code = iso2Code;
     }
 
@@ -41,15 +53,7 @@ public class Country {
     public boolean equals(Object obj) {
         Country c = (Country) obj;
 
-        if (iso2Code == null && c.iso2Code == null) {
-            return true;
-        }
-
-        try {
-            return iso2Code.equals(c.iso2Code);
-        } catch (NullPointerException e) {
-            return false;
-        }
+        return Objects.equals(c.iso2Code, iso2Code) && Objects.equals(c.id, id);
     }
 
 }
