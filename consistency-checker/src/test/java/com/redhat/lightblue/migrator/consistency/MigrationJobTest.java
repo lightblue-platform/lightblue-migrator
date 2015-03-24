@@ -575,7 +575,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -630,7 +630,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
@@ -666,7 +666,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
@@ -704,7 +704,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -740,7 +740,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -759,7 +759,7 @@ public class MigrationJobTest {
         Assert.assertEquals(2, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-        
+
         // verify source query is set
         Assert.assertNotNull(migrationJob.getJobExecutions());
         Assert.assertEquals(1, migrationJob.getJobExecutions().size());
@@ -782,7 +782,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -818,7 +818,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -854,7 +854,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -890,7 +890,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -926,7 +926,7 @@ public class MigrationJobTest {
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
                 LightblueResponse response = new LightblueResponse();
-                
+
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -1027,6 +1027,9 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        // verify marked complete
+        Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
+        Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
     }
 
     /**
@@ -1082,5 +1085,8 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        // verify marked complete
+        Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
+        Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
     }
 }

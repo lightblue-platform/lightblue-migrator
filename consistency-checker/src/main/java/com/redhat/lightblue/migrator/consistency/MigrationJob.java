@@ -350,7 +350,8 @@ public class MigrationJob implements Runnable {
                 // in the array before ours, we do not get to process
                 if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
                     // check if this is a dead job
-                    if (System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
+                    if (execution.getActualStartDate() != null && 
+                            System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
                         // job is dead, mark it complete
                         LightblueResponse responseMarkDead = markExecutionComplete(i);
                         LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
@@ -401,6 +402,9 @@ public class MigrationJob implements Runnable {
         updateRequest.setProjections(projections);
 
         List<Update> updates = new ArrayList<>();
+        
+        currentRun.setActualEndDate(new Date());
+        currentRun.setCompletedFlag(true);
 
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
