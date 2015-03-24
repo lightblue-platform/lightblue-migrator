@@ -36,6 +36,13 @@ import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import static com.redhat.lightblue.migrator.consistency.MigrationJob.mapper;
 import com.redhat.lightblue.util.test.FileUtil;
+import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MigrationJobTest {
 
@@ -508,12 +515,12 @@ public class MigrationJobTest {
     }
 
     @Test
-    public void testGetDestinationDocuments_NullMap() {
+    public void testGetDestinationDocuments_NullMap() throws IOException {
         assertTrue(migrationJob.getDestinationDocuments(null).isEmpty());
     }
 
     @Test
-    public void testGetDestinationDocuments_EmptyMap() {
+    public void testGetDestinationDocuments_EmptyMap() throws IOException {
         assertTrue(migrationJob.getDestinationDocuments(new HashMap<String, JsonNode>()).isEmpty());
     }
 
@@ -1088,5 +1095,135 @@ public class MigrationJobTest {
         // verify marked complete
         Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
         Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+    }
+
+    /**
+     * Thread starvation:
+     * https://github.com/lightblue-platform/lightblue-migrator/issues/129
+     *
+     * Test with ExecutorService#submit
+     */
+    @Test
+    public void testException_getSourceDocuments_submit() throws IOException, URISyntaxException, InterruptedException {
+        final int JOB_COUNT = 100;
+        final int THREAD_COUNT = 2;
+        final AtomicInteger outstandingThreadCount = new AtomicInteger(0);
+
+        // create a job executor with more jobs than threads
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < JOB_COUNT; i++) {
+            outstandingThreadCount.getAndIncrement();
+            MigrationJob job = new MigrationJob() {
+                // array of responses to return
+                private final String[] jsonResponses = new String[]{
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                };
+
+                private int jsonResponsesPsn = 0;
+
+                @Override
+                protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                    LightblueResponse response = new LightblueResponse();
+                    JsonNode node = null;
+                    try {
+                        node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    response.setJson(node);
+                    return response;
+                }
+
+                @Override
+                protected Map<String, JsonNode> getSourceDocuments() {
+                    outstandingThreadCount.getAndDecrement();
+                    throw new RuntimeException("forced failure for testing", new SQLException("foo"));
+                }
+            };
+
+            job.setPid("pid1");
+
+            futures.add(executor.submit(job));
+        }
+
+        Assert.assertTrue(JOB_COUNT > THREAD_COUNT);
+
+        // all jobs are created.  There are JOB_COUNT of them but only THREAD_COUNT threads
+        // but we want to be sure to have *some* jobs to run before we wait for termination
+        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 2));
+        for (Future future : futures) {
+            try {
+                future.get();
+            } catch (ExecutionException ex) {
+                Assert.fail(ex.getCause().toString());
+            }
+        }
+        // and now that we're done, verify everything got processed
+        Assert.assertEquals(0, outstandingThreadCount.intValue());
+    }
+
+    /**
+     * Thread starvation:
+     * https://github.com/lightblue-platform/lightblue-migrator/issues/129
+     *
+     * Test with ExecutorService#execute
+     */
+    @Test
+    public void testException_getSourceDocuments_execute() throws IOException, URISyntaxException, InterruptedException {
+        final int JOB_COUNT = 100;
+        final int THREAD_COUNT = 2;
+        final AtomicInteger outstandingThreadCount = new AtomicInteger(0);
+
+        // create a job executor with more jobs than threads
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < JOB_COUNT; i++) {
+            outstandingThreadCount.getAndIncrement();
+            MigrationJob job = new MigrationJob() {
+                // array of responses to return
+                private final String[] jsonResponses = new String[]{
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                };
+
+                private int jsonResponsesPsn = 0;
+
+                @Override
+                protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                    LightblueResponse response = new LightblueResponse();
+                    JsonNode node = null;
+                    try {
+                        node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    response.setJson(node);
+                    return response;
+                }
+
+                @Override
+                protected Map<String, JsonNode> getSourceDocuments() {
+                    outstandingThreadCount.getAndDecrement();
+                    throw new RuntimeException("forced failure for testing", new SQLException("foo"));
+                }
+            };
+
+            job.setPid("pid1");
+
+            executor.execute(job);
+        }
+
+        Assert.assertTrue(JOB_COUNT > THREAD_COUNT);
+
+        executor.shutdown();
+
+        // all jobs are created.  There are JOB_COUNT of them but only THREAD_COUNT threads
+        // but we want to be sure to have *some* jobs to run before we wait for termination
+        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 2));
+
+        executor.awaitTermination(60, TimeUnit.SECONDS);
+
+        // and now that we're done, verify everything got processed
+        Assert.assertEquals(0, outstandingThreadCount.intValue());
     }
 }
