@@ -34,7 +34,8 @@ public class ConsistencyChecker implements Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
     public static final int MAX_JOB_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
-    public static final int MAX_THREAD_WAIT_MSEC = 5 * 60 * 1000; // 5 minutes
+    public static final int MAX_JOBS_PER_ENTITY = 2000; // # of jobs to pick up each execution
+    public static final int MAX_EXECUTOR_TERMINATION_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
 
     private String consistencyCheckerName;
     private String hostName;
@@ -182,7 +183,7 @@ public class ConsistencyChecker implements Runnable {
                 if ((!Thread.interrupted())) {
                     try {
                         for (ExecutorService executor : executors) {
-                            executor.awaitTermination(MAX_THREAD_WAIT_MSEC, TimeUnit.MILLISECONDS);
+                            executor.awaitTermination(MAX_EXECUTOR_TERMINATION_WAIT_MSEC, TimeUnit.MILLISECONDS);
                         }
                     } catch (InterruptedException e) {
                         run = false;
@@ -204,6 +205,9 @@ public class ConsistencyChecker implements Runnable {
                     withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
                     not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
             findRequest.select(includeFieldRecursively("*"));
+            
+            // only pick up the first MAX_JOBS_PER_ENTITY jobs
+            findRequest.range(0, MAX_JOBS_PER_ENTITY);
 
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
