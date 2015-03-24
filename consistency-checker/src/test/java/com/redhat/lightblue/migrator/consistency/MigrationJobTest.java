@@ -1136,9 +1136,9 @@ public class MigrationJobTest {
                 }
 
                 @Override
-                protected Map<String, JsonNode> getSourceDocuments() {
+                protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
                     outstandingThreadCount.getAndDecrement();
-                    throw new RuntimeException("forced failure for testing", new SQLException("foo"));
+                    throw new SQLException("forced failure for testing");
                 }
             };
 
@@ -1151,7 +1151,7 @@ public class MigrationJobTest {
 
         // all jobs are created.  There are JOB_COUNT of them but only THREAD_COUNT threads
         // but we want to be sure to have *some* jobs to run before we wait for termination
-        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 2));
+        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 5));
         for (Future future : futures) {
             try {
                 future.get();
@@ -1202,9 +1202,9 @@ public class MigrationJobTest {
                 }
 
                 @Override
-                protected Map<String, JsonNode> getSourceDocuments() {
+                protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
                     outstandingThreadCount.getAndDecrement();
-                    throw new RuntimeException("forced failure for testing", new SQLException("foo"));
+                    throw new SQLException("forced failure for testing");
                 }
             };
 
