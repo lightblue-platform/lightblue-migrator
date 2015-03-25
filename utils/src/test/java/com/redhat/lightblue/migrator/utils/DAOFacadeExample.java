@@ -11,7 +11,7 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
     };
 
     public DAOFacadeExample(CountryDAO legacyDAO, CountryDAO lightblueDAO) {
-        super(legacyDAO, lightblueDAO);
+        super(legacyDAO, lightblueDAO, Country.class);
     }
 
     @Override

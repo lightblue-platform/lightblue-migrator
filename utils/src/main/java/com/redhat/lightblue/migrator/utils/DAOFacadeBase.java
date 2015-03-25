@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.utils;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,14 +35,36 @@ public class DAOFacadeBase<D> {
 
     private EntityIdStore entityIdStore = null;
 
+    public EntityIdStore getEntityIdStore() {
+        return entityIdStore;
+    }
+
     public void setEntityIdStore(EntityIdStore entityIdStore) {
         this.entityIdStore = entityIdStore;
+
+        try {
+            Method method = lightblueDAO.getClass().getMethod("setEntityIdStore", EntityIdStore.class);
+            method.invoke(lightblueDAO, entityIdStore);
+        } catch (NoSuchMethodException e) {
+            throw new RuntimeException("LightblueDAO needs to have a setter method for EntityIdStore", e);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public DAOFacadeBase(D legacyDAO, D lightblueDAO) {
         super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
+    }
+
+    public DAOFacadeBase(D legacyDAO, D lightblueDAO, Class entityClass) {
+        this(legacyDAO, lightblueDAO);
+        this.entityIdStore = new EntityIdStoreImpl(entityClass);
+
+        setEntityIdStore(entityIdStore);
     }
 
     private ListeningExecutorService getExecutor() {
@@ -260,6 +283,7 @@ public class DAOFacadeBase<D> {
             }
 
             Method method = lightblueDAO.getClass().getMethod(methodName, types);
+            // it's expected that this method in lightblueDAO will extract id from idStore
             lightblueEntity = (T) method.invoke(lightblueDAO, values);
 
         }
@@ -267,15 +291,6 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-
-            if (lightblueEntity == null && legacyEntity == null) {
-                return null;
-            }
-
-            if (lightblueEntity == null && legacyEntity != null) {
-                logInconsistency(returnedType.getName(), methodName, values);
-                return legacyEntity;
-            }
 
             // check if entities match
             if (Objects.equals(lightblueEntity, legacyEntity)) {

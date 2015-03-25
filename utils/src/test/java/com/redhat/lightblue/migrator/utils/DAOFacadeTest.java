@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.utils;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -20,14 +21,21 @@ public class DAOFacadeTest {
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
 
     @Mock CountryDAO legacyDAO;
-    @Mock CountryDAO lightblueDAO;
+    @Mock CountryDAOLightblue lightblueDAO;
     @Mock EntityIdStore entityIdStore;
     CountryDAO facade;
 
     @Before
     public void setup() {
         facade = new DAOFacadeExample(legacyDAO, lightblueDAO);
-        ((DAOFacadeBase)facade).setEntityIdStore(entityIdStore);
+        Mockito.verify(lightblueDAO).setEntityIdStore(((DAOFacadeBase)facade).getEntityIdStore());
+        //((DAOFacadeBase)facade).setEntityIdStore(entityIdStore);
+    }
+
+    @After
+    public void verifyNoMoreInteractions() {
+        Mockito.verifyNoMoreInteractions(lightblueDAO);
+        Mockito.verifyNoMoreInteractions(legacyDAO);
     }
 
     /* Read tests */
@@ -38,7 +46,7 @@ public class DAOFacadeTest {
 
         facade.getCountry("PL");
 
-        Mockito.verifyZeroInteractions(lightblueDAO);
+        Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).getCountry("PL");
     }
 
@@ -54,7 +62,7 @@ public class DAOFacadeTest {
         facade.getCountry("PL");
 
         Mockito.verify(legacyDAO).getCountry("PL");
-        Mockito.verify(legacyDAO).getCountry("PL");
+        Mockito.verify(lightblueDAO).getCountry("PL");
     }
 
     @Test
@@ -70,7 +78,7 @@ public class DAOFacadeTest {
         Country returnedCountry = facade.getCountry("PL");
 
         Mockito.verify(legacyDAO).getCountry("PL");
-        Mockito.verify(legacyDAO).getCountry("PL");
+        Mockito.verify(lightblueDAO).getCountry("PL");
 
         // when there is a conflict, facade will return what legacy dao returned
         Assert.assertEquals(ca, returnedCountry);
@@ -96,7 +104,7 @@ public class DAOFacadeTest {
 
         facade.updateCountry(pl);
 
-        Mockito.verifyZeroInteractions(lightblueDAO);
+        Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).updateCountry(pl);
     }
 
@@ -169,9 +177,50 @@ public class DAOFacadeTest {
         Country createdCountry = facade.createCountry(pl);
         Assert.assertEquals(101l, createdCountry.getId());
 
-        Mockito.verify(entityIdStore).storeId(101l);
+
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(lightblueDAO).createCountry(createdByLegacy); // DAOFacadeExample should set the id
+        Mockito.verify(lightblueDAO).createCountry(pl);
+
+        // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
+        Assert.assertTrue(101l == (Long)((DAOFacadeBase)facade).getEntityIdStore().restoreId());
+    }
+
+    @Test
+    public void dualWritePhaseCreateInconsistentTest() {
+        LightblueMigrationPhase.dualWritePhase(togglzRule);
+
+        Country pl = new Country("PL");
+        Country createdByLegacy = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(createdByLegacy);
+        Mockito.when(lightblueDAO.createCountry(pl)).thenReturn(pl);
+
+        Country createdCountry = facade.createCountry(pl);
+
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(lightblueDAO).createCountry(pl);
+
+        // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
+        Assert.assertTrue(101l == (Long) ((DAOFacadeBase) facade).getEntityIdStore().restoreId());
+
+        // when there is a conflict, facade will return what legacy dao returned
+        Assert.assertEquals(createdByLegacy, createdCountry);
+    }
+
+    @Test
+    public void ligtblueProxyPhaseCreateTest() {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        // lightblue will handle ID generation in this phase
+        ((DAOFacadeBase) facade).setEntityIdStore(null);
+        Mockito.verify(lightblueDAO).setEntityIdStore(null);
+
+        Country pl = new Country("PL");
+
+        facade.createCountry(pl);
+
+        Mockito.verifyZeroInteractions(legacyDAO);
+        Mockito.verify(lightblueDAO).createCountry(pl);
     }
 
 }
