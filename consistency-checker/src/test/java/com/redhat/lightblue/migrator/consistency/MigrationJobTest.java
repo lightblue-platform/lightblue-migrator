@@ -587,8 +587,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -642,7 +641,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -678,7 +677,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -716,7 +715,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -752,7 +751,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -794,7 +793,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -830,7 +829,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -866,7 +865,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -902,7 +901,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -938,7 +937,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}");
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -974,7 +973,7 @@ public class MigrationJobTest {
         try {
             actualObj = mapper.readTree(readFile(fileName));
         } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
+            Assert.fail("Unable to parse json response: " + e.toString());
         }
         return actualObj;
     }
@@ -989,7 +988,7 @@ public class MigrationJobTest {
     public void testMultipleJobExecutors_first() throws Exception {
         migrationJob = new MigrationJob() {
             // array of responses to return
-            private String[] jsonResponses = new String[]{
+            private final String[] jsonResponses = new String[]{
                 // initial job save
                 FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
                 // save one document
@@ -1017,7 +1016,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -1049,7 +1048,7 @@ public class MigrationJobTest {
     public void testMultipleJobExecutors_second() throws Exception {
         migrationJob = new MigrationJob() {
             // array of responses to return
-            private String[] jsonResponses = new String[]{
+            private final String[] jsonResponses = new String[]{
                 // initial job save
                 FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
                 // final job save (since this is a noop, there is nothing in the middle)
@@ -1075,7 +1074,7 @@ public class MigrationJobTest {
                 try {
                     node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    Assert.fail("Unable to parse json response: " + e.toString());
                 }
                 response.setJson(node);
                 return response;
@@ -1129,7 +1128,7 @@ public class MigrationJobTest {
                     try {
                         node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Assert.fail("Unable to parse json response: " + e.toString());
                     }
                     response.setJson(node);
                     return response;
@@ -1195,7 +1194,7 @@ public class MigrationJobTest {
                     try {
                         node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        Assert.fail("Unable to parse json response: " + e.toString());
                     }
                     response.setJson(node);
                     return response;
