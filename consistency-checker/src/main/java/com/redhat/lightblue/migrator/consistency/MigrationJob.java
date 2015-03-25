@@ -47,6 +47,7 @@ import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.sql.SQLException;
 import java.util.List;
 
 public class MigrationJob implements Runnable {
@@ -310,7 +311,7 @@ public class MigrationJob implements Runnable {
                 LOGGER.debug("No Run Mark Updated Response: {}", responseMarkExecutionConplete.getText());
             }
 
-        } catch (RuntimeException e) {
+        } catch (RuntimeException | LightblueResponseParseException | SQLException | IOException e) {
             // would be nice to reference DataType.DATE_FORMAT_STR in core..
             DateFormat dateFormat = ClientConstants.getDateFormat();
             LOGGER.error(String.format("Error while processing job %s with %s for start date %s and end date %s",
@@ -331,49 +332,45 @@ public class MigrationJob implements Runnable {
      * should be processed, index 1 is an Integer indicating the position in the
      * jobExecutions array for this job execution attempt
      */
-    private Object[] shouldProcessJob(LightblueResponse response) {
+    private Object[] shouldProcessJob(LightblueResponse response) throws LightblueResponseParseException {
         boolean processJob = true;
         int jobExecutionPsn = -1;
 
-        try {
-            MigrationJob[] jobs = response.parseProcessed(MigrationJob[].class);
+        MigrationJob[] jobs = response.parseProcessed(MigrationJob[].class);
 
-            // should only be one job returned, verify
-            if (jobs.length > 1) {
-                throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
+        // should only be one job returned, verify
+        if (jobs.length > 1) {
+            throw new RuntimeException("Error parsing lightblue response: more than one job returned: " + jobs.length);
+        }
+
+        // first incomplete job execution must be for this execution else we don't process it
+        int i = 0;
+        for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
+            // if we find an execution that is not our pid but is active
+            // in the array before ours, we do not get to process
+            if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
+                // check if this is a dead job
+                if (execution.getActualStartDate() != null
+                        && System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
+                    // job is dead, mark it complete
+                    LightblueResponse responseMarkDead = markExecutionComplete(i);
+                    LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
+                } else {
+                    // we're not the one processing this guy!
+                    processJob = false;
+                }
             }
 
-            // first incomplete job execution must be for this execution else we don't process it
-            int i = 0;
-            for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
-                // if we find an execution that is not our pid but is active
-                // in the array before ours, we do not get to process
-                if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
-                    // check if this is a dead job
-                    if (execution.getActualStartDate() != null && 
-                            System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
-                        // job is dead, mark it complete
-                        LightblueResponse responseMarkDead = markExecutionComplete(i);
-                        LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
-                    } else {
-                        // we're not the one processing this guy!
-                        processJob = false;
-                    }
-                }
-
-                // find our job's execution in the array
-                // once we find our job, we can stop looping, we've decided
-                // already if this execution gets to be processed or not.
-                if (pid.equals(execution.getPid())) {
-                    jobExecutionPsn = i;
-                    break;
-                }
-
-                // increment position in array
-                i++;
+            // find our job's execution in the array
+            // once we find our job, we can stop looping, we've decided
+            // already if this execution gets to be processed or not.
+            if (pid.equals(execution.getPid())) {
+                jobExecutionPsn = i;
+                break;
             }
-        } catch (LightblueResponseParseException e) {
-            throw new RuntimeException("Error parsing lightblue response: " + response.getJson().toString(), e);
+
+            // increment position in array
+            i++;
         }
 
         return new Object[]{processJob, jobExecutionPsn};
@@ -402,7 +399,7 @@ public class MigrationJob implements Runnable {
         updateRequest.setProjections(projections);
 
         List<Update> updates = new ArrayList<>();
-        
+
         currentRun.setActualEndDate(new Date());
         currentRun.setCompletedFlag(true);
 
@@ -488,24 +485,18 @@ public class MigrationJob implements Runnable {
         return response.parseModifiedCount();
     }
 
-    protected Map<String, JsonNode> getSourceDocuments() {
-        Map<String, JsonNode> sourceDocuments = new LinkedHashMap<>();
-        try {
-            DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
-            List<Query> conditions = new LinkedList<>();
-            conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
-            conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
-            sourceRequest.where(and(conditions));
-            sourceRequest.select(includeFieldRecursively("*"));
-            currentRun.setSourceQuery(sourceRequest.getBody());
-            sourceDocuments = findSourceData(sourceRequest);
-        } catch (IOException e) {
-            throw new RuntimeException("Problem getting sourceDocuments", e);
-        }
-        return sourceDocuments;
+    protected Map<String, JsonNode> getSourceDocuments() throws SQLException, IOException {
+        DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
+        List<Query> conditions = new LinkedList<>();
+        conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
+        conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
+        sourceRequest.where(and(conditions));
+        sourceRequest.select(includeFieldRecursively("*"));
+        currentRun.setSourceQuery(sourceRequest.getBody());
+        return findSourceData(sourceRequest);
     }
 
-    protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) {
+    protected Map<String, JsonNode> getDestinationDocuments(Map<String, JsonNode> sourceDocuments) throws IOException {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
         if (sourceDocuments == null || sourceDocuments.isEmpty()) {
             LOGGER.debug("Unable to fetch any destination documents as there are no source documents");
@@ -538,30 +529,27 @@ public class MigrationJob implements Runnable {
         return destinationDocuments;
     }
 
-    private Map<String, JsonNode> doDestinationDocumentFetch(Map<String, JsonNode> sourceDocuments) {
+    private Map<String, JsonNode> doDestinationDocumentFetch(Map<String, JsonNode> sourceDocuments) throws IOException {
         Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
         if (sourceDocuments == null || sourceDocuments.isEmpty()) {
             return destinationDocuments;
         }
 
-        try {
-            DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-            List<Query> requestConditions = new LinkedList<>();
-            for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
-                List<Query> docConditions = new LinkedList<>();
-                for (String keyField : getJobConfiguration().getDestinationIdentityFields()) {
-                    ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
-                    docConditions.add(docQuery);
-                }
-                requestConditions.add(and(docConditions));
+        DataFindRequest destinationRequest = new DataFindRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
+        List<Query> requestConditions = new LinkedList<>();
+        for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
+            List<Query> docConditions = new LinkedList<>();
+            for (String keyField : getJobConfiguration().getDestinationIdentityFields()) {
+                ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().findValue(keyField).asText());
+                docConditions.add(docQuery);
             }
-            destinationRequest.where(or(requestConditions));
-            destinationRequest.select(includeFieldRecursively("*"));
-            destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
-            destinationDocuments = findDestinationData(destinationRequest);
-        } catch (IOException e) {
-            throw new RuntimeException("Problem getting destinationDocuments", e);
+            requestConditions.add(and(docConditions));
         }
+        destinationRequest.where(or(requestConditions));
+        destinationRequest.select(includeFieldRecursively("*"));
+        destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
+        destinationDocuments = findDestinationData(destinationRequest);
+
         return destinationDocuments;
     }
 
