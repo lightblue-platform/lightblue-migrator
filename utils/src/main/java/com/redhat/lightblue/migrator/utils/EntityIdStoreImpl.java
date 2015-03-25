@@ -4,6 +4,14 @@ import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 
+/**
+ * EntityIdStore implementation using ehcache. Creates a cache object per entity and uses thread id as key to avoid conflicts.
+ *
+ * TODO: ehcache.xml will need to be optimized to minimize overhead.
+ *
+ * @author mpatercz
+ *
+ */
 public class EntityIdStoreImpl implements EntityIdStore {
 
     // singleton
