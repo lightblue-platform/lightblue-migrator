@@ -7,6 +7,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.PosixParser;
+import org.apache.log4j.PropertyConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,12 @@ public final class ConsistencyCheckerCLI {
         options.addOption(OptionBuilder.withArgName("jobversion").withLongOpt("jobversion").hasArg(true).withDescription("migrationJob Entity Version").isRequired().create('j'));
         options.addOption(OptionBuilder.withArgName("sourceconfig").withLongOpt("sourceconfig").hasArg(true).withDescription("Path to configuration file for source").isRequired().create('s'));
         options.addOption(OptionBuilder.withArgName("destinationconfig").withLongOpt("destinationconfig").hasArg(true).withDescription("Path to configuration file for destination").isRequired().create('d'));
+
+        String log4jConfig = System.getProperty("log4j.configuration");
+        if (log4jConfig != null && !log4jConfig.isEmpty()) {
+            // watch for log4j changes using default delay (60 seconds)
+            PropertyConfigurator.configureAndWatch(log4jConfig);
+        }
 
         ConsistencyChecker checker = new ConsistencyChecker();
         PosixParser parser = new PosixParser();
