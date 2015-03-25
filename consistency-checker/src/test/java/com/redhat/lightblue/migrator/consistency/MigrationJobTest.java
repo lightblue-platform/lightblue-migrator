@@ -885,33 +885,16 @@ public class MigrationJobTest {
         List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < JOB_COUNT; i++) {
             outstandingThreadCount.getAndIncrement();
-            MigrationJob job = new MigrationJob() {
-                // array of responses to return
-                private final String[] jsonResponses = new String[]{
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-                };
-
-                private int jsonResponsesPsn = 0;
-
-                @Override
-                protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                    LightblueResponse response = new LightblueResponse();
-                    JsonNode node = null;
-                    try {
-                        node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    response.setJson(node);
-                    return response;
-                }
-
-                @Override
-                protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
-                    outstandingThreadCount.getAndDecrement();
-                    throw new SQLException("forced failure for testing");
-                }
-            };
+            MigrationJob job = new TestMigrationJob(null, null,
+                    new String[]{
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                    }) {
+                        @Override
+                        protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
+                            outstandingThreadCount.getAndDecrement();
+                            throw new SQLException("forced failure for testing");
+                        }
+                    };
 
             job.setPid("pid1");
 
@@ -951,33 +934,16 @@ public class MigrationJobTest {
         List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < JOB_COUNT; i++) {
             outstandingThreadCount.getAndIncrement();
-            MigrationJob job = new MigrationJob() {
-                // array of responses to return
-                private final String[] jsonResponses = new String[]{
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-                };
-
-                private int jsonResponsesPsn = 0;
-
-                @Override
-                protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                    LightblueResponse response = new LightblueResponse();
-                    JsonNode node = null;
-                    try {
-                        node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    response.setJson(node);
-                    return response;
-                }
-
-                @Override
-                protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
-                    outstandingThreadCount.getAndDecrement();
-                    throw new SQLException("forced failure for testing");
-                }
-            };
+            MigrationJob job = new TestMigrationJob(null, null,
+                    new String[]{
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                    }) {
+                        @Override
+                        protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
+                            outstandingThreadCount.getAndDecrement();
+                            throw new SQLException("forced failure for testing");
+                        }
+                    };
 
             job.setPid("pid1");
 
