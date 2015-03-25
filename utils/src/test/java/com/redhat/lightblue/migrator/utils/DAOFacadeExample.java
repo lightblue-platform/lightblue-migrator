@@ -26,7 +26,7 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
     @Override
     public Country updateCountry(Country country) {
         try {
-            return callDAOWriteMethod(Country.class, "updateCountry", country);
+            return callDAOUpdateMethod(Country.class, "updateCountry", country);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

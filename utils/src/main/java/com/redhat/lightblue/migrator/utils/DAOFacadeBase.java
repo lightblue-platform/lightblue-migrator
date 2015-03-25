@@ -20,8 +20,8 @@ import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.LightblueMigrationConfiguration;
 
 /**
- * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which service/dao to use and verifying
- * returned data. Verification uses equals method.
+ * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
+ * service/dao to use and verifying returned data. Verification uses equals method.
  *
  * @author mpatercz
  *
@@ -99,7 +99,7 @@ public class DAOFacadeBase<D> {
     }
 
     /**
-     * Call dao method which reads data
+     * Call dao method which reads data.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -141,8 +141,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            Method equalsMethod = lightblueEntity.getClass().getMethod("equals", Object.class);
-            if ((Boolean) equalsMethod.invoke(lightblueEntity, legacyEntity)) {
+            if (Objects.equals(legacyEntity, lightblueEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -173,7 +172,8 @@ public class DAOFacadeBase<D> {
     }
 
     /**
-     * Call dao method which writes data.
+     * Call dao method which updates data. Updating makes sense only for entities with known ID. If ID is not specified, it will be generated
+     * by both legacy and lightblue datastores independently, creating a data incosistency. If you don't know the ID, use callDAOUpdateMethod method.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -182,7 +182,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOWriteMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
 
         T legacyEntity = null, lightblueEntity = null;
@@ -215,18 +215,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-
-            if (lightblueEntity == null && legacyEntity == null) {
-                return null;
-            }
-
-            if (lightblueEntity == null && legacyEntity != null) {
-                logInconsistency(returnedType.getName(), methodName, values);
-                return legacyEntity;
-            }
-
-            Method equalsMethod = lightblueEntity.getClass().getMethod("equals", Object.class);
-            if ((Boolean) equalsMethod.invoke(lightblueEntity, legacyEntity)) {
+            if (Objects.equals(legacyEntity, lightblueEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -240,7 +229,7 @@ public class DAOFacadeBase<D> {
     }
 
     /**
-     * Call dao method which writes data. Won't work if method has primitive parameters.
+     * Call dao method which updates data. Won't work if method has primitive parameters.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -248,12 +237,12 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOWriteMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
-        return callDAOWriteMethod(returnedType, methodName, toClasses(values), values);
+    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+        return callDAOUpdateMethod(returnedType, methodName, toClasses(values), values);
     }
 
     /**
-     * Call dao method which creates data.
+     * Call dao method which creates data. It will ensure that entities in both legacy and lightblue datastores are the same, including IDs.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call

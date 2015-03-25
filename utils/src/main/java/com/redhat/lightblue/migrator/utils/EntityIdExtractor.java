@@ -1,7 +1,7 @@
 package com.redhat.lightblue.migrator.utils;
 
 /**
- * Extract ID of any entity. Use to define anonymous classes.
+ * Extract ID of any entity. Define anonymous class inside facade implementation for your particular DAO and entity.
  *
  * @author mpatercz
  *
