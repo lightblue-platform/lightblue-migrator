@@ -2,10 +2,12 @@
     xsi:noNamespaceSchemaLocation="ehcache.xsd" updateCheck="true"
     monitoring="autodetect" dynamicConfig="true">
 
+    <!--
+        timeToLiveSeconds: It's important to expire the IDs in case there are not removed by Lightblue DAO (can happen if there is an error).
+        maxEntriesLocalHeap: we should never reach that limit
+    -->
     <defaultCache
-        <!-- It's important to expire the IDs in case there are not removed by Lightblue DAO (can happen if there is an error). -->
         timeToLiveSeconds="60"
-        <!-- We should never hit that limit -->
         maxEntriesLocalHeap="1000000"
     />
 
