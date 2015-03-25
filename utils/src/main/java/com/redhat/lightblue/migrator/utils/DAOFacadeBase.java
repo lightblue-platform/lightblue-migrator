@@ -242,7 +242,7 @@ public class DAOFacadeBase<D> {
     }
 
     /**
-     * Call dao method which creates data. It will ensure that entities in both legacy and lightblue datastores are the same, including IDs.
+     * Call dao method which creates a single entity. It will ensure that entities in both legacy and lightblue datastores are the same, including IDs.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -251,7 +251,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOCreateMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
 
         T legacyEntity = null, lightblueEntity = null;
@@ -295,8 +295,8 @@ public class DAOFacadeBase<D> {
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
-    public <T> T callDAOCreateMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
-        return callDAOCreateMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
+    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+        return callDAOCreateSingleMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 
 }
