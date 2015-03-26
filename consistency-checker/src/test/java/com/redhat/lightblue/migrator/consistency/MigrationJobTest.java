@@ -19,7 +19,6 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -50,7 +49,7 @@ public class MigrationJobTest {
     private final String sourceConfigPath = "source-lightblue-client.properties";
     private final String destinationConfigPath = "destination-lightblue-client.properties";
 
-    protected TestMigrationJob migrationJob;
+    protected MigrationJob migrationJob;
     protected LightblueClient destinationClientMock;
 
     protected class TestMigrationJob extends MigrationJob {
@@ -61,10 +60,6 @@ public class MigrationJobTest {
         private final List<String> requestBodyList = new ArrayList<>();
 
         private int jsonResponsesPsn = 0;
-
-        public TestMigrationJob(MigrationConfiguration config) {
-            super(config);
-        }
 
         /**
          * @param sourceDataResource resource to load for the findSourceData
@@ -97,7 +92,7 @@ public class MigrationJobTest {
             requestBodyList.add(saveRequest.getBody());
             LightblueResponse response = new LightblueResponse();
             JsonNode node = null;
-            if (jsonResponsesPsn >= jsonResponses.length) {
+            if (jsonResponses != null && jsonResponsesPsn >= jsonResponses.length) {
                 jsonResponsesPsn = jsonResponses.length - 1;
             }
             try {
@@ -112,7 +107,7 @@ public class MigrationJobTest {
 
     @Before
     public void setup() {
-        migrationJob = new TestMigrationJob(new MigrationConfiguration());
+        migrationJob = new MigrationJob(new MigrationConfiguration());
         migrationJob.setSourceConfigPath(sourceConfigPath);
         migrationJob.setDestinationConfigPath(destinationConfigPath);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
@@ -626,7 +621,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceAndDestination() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "singleFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
@@ -661,7 +656,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestination() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
@@ -679,7 +674,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
@@ -698,7 +693,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInDestinationButNotSource() {
-        migrationJob = new TestMigrationJob("emptyFindResponse.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("emptyFindResponse.json", "singleFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
@@ -716,7 +711,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInSourceAndDestination() {
-        migrationJob = new TestMigrationJob("multipleFindResponse.json", "multipleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "multipleFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
@@ -741,7 +736,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInSourceButNotDestination() {
-        migrationJob = new TestMigrationJob("multipleFindResponse.json", "emptyFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "emptyFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
@@ -759,7 +754,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInDestinationButNotSource() {
-        migrationJob = new TestMigrationJob("emptyFindResponse.json", "multipleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("emptyFindResponse.json", "multipleFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
@@ -777,7 +772,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleSameExceptForTimestamp() {
-        migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "multipleFindResponseDestination.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "multipleFindResponseDestination.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
@@ -795,7 +790,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "multipleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "multipleFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
@@ -813,7 +808,7 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
-        migrationJob = new TestMigrationJob("multipleFindResponse.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "singleFindResponse.json",
                 new String[]{"{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
@@ -863,7 +858,7 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_first() throws Exception {
-        migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
                     // initial job save
                     FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
@@ -899,7 +894,7 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_second() throws Exception {
-        migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
                     // initial job save
                     FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
