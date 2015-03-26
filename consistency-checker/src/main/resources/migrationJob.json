@@ -129,7 +129,7 @@
                         "actualEndDate": {
                             "type": "date",
                             "constraints": {
-                                "required": true
+                                "required": false
                             },
                             "description": "Actual end date for this migration job"
                         },
