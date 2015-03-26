@@ -799,7 +799,7 @@ public class MigrationJobTest {
         try {
             actualObj = mapper.readTree(readFile(fileName));
         } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
+            Assert.fail("Unable to parse json response: " + e.toString());
         }
         return actualObj;
     }
