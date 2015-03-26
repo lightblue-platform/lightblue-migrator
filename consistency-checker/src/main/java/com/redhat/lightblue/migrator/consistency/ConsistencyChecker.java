@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,6 +26,8 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class ConsistencyChecker implements Runnable {
 
@@ -35,7 +36,8 @@ public class ConsistencyChecker implements Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
     public static final int MAX_JOB_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
-    public static final int MAX_THREAD_WAIT_MSEC = 5 * 60 * 1000; // 5 minutes
+    public static final int MAX_JOBS_PER_ENTITY = 2000; // # of jobs to pick up each execution
+    public static final int MAX_EXECUTOR_TERMINATION_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
 
     private String consistencyCheckerName;
     private String hostName;
@@ -131,6 +133,7 @@ public class ConsistencyChecker implements Runnable {
         while (run && !Thread.interrupted()) {
             List<ExecutorService> executors = new ArrayList<>();
             List<MigrationConfiguration> configurations = getJobConfigurations();
+            List<Future<?>> futures = new ArrayList<>();
 
             for (MigrationConfiguration configuration : configurations) {
                 if (configuration.getThreadCount() < 1) {
@@ -151,7 +154,7 @@ public class ConsistencyChecker implements Runnable {
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
                         job.setSourceConfigPath(sourceConfigPath);
                         job.setDestinationConfigPath(destinationConfigPath);
-                        jobExecutor.execute(job);
+                        futures.add(jobExecutor.submit(job));
                     }
                 }
             }
@@ -177,22 +180,22 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             } else {
-                for (ExecutorService executor : executors) {
-                    executor.shutdown();
-                }
-                if ((!Thread.interrupted())) {
+                for (Future future : futures) {
                     try {
-                        for (ExecutorService executor : executors) {
-                            executor.awaitTermination(MAX_THREAD_WAIT_MSEC, TimeUnit.MILLISECONDS);
-                        }
-                    } catch (InterruptedException e) {
+                        future.get();
+                    } catch (InterruptedException ex) {
                         run = false;
+                        LOGGER.error("Future was interrupted, will stop execution of migrator");
+                    } catch (ExecutionException ex) {
+                        LOGGER.warn("Future execution failed", ex);
                     }
                 }
             }
             
             LOGGER.info("Job executors done");
         }
+
+        LOGGER.info("ConsistencyChecker done");
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
@@ -234,6 +237,9 @@ public class ConsistencyChecker implements Runnable {
             );
             findRequest.select(includeFieldRecursively("*"));
 
+            // only pick up the first MAX_JOBS_PER_ENTITY jobs
+            findRequest.range(0, MAX_JOBS_PER_ENTITY);
+
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
             LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
@@ -260,7 +266,8 @@ public class ConsistencyChecker implements Runnable {
 
     /**
      * Gets the next job available for processing.
-     * @return 
+     *
+     * @return
      */
     protected MigrationJob getNextAvailableJob() {
         MigrationJob job = null;

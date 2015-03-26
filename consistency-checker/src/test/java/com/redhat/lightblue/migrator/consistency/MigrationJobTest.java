@@ -509,12 +509,12 @@ public class MigrationJobTest {
     }
 
     @Test
-    public void testGetDestinationDocuments_NullMap() {
+    public void testGetDestinationDocuments_NullMap() throws IOException {
         assertTrue(migrationJob.getDestinationDocuments(null).isEmpty());
     }
 
     @Test
-    public void testGetDestinationDocuments_EmptyMap() {
+    public void testGetDestinationDocuments_EmptyMap() throws IOException {
         assertTrue(migrationJob.getDestinationDocuments(new HashMap<String, JsonNode>()).isEmpty());
     }
 
@@ -1168,6 +1168,6 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
         Assert.assertEquals(2, callCounter.get());
         Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
-        Assert.assertTrue(requestBodyList.get(1).contains("ABORTED_UNKNOWN"));
+        Assert.assertTrue(requestBodyList.get(1).contains("STARTING"));
     }
 }

@@ -11,6 +11,8 @@ public class MigrationJobExecution {
     // actual run times for job
     private Date actualStartDate;
     private Date actualEndDate;
+    
+    public String sourceQuery;
 
     private JobStatus jobStatus = JobStatus.STARTING;
 
@@ -58,6 +60,14 @@ public class MigrationJobExecution {
 
     public void setActualEndDate(Date actualEndDate) {
         this.actualEndDate = actualEndDate;
+    }
+    
+    public String getSourceQuery() {
+        return sourceQuery;
+    }
+    
+    public void setSourceQuery(String sourceQuery) {
+        this.sourceQuery = sourceQuery;
     }
 
     public int getProcessedDocumentCount() {
