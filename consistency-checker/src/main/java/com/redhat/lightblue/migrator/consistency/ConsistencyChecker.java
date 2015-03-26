@@ -2,6 +2,7 @@ package com.redhat.lightblue.migrator.consistency;
 
 import static com.redhat.lightblue.client.expression.query.ArrayQuery.withSubfield;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
+import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.UnaryLogicalQuery.not;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
@@ -202,12 +203,38 @@ public class ConsistencyChecker implements Runnable {
         List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(and(
-                    withValue("configurationName = " + configuration.getConfigurationName()),
+            /*
+                and:
+                    whenAvailableDate <= new Date()
+                    or:
+                        jobExecutions# = 0
+                        not:
+                            jobExecutions.jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
+                        and:
+                            not:
+                                jobExecutions.jobStatus $not_in [COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
+                            jobExecutions.actualStartDate < (new Date() - expectedExecutionMilliseconds)
+
+             */
+            findRequest.where(
+                and(
                     withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                    not(withSubfield("jobExecutions", withValue("jobStatus = 'COMPLETED_SUCCESS'"))),
-                    not(withSubfield("jobExecutions", withValue("jobStatus = 'COMPLETED_PARTIAL'")))
-            ));
+                    or(
+                        not(
+
+                            withSubfield("jobExecutions", withValue("jobStatus  $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
+                        ),
+                        and(
+                            not(
+
+                                    withSubfield("jobExecutions", withValue("jobStatus  $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
+                            ),
+                            // TODO check how lightblue will handle the next comparison (if it can handle this case), suggestions?
+                            withValue("whenAvailableDate + expectedExecutionMilliseconds < " + ClientConstants.getDateFormat().format(new Date()))
+                        )
+                    )
+                )
+            );
             findRequest.select(includeFieldRecursively("*"));
 
             // only pick up the first MAX_JOBS_PER_ENTITY jobs

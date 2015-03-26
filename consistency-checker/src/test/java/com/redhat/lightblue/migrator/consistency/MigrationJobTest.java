@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -49,15 +50,21 @@ public class MigrationJobTest {
     private final String sourceConfigPath = "source-lightblue-client.properties";
     private final String destinationConfigPath = "destination-lightblue-client.properties";
 
-    protected MigrationJob migrationJob;
+    protected TestMigrationJob migrationJob;
     protected LightblueClient destinationClientMock;
 
-    private class TestMigrationJob extends MigrationJob {
-        private final String[] jsonResponses;
-        private final String sourceDataResource;
-        private final String destinationDataResource;
+    protected class TestMigrationJob extends MigrationJob {
+        private String[] jsonResponses;
+        private String sourceDataResource;
+        private String destinationDataResource;
+        private final AtomicInteger callCounter = new AtomicInteger(0);
+        private final List<String> requestBodyList = new ArrayList<>();
 
         private int jsonResponsesPsn = 0;
+
+        public TestMigrationJob(MigrationConfiguration config) {
+            super(config);
+        }
 
         /**
          * @param sourceDataResource resource to load for the findSourceData
@@ -86,6 +93,8 @@ public class MigrationJobTest {
 
         @Override
         protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+            callCounter.incrementAndGet();
+            requestBodyList.add(saveRequest.getBody());
             LightblueResponse response = new LightblueResponse();
             JsonNode node = null;
             if (jsonResponsesPsn >= jsonResponses.length) {
@@ -103,7 +112,7 @@ public class MigrationJobTest {
 
     @Before
     public void setup() {
-        migrationJob = new MigrationJob(new MigrationConfiguration());
+        migrationJob = new TestMigrationJob(new MigrationConfiguration());
         migrationJob.setSourceConfigPath(sourceConfigPath);
         migrationJob.setDestinationConfigPath(destinationConfigPath);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
@@ -623,10 +632,14 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     private LinkedHashMap<String, JsonNode> getProcessedContentsFrom(String filename) {
@@ -653,11 +666,15 @@ public class MigrationJobTest {
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
@@ -668,11 +685,15 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.setOverwriteDestinationDocuments(false);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
@@ -687,6 +708,10 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("COMPLETED_SUCCESS"));
     }
 
     @Test
@@ -697,8 +722,8 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(2, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
 
@@ -706,6 +731,12 @@ public class MigrationJobTest {
         Assert.assertNotNull(migrationJob.getJobExecutions());
         Assert.assertEquals(1, migrationJob.getJobExecutions().size());
         Assert.assertNotNull(migrationJob.getJobExecutions().get(0).getSourceQuery());
+
+        // verify statuses
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
@@ -715,11 +746,15 @@ public class MigrationJobTest {
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
@@ -734,6 +769,10 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("COMPLETED_SUCCESS"));
     }
 
     @Test
@@ -744,10 +783,14 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(2, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
@@ -758,10 +801,14 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
@@ -771,11 +818,15 @@ public class MigrationJobTest {
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     private void configureMigrationJob(MigrationJob migrationJob) {
@@ -833,8 +884,11 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
         // verify marked complete
-        Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
         Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     /**
@@ -863,9 +917,12 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-        // verify marked complete
-        Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
+
         Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+
+        Assert.assertEquals(2, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains("ABORTED_UNKNOWN"));
     }
 
     /**

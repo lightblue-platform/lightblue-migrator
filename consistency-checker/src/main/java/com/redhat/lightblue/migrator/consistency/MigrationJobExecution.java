@@ -14,7 +14,7 @@ public class MigrationJobExecution {
     
     public String sourceQuery;
 
-    private JobStatus jobStatus = JobStatus.NEW;
+    private JobStatus jobStatus = JobStatus.STARTING;
 
     // summary info on what the job did
     private int processedDocumentCount = 0;
