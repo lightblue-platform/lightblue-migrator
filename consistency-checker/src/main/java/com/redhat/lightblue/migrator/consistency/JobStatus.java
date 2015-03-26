@@ -5,10 +5,12 @@ package com.redhat.lightblue.migrator.consistency;
  * JobStatus can be one of the following values:
  *      STARTING           - It just got to be processing
  *      RUNNING            - Currently being processed for synchronous request
- *      RUNNING_ASYNC      - Currently being processed for asynchronous request
+ *      RUNNING_ASYNC      - Currently being processed for asynchronous request - TODO Lightblue client doesn't support this yet (this and other parts of the code need to be updated after the enhancement in lightblue client) but coded to check the status if the developer set manually on the request body
  *      COMPLETED_SUCCESS  - Final status - Execution completed successfully
  *      COMPLETED_PARTIAL  - Final status - Execution completed but only partially (at least one part of the request was successfully processed and at least one part of the request failed )
  *      COMPLETED_FAILED   - Final status - Execution completed but failed (for know exceptions like bad request, entity doesn't exist, etc)
+ *      COMPLETED_DEAD     - Final status - Execution due date was expired so we marked as completed and dead
+ *      COMPLETED_IGNORED  - Final status - Execution is not dead but it isn't own by the current PID, so it will be marked as completed but it will also be ignored. This can also be used when an status is expected but the execution still asynchronous running
  *      ABORTED_DUPLICATE  - Final status - Execution aborted because it was duplicated
  *      ABORTED_TIMEOUT    - Final status - Execution aborted because of timeout (running too long) (can't be due some lightblue constraint or external constraints like MongoDB server)
  *      ABORTED_AUTH       - Final status - Execution aborted due authentication/authorization issues
@@ -19,7 +21,7 @@ package com.redhat.lightblue.migrator.consistency;
  */
 public enum JobStatus {
     STARTING,RUNNING,RUNNING_ASYNC,COMPLETED_SUCCESS,COMPLETED_PARTIAL,
-    COMPLETED_FAILED,ABORTED_DUPLICATE,ABORTED_TIMEOUT,ABORTED_AUTH,ABORTED_UNKNOWN,UNKNOWN;
+    COMPLETED_DEAD,COMPLETED_IGNORED,COMPLETED_FAILED,ABORTED_DUPLICATE,ABORTED_TIMEOUT,ABORTED_AUTH,ABORTED_UNKNOWN,UNKNOWN;
 
     /**
      * If the job is running (represented by the states: STARTING, RUNNING and RUNNING_ASYNC ) returns true. If it is FINISHING it is considered that
@@ -39,7 +41,7 @@ public enum JobStatus {
      * @return true if the job is/was unsuccessful, false otherwise
      */
     public boolean isUnsuccessful(){
-        if(this.equals(COMPLETED_FAILED) || this.equals(ABORTED_DUPLICATE) || this.equals(ABORTED_AUTH) || this.equals(ABORTED_TIMEOUT) || this.equals(ABORTED_UNKNOWN) ||
+        if(this.equals(COMPLETED_DEAD) || this.equals(COMPLETED_IGNORED) || this.equals(COMPLETED_FAILED) || this.equals(ABORTED_DUPLICATE) || this.equals(ABORTED_AUTH) || this.equals(ABORTED_TIMEOUT) || this.equals(ABORTED_UNKNOWN) ||
                 this.equals(UNKNOWN)){
             return true;
         }
@@ -60,8 +62,8 @@ public enum JobStatus {
      * @return true iff it is one of the documented final status, false otherwise
      */
     public boolean isFinalStatus() {
-        if(this.equals(COMPLETED_SUCCESS) || this.equals(COMPLETED_PARTIAL) ||
-                this.equals(COMPLETED_FAILED) || this.equals(ABORTED_DUPLICATE) || this.equals(ABORTED_AUTH) || this.equals(ABORTED_TIMEOUT) || this.equals(ABORTED_UNKNOWN) ||
+        if(     this.equals(COMPLETED_SUCCESS) || this.equals(COMPLETED_PARTIAL) ||
+                this.equals(COMPLETED_DEAD)    || this.equals(COMPLETED_IGNORED) || this.equals(COMPLETED_FAILED) || this.equals(ABORTED_DUPLICATE) || this.equals(ABORTED_AUTH) || this.equals(ABORTED_TIMEOUT) || this.equals(ABORTED_UNKNOWN) ||
                 this.equals(UNKNOWN)){
             return true;
         }

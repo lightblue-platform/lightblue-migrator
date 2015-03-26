@@ -19,6 +19,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -561,6 +562,8 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceAndDestination() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -574,8 +577,9 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
-                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -591,10 +595,14 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     private LinkedHashMap<String, JsonNode> getProcessedContentsFrom(String filename) {
@@ -616,6 +624,8 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestination() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -629,6 +639,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 
                 JsonNode node = null;
@@ -643,15 +655,21 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
     public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -665,6 +683,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 
                 JsonNode node = null;
@@ -681,15 +701,21 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.setOverwriteDestinationDocuments(false);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
     public void testExecuteExistsInDestinationButNotSource() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -703,8 +729,9 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
-                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
@@ -722,10 +749,16 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("COMPLETED_SUCCESS"));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceAndDestination() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -739,6 +772,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 
                 JsonNode node = null;
@@ -755,14 +790,20 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(2, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceButNotDestination() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -776,6 +817,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 
                 JsonNode node = null;
@@ -790,15 +833,21 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
     public void testExecuteMultipleExistsInDestinationButNotSource() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -812,6 +861,51 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
+                LightblueResponse response = new LightblueResponse();
+                JsonNode node = null;
+                try {
+                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                response.setJson(node);
+                return response;
+            }
+        };
+        configureMigrationJob(migrationJob);
+        migrationJob.run();
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("COMPLETED_SUCCESS"));
+    }
+
+    @Test
+    public void testExecuteMultipleSameExceptForTimestamp() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
+        migrationJob = new MigrationJob() {
+            @Override
+            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
+                return getProcessedContentsFrom("multipleFindResponseSource.json");
+            }
+
+            @Override
+            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
+                return getProcessedContentsFrom("multipleFindResponseDestination.json");
+            }
+
+            @Override
+            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 
                 JsonNode node = null;
@@ -831,46 +925,16 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-    }
-
-    @Test
-    public void testExecuteMultipleSameExceptForTimestamp() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponseSource.json");
-            }
-
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponseDestination.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
-        configureMigrationJob(migrationJob);
-        migrationJob.run();
-        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(2, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
     public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -884,8 +948,9 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
-                
                 JsonNode node = null;
                 try {
                     node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
@@ -899,14 +964,20 @@ public class MigrationJobTest {
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             @Override
             protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
@@ -920,6 +991,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 
                 JsonNode node = null;
@@ -934,11 +1007,15 @@ public class MigrationJobTest {
         };
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     private void configureMigrationJob(MigrationJob migrationJob) {
@@ -975,6 +1052,8 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_first() throws Exception {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             // array of responses to return
             private String[] jsonResponses = new String[]{
@@ -1000,6 +1079,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 JsonNode node = null;
                 try {
@@ -1017,11 +1098,15 @@ public class MigrationJobTest {
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
-        Assert.assertTrue(migrationJob.hasInconsistentDocuments());
-        Assert.assertEquals(2, migrationJob.getDocumentsProcessed());
-        Assert.assertEquals(1, migrationJob.getConsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
-        Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertFalse(migrationJob.hasInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getDocumentsProcessed());
+        Assert.assertEquals(0, migrationJob.getConsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
+        Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("RUNNING"));
+        Assert.assertTrue(requestBodyList.get(2).contains("ABORTED_UNKNOWN"));
     }
 
     /**
@@ -1032,6 +1117,8 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_second() throws Exception {
+        final AtomicInteger callCounter = new AtomicInteger(0);
+        final List<String> requestBodyList = new ArrayList<>();
         migrationJob = new MigrationJob() {
             // array of responses to return
             private String[] jsonResponses = new String[]{
@@ -1055,6 +1142,8 @@ public class MigrationJobTest {
 
             @Override
             protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+                callCounter.incrementAndGet();
+                requestBodyList.add(saveRequest.getBody());
                 LightblueResponse response = new LightblueResponse();
                 JsonNode node = null;
                 try {
@@ -1077,5 +1166,8 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(2, callCounter.get());
+        Assert.assertTrue(requestBodyList.get(0).contains("STARTING"));
+        Assert.assertTrue(requestBodyList.get(1).contains("ABORTED_UNKNOWN"));
     }
 }

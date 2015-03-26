@@ -12,7 +12,7 @@ public class MigrationJobExecution {
     private Date actualStartDate;
     private Date actualEndDate;
 
-    private JobStatus jobStatus = JobStatus.NEW;
+    private JobStatus jobStatus = JobStatus.STARTING;
 
     // summary info on what the job did
     private int processedDocumentCount = 0;
