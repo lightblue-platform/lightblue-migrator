@@ -295,72 +295,6 @@ public class MigrationJob implements Runnable {
                 Map<String, JsonNode> sourceDocuments = getSourceDocuments();
                 Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
 
-
-                /*
-                 Response can be (according from the documentation http://jewzaam.gitbooks.io/lightblue-specifications/content/language_specification/data.html ):
-                 complete: The operation completed, all requests are processed
-                 partial: Some of the operations are successful, some failed
-                 async: Operation running asynchronously
-                 error: Operation failed because of some system error
-                 */
-                boolean allComplete = true;
-                boolean anyPartial = false;
-                boolean anyAsync = false;
-                for (JsonNode jsonNode : sourceDocuments.values()) {
-                    JsonNode jsStatus = jsonNode.findValue(STATUS);
-                    if (jsStatus == null || jsStatus instanceof NullNode || jsStatus instanceof MissingNode) {
-                        // It should not reach here as is expected lightblue to throw an exception
-                        LOGGER.error("In sourceDocuments: Found 'error' in response's status in one of the documents!");
-                        throw new RuntimeException("Found 'error' in response's status!");
-                    }
-                    String status = jsStatus.asText(); // TODO lightblue client should have a better way to handle this
-                    if (COMPLETE.equalsIgnoreCase(status)) {
-                        continue;
-                    } else {
-                        allComplete = false;
-                        if (PARTIAL.equalsIgnoreCase(status)) {
-                            anyPartial = true;
-                        } else if (ASYNC.equalsIgnoreCase(status)) {
-                            anyAsync = true;
-                        } else if (ERROR.equalsIgnoreCase(status)) {
-                            // It should not reach here as is expected lightblue to throw an exception
-                            LOGGER.error("In sourceDocuments: Found 'error' in response's status in one of the documents!");
-                            throw new RuntimeException("Found 'error' in response's status!");
-                        } else {
-                            // It should not reach here as lightblue response should always have a status
-                            LOGGER.error("In sourceDocuments: One of the JSON returned doesn't have a valid status. Status set on the response was \"{}\"", status);
-                            throw new RuntimeException("Invalid status from the response: " + status);
-                        }
-                    }
-                }
-                for (JsonNode jsonNode : destinationDocuments.values()) {
-                    String status = jsonNode.findValue("status").asText();
-                    if (COMPLETE.equalsIgnoreCase(status)) {
-                        continue;
-                    } else {
-                        allComplete = false;
-                        if (PARTIAL.equalsIgnoreCase(status)) {
-                            anyPartial = true;
-                        } else if (ASYNC.equalsIgnoreCase(status)) {
-                            anyAsync = true;
-                        } else if (ERROR.equalsIgnoreCase(status)) {
-                            // It should not reach here as is expected lightblue to throw an exception
-                            LOGGER.error("In destinationDocuments: Found 'error' in response's status in one of the documents!");
-                            throw new RuntimeException("Found 'error' in response's status!");
-                        } else {
-                            // It should not reach here as lightblue response should always have a status
-                            LOGGER.error("In destinationDocuments: One of the JSON returned doesn't have a valid status. Status set on the response was \"{}\"", status);
-                            throw new RuntimeException("Invalid status from the response: " + status);
-                        }
-                    }
-                }
-                // if any async, update the status of the job
-                if (anyAsync) {
-                    currentRun.setJobStatus(JobStatus.RUNNING_ASYNC);
-                    responseMarkExecutionStatus = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), false);
-                    LOGGER.debug("Updated Status Response for status {}: {}", currentRun.getJobStatus(), responseMarkExecutionStatus.getText());
-                }
-
                 List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
                 if (!documentsToOverwrite.isEmpty()) {
                     hasInconsistentDocuments = true;
@@ -370,13 +304,13 @@ public class MigrationJob implements Runnable {
                 currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
                 currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
 
+                // Check the status of the overwritten documents
+                boolean allComplete = true;
+                boolean anyPartial = false;
+                boolean anyAsync = false;
+                
                 if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
                     currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
-
-                    // Check the status of the overwritten documents
-                    allComplete = true;
-                    anyPartial = false;
-                    anyAsync = false;
 
                     for (Entry<DataSaveRequest, LightblueResponse> entry : overwriteProcessedList) {
                         JsonNode jsonNode = entry.getValue().getJson();
@@ -387,9 +321,7 @@ public class MigrationJob implements Runnable {
                             throw new RuntimeException("Found 'error' in response's status!");
                         }
                         String status = jsStatus.asText(); // TODO lightblue client should have a better way to handle this
-                        if ("complete".equalsIgnoreCase(status)) {
-                            continue;
-                        } else {
+                        if (!COMPLETE.equalsIgnoreCase(status)) {
                             allComplete = false;
                             if ("partial".equalsIgnoreCase(status)) {
                                 anyPartial = true;

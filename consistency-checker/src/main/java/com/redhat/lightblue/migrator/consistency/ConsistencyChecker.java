@@ -222,12 +222,12 @@ public class ConsistencyChecker implements Runnable {
                     or(
                         not(
 
-                            withSubfield("jobExecutions", withValue("jobStatus  $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
+                            withSubfield("jobExecutions", withValue("jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
                         ),
                         and(
                             not(
 
-                                    withSubfield("jobExecutions", withValue("jobStatus  $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
+                                    withSubfield("jobExecutions", withValue("jobStatus $not_in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
                             ),
                             // TODO check how lightblue will handle the next comparison (if it can handle this case), suggestions?
                             withValue("whenAvailableDate + expectedExecutionMilliseconds < " + ClientConstants.getDateFormat().format(new Date()))
