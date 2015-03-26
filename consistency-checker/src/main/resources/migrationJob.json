@@ -29,7 +29,7 @@
                         "dir": "$asc",
                         "field": "whenAvailableDate"
                     }
-                ]
+                ],
                 "name": "MigrationJobsToExecute",
                 "unique": false
             }
