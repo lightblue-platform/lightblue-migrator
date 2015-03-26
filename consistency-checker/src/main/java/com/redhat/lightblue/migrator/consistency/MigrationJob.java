@@ -435,7 +435,7 @@ public class MigrationJob implements Runnable {
                     (getEndDate() == null ? "null" : dateFormat.format(getEndDate()))), e);
             try {
                 currentRun.setJobStatus(JobStatus.ABORTED_UNKNOWN);
-                LightblueResponse lr = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), false);
+                LightblueResponse lr = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), true);
                 LOGGER.debug("Processing RuntimeException and just updated Status Response for status {}: {}", currentRun.getJobStatus(), lr.getText());
             } catch (RuntimeException re) {
                 LOGGER.error("Couldn't update failed job's status", re);
@@ -472,7 +472,8 @@ public class MigrationJob implements Runnable {
             // in the array before ours, we do not get to process
             if (!execution.getJobStatus().isCompleted() && !pid.equals(execution.getPid())) {
                 // check if this is a dead job
-                if (System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
+                if (execution.getActualStartDate() != null
+                        && System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
                     // job is dead, mark it complete
                     LightblueResponse responseMarkDead = markExecutionStatusAndEndDate(i, JobStatus.COMPLETED_DEAD, true);
                     LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
@@ -522,9 +523,8 @@ public class MigrationJob implements Runnable {
 
         List<Update> updates = new ArrayList<>();
 
-        currentRun.setActualEndDate(new Date());
-
         if (updateEndDate) {
+            currentRun.setActualEndDate(new Date());
             updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
         }
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".jobStatus", new ObjectRValue(jobStatus.toString()))));
