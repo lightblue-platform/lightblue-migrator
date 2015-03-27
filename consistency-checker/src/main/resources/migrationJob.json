@@ -40,15 +40,15 @@
                 "fields": [
                     {
                         "dir": "$asc",
-                        "field": "configurationName"
-                    },
-                    {
-                        "dir": "$asc",
                         "field": "whenAvailableDate"
                     },
                     {
                         "dir": "$asc",
-                        "field": "jobStatus"
+                        "field": "jobExecutions.jobStatus"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "configurationName"
                     }
                 ],
                 "name": "MigrationJobsToExecute",
