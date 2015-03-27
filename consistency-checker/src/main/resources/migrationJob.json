@@ -45,6 +45,10 @@
                     {
                         "dir": "$asc",
                         "field": "whenAvailableDate"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "jobStatus"
                     }
                 ],
                 "name": "MigrationJobsToExecute",
