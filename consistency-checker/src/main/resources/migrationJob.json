@@ -229,7 +229,7 @@
         },
         "version": {
             "changelog": "Initial version",
-            "value": "0.1.3-SNAPSHOT"
+            "value": "0.1.4-SNAPSHOT"
         }
     }
 }
