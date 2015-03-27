@@ -45,12 +45,8 @@ public class DAOFacadeBase<D> {
         try {
             Method method = lightblueDAO.getClass().getMethod("setEntityIdStore", EntityIdStore.class);
             method.invoke(lightblueDAO, entityIdStore);
-        } catch (NoSuchMethodException e) {
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException("LightblueDAO needs to have a setter method for EntityIdStore", e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
         }
     }
 
