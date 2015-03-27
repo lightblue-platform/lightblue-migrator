@@ -35,6 +35,20 @@
                 ],
                 "name": null,
                 "unique": true
+            },
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "configurationName"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "whenAvailableDate"
+                    }
+                ],
+                "name": "MigrationJobsToExecute",
+                "unique": false
             }
         ],
         "name": "migrationJob"
