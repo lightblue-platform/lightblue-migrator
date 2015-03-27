@@ -7,16 +7,11 @@ import static com.redhat.lightblue.client.projection.FieldProjection.*;
 
 import java.io.IOException;
 import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
+import com.fasterxml.jackson.databind.node.MissingNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +60,10 @@ public class MigrationJob implements Runnable {
     protected static final ObjectMapper mapper = new ObjectMapper()
             .setDateFormat(ClientConstants.getDateFormat())
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    public static final String STATUS_COMPLETE = "COMPLETE";
+    public static final String STATUS_PARTIAL = "PARTIAL";
+    public static final String STATUS_ASYNC = "ASYNC";
+    public static final String STATUS_ERROR = "ERROR";
 
     public MigrationJob() {
         migrationConfiguration = new MigrationConfiguration();
@@ -265,6 +264,7 @@ public class MigrationJob implements Runnable {
     @Override
     public void run() {
         LOGGER.debug("MigrationJob started");
+        int jobExecutionPsn = -1;
 
         try {
             currentRun = new MigrationJobExecution();
@@ -281,15 +281,17 @@ public class MigrationJob implements Runnable {
 
             Object[] x = shouldProcessJob(response);
             boolean processJob = (Boolean) x[0];
-            int jobExecutionPsn = (Integer) x[1];
+            jobExecutionPsn = (Integer) x[1];
 
             if (processJob) {
-                Map<String, JsonNode> sourceDocuments = getSourceDocuments();
+                currentRun.setJobStatus(JobStatus.RUNNING);
+                LightblueResponse responseMarkExecutionStatus = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), false);
+                LOGGER.debug("Updated Status Response for status {}: {}", currentRun.getJobStatus(), responseMarkExecutionStatus.getText());
 
+                Map<String, JsonNode> sourceDocuments = getSourceDocuments();
                 Map<String, JsonNode> destinationDocuments = getDestinationDocuments(sourceDocuments);
 
                 List<JsonNode> documentsToOverwrite = getDocumentsToOverwrite(sourceDocuments, destinationDocuments);
-
                 if (!documentsToOverwrite.isEmpty()) {
                     hasInconsistentDocuments = true;
                 }
@@ -298,17 +300,62 @@ public class MigrationJob implements Runnable {
                 currentRun.setConsistentDocumentCount(sourceDocuments.size() - documentsToOverwrite.size());
                 currentRun.setInconsistentDocumentCount(documentsToOverwrite.size());
 
+                // Check the status of the overwritten documents
+                boolean allComplete = true;
+                boolean anyPartial = false;
+                boolean anyAsync = false;
+
                 if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
-                    currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
+                    List<LightblueResponse> responses = overwriteLightblue(documentsToOverwrite);
+                    int totalOverwrittenDocumentCount = 0;
+
+                    for (LightblueResponse r : responses) {
+                        totalOverwrittenDocumentCount += r.parseModifiedCount();
+                        JsonNode jsonNode = r.getJson();
+                        JsonNode jsStatus = jsonNode.findValue("status");
+                        if (jsStatus == null || jsStatus instanceof NullNode || jsStatus instanceof MissingNode) {
+                            // It should not reach here as is expected lightblue to throw an exception
+                            LOGGER.error("In sourceDocuments: Found 'error' in response's status in one of the documents!");
+                            throw new RuntimeException("Found 'error' in response's status!");
+                        }
+                        String status = jsStatus.asText(); // TODO lightblue client should have a better way to handle this
+                        if (!STATUS_COMPLETE.equalsIgnoreCase(status)) {
+                            allComplete = false;
+                            if (STATUS_PARTIAL.equalsIgnoreCase(status)) {
+                                anyPartial = true;
+                            } else if (STATUS_ASYNC.equalsIgnoreCase(status)) {
+                                anyAsync = true;
+                            } else if (STATUS_ERROR.equalsIgnoreCase(status)) {
+                                // It should not reach here as is expected lightblue to throw an exception
+                                LOGGER.error("In sourceDocuments: Found 'error' in response's status in one of the documents!");
+                                throw new RuntimeException("Found 'error' in response's status!");
+                            } else {
+                                // It should not reach here as lightblue response should always have a status
+                                LOGGER.error("In sourceDocuments: One of the JSON returned doesn't have a valid status. Status set on the response was \"{}\"", status);
+                                throw new RuntimeException("Invalid status from the response: " + status);
+                            }
+                        }
+                    }
+                    currentRun.setOverwrittenDocumentCount(totalOverwrittenDocumentCount);
                 }
-                currentRun.setCompletedFlag(true);
+                if (allComplete) {
+                    currentRun.setJobStatus(JobStatus.COMPLETED_SUCCESS);
+                } else if (anyPartial) {
+                    currentRun.setJobStatus(JobStatus.COMPLETED_PARTIAL);
+                } else if (anyAsync) {
+                    currentRun.setJobStatus(JobStatus.COMPLETED_IGNORED);
+                } else {
+                    currentRun.setJobStatus(JobStatus.UNKNOWN);
+                }
+
                 currentRun.setActualEndDate(new Date());
                 saveJobDetails(jobExecutionPsn);
                 LOGGER.debug("Success Save Response: {}", response.getText());
             } else {
-                // just mark complete and set actual end date
-                LightblueResponse responseMarkExecutionConplete = markExecutionComplete(jobExecutionPsn);
-                LOGGER.debug("No Run Mark Updated Response: {}", responseMarkExecutionConplete.getText());
+                // mark aborted
+                currentRun.setJobStatus(JobStatus.ABORTED_DUPLICATE);
+                LightblueResponse responseMarkExecutionStatus = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), true);
+                LOGGER.debug("No Run Mark Updated Response: {}", responseMarkExecutionStatus.getText());
             }
 
         } catch (RuntimeException | LightblueResponseParseException | SQLException | IOException e) {
@@ -318,6 +365,13 @@ public class MigrationJob implements Runnable {
                     _id,
                     getJobConfiguration(), (getStartDate() == null ? "null" : dateFormat.format(getStartDate())),
                     (getEndDate() == null ? "null" : dateFormat.format(getEndDate()))), e);
+            try {
+                currentRun.setJobStatus(JobStatus.ABORTED_UNKNOWN);
+                LightblueResponse lr = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), true);
+                LOGGER.debug("Processing RuntimeException and just updated Status Response for status {}: {}", currentRun.getJobStatus(), lr.getText());
+            } catch (RuntimeException re) {
+                LOGGER.error("Couldn't update failed job's status", re);
+            }
         }
 
         LOGGER.debug("MigrationJob completed");
@@ -348,12 +402,12 @@ public class MigrationJob implements Runnable {
         for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
             // if we find an execution that is not our pid but is active
             // in the array before ours, we do not get to process
-            if (!execution.isCompletedFlag() && !pid.equals(execution.getPid())) {
+            if (!execution.getJobStatus().isCompleted() && !pid.equals(execution.getPid())) {
                 // check if this is a dead job
                 if (execution.getActualStartDate() != null
                         && System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
                     // job is dead, mark it complete
-                    LightblueResponse responseMarkDead = markExecutionComplete(i);
+                    LightblueResponse responseMarkDead = markExecutionStatusAndEndDate(i, JobStatus.COMPLETED_DEAD, true);
                     LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
                 } else {
                     // we're not the one processing this guy!
@@ -390,7 +444,8 @@ public class MigrationJob implements Runnable {
         destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
     }
 
-    private LightblueResponse markExecutionComplete(int jobExecutionPsn) {
+    private LightblueResponse markExecutionStatusAndEndDate(int jobExecutionPsn, JobStatus jobStatus, boolean updateEndDate) {
+        // LightblueClient - update job status
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
 
@@ -400,11 +455,11 @@ public class MigrationJob implements Runnable {
 
         List<Update> updates = new ArrayList<>();
 
-        currentRun.setActualEndDate(new Date());
-        currentRun.setCompletedFlag(true);
-
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        if (updateEndDate) {
+            currentRun.setActualEndDate(new Date());
+            updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
+        }
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".jobStatus", new ObjectRValue(jobStatus.toString()))));
         updateRequest.updates(updates);
 
         LOGGER.debug("Marking Execution Complete: {}", updateRequest.getBody());
@@ -417,6 +472,7 @@ public class MigrationJob implements Runnable {
      * @return
      */
     private LightblueResponse saveJobDetails(int jobExecutionPsn) {
+        // LightblueClient - update job details
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
 
@@ -436,7 +492,7 @@ public class MigrationJob implements Runnable {
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".pid", new ObjectRValue(currentRun.getPid()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualStartDate", new ObjectRValue(currentRun.getActualStartDate()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
-        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".completedFlag", new ObjectRValue(currentRun.isCompletedFlag()))));
+        updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".jobStatus", new ObjectRValue(currentRun.getJobStatus().toString()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".processedDocumentCount", new ObjectRValue(currentRun.getProcessedDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".consistentDocumentCount", new ObjectRValue(currentRun.getConsistentDocumentCount()))));
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".inconsistentDocumentCount", new ObjectRValue(currentRun.getInconsistentDocumentCount()))));
@@ -452,9 +508,11 @@ public class MigrationJob implements Runnable {
         return callLightblue(updateRequest);
     }
 
-    protected int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    protected List<LightblueResponse> overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+        List<LightblueResponse> responses = new ArrayList<>();
         if (documentsToOverwrite.size() <= BATCH_SIZE) {
-            return doOverwriteLightblue(documentsToOverwrite);
+            responses.add(doOverwriteLightblue(documentsToOverwrite));
+            return responses;
         }
 
         int totalModified = 0;
@@ -467,22 +525,22 @@ public class MigrationJob implements Runnable {
             }
 
             List<JsonNode> subList = documentsToOverwrite.subList(position, limitedPosition);
-            totalModified += doOverwriteLightblue(subList);
+            responses.add(doOverwriteLightblue(subList));
 
             position = limitedPosition;
         }
 
-        return totalModified;
+        return responses;
     }
 
-    private int doOverwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    private LightblueResponse doOverwriteLightblue(List<JsonNode> documentsToOverwrite) {
+        // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
         saveRequest.create(documentsToOverwrite.toArray());
         List<Projection> projections = new ArrayList<>();
-        projections.add(new FieldProjection("*", true, true));
+        projections.add(new FieldProjection("*", false, true));
         saveRequest.returns(projections);
-        LightblueResponse response = callLightblue(saveRequest);
-        return response.parseModifiedCount();
+        return callLightblue(saveRequest);
     }
 
     protected Map<String, JsonNode> getSourceDocuments() throws SQLException, IOException {
@@ -681,5 +739,4 @@ public class MigrationJob implements Runnable {
         }
         return response;
     }
-
 }

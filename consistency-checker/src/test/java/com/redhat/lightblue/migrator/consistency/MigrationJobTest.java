@@ -52,10 +52,12 @@ public class MigrationJobTest {
     protected MigrationJob migrationJob;
     protected LightblueClient destinationClientMock;
 
-    private class TestMigrationJob extends MigrationJob {
+    protected class TestMigrationJob extends MigrationJob {
         private final String[] jsonResponses;
         private final String sourceDataResource;
         private final String destinationDataResource;
+        private final AtomicInteger callCounter = new AtomicInteger(0);
+        private final List<String> requestBodyList = new ArrayList<>();
 
         private int jsonResponsesPsn = 0;
 
@@ -86,9 +88,11 @@ public class MigrationJobTest {
 
         @Override
         protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+            callCounter.incrementAndGet();
+            requestBodyList.add(saveRequest.getBody());
             LightblueResponse response = new LightblueResponse();
             JsonNode node = null;
-            if (jsonResponsesPsn >= jsonResponses.length) {
+            if (jsonResponses != null && jsonResponsesPsn >= jsonResponses.length) {
                 jsonResponsesPsn = jsonResponses.length - 1;
             }
             try {
@@ -581,7 +585,8 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
 
         List<JsonNode> documentsToOverwrite = new ArrayList<>();
-        for (int x = 0; x < (MigrationJob.BATCH_SIZE * 2); x++) {
+        int documentCount = MigrationJob.BATCH_SIZE * 2;
+        for (int x = 0; x < documentCount; x++) {
             ObjectNode document = factory.objectNode();
             document.put(key, factory.textNode(value + x));
             documentsToOverwrite.add(document);
@@ -589,9 +594,10 @@ public class MigrationJobTest {
 
         when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
 
-        int actual = migrationJob.overwriteLightblue(documentsToOverwrite);
+        List<LightblueResponse> responses = migrationJob.overwriteLightblue(documentsToOverwrite);
 
-        assertEquals(4, actual);
+        Assert.assertNotNull(responses);
+        Assert.assertEquals((int) Math.ceil(((double) documentCount) / (double) MigrationJob.BATCH_SIZE), responses.size());
     }
 
     @Test
@@ -602,7 +608,8 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
 
         List<JsonNode> documentsToOverwrite = new ArrayList<>();
-        for (int x = 0; x < (MigrationJob.BATCH_SIZE + 1); x++) {
+        int documentCount = MigrationJob.BATCH_SIZE + 1;
+        for (int x = 0; x < documentCount; x++) {
             ObjectNode document = factory.objectNode();
             document.put(key, factory.textNode(value + x));
             documentsToOverwrite.add(document);
@@ -610,15 +617,16 @@ public class MigrationJobTest {
 
         when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
 
-        int actual = migrationJob.overwriteLightblue(documentsToOverwrite);
+        List<LightblueResponse> responses = migrationJob.overwriteLightblue(documentsToOverwrite);
 
-        assertEquals(4, actual);
+        Assert.assertNotNull(responses);
+        Assert.assertEquals((int) Math.ceil(((double) documentCount) / (double) MigrationJob.BATCH_SIZE), responses.size());
     }
 
     @Test
     public void testExecuteExistsInSourceAndDestination() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "singleFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "singleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -627,6 +635,10 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     private LinkedHashMap<String, JsonNode> getProcessedContentsFrom(String filename) {
@@ -648,8 +660,8 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestination() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -658,12 +670,17 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is saving destination data
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.setOverwriteDestinationDocuments(false);
@@ -673,12 +690,16 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteExistsInDestinationButNotSource() {
-        migrationJob = new TestMigrationJob("emptyFindResponse.json", "singleFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("emptyFindResponse.json", "singleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -687,12 +708,16 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceAndDestination() {
-        migrationJob = new TestMigrationJob("multipleFindResponse.json", "multipleFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "multipleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -706,12 +731,18 @@ public class MigrationJobTest {
         Assert.assertNotNull(migrationJob.getJobExecutions());
         Assert.assertEquals(1, migrationJob.getJobExecutions().size());
         Assert.assertNotNull(migrationJob.getJobExecutions().get(0).getSourceQuery());
+
+        // verify statuses
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceButNotDestination() {
-        migrationJob = new TestMigrationJob("multipleFindResponse.json", "emptyFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "emptyFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -720,12 +751,17 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(2, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is data save request
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInDestinationButNotSource() {
-        migrationJob = new TestMigrationJob("emptyFindResponse.json", "multipleFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("emptyFindResponse.json", "multipleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -734,12 +770,16 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleSameExceptForTimestamp() {
-        migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "multipleFindResponseDestination.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "multipleFindResponseDestination.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -748,12 +788,16 @@ public class MigrationJobTest {
         Assert.assertEquals(2, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
-        migrationJob = new TestMigrationJob("singleFindResponse.json", "multipleFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "multipleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -762,12 +806,16 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
-        migrationJob = new TestMigrationJob("multipleFindResponse.json", "singleFindResponse.json",
-                new String[]{"{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}"});
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "singleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
         configureMigrationJob(migrationJob);
         migrationJob.run();
@@ -776,6 +824,11 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is data save request
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     private void configureMigrationJob(MigrationJob migrationJob) {
@@ -812,12 +865,14 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_first() throws Exception {
-        migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
                     // initial job save
                     FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                    // update job to running
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
                     // save one document
-                    "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}",
+                    "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}",
                     // final job save
                     FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
                 });
@@ -833,8 +888,12 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
         // verify marked complete
-        Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
         Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is data save request
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     /**
@@ -845,7 +904,7 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_second() throws Exception {
-        migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
                     // initial job save
                     FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
@@ -863,9 +922,12 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
-        // verify marked complete
-        Assert.assertTrue(migrationJob.currentRun.isCompletedFlag());
+
         Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+
+        Assert.assertEquals(2, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.ABORTED_DUPLICATE.toString()));
     }
 
     /**

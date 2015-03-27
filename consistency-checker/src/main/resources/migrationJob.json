@@ -6,7 +6,24 @@
             "datasource": "mongodata"
         },
         "enums": [
-            
+            {
+                "name": "jobStatusType",
+                "values": [
+                    "STARTING",
+                    "RUNNING",
+                    "RUNNING_ASYNC",
+                    "COMPLETED_SUCCESS",
+                    "COMPLETED_PARTIAL",
+                    "COMPLETED_DEAD",
+                    "COMPLETED_IGNORED",
+                    "COMPLETED_FAILED",
+                    "ABORTED_DUPLICATE",
+                    "ABORTED_TIMEOUT",
+                    "ABORTED_AUTH",
+                    "ABORTED_UNKNOWN",
+                    "UNKNOWN"
+                ]
+            }
         ],
         "indexes": [
             {
@@ -81,7 +98,7 @@
                 },
                 "description": "Document end date for this migration job"
             },
-            "whenAvailableDate" : {
+            "whenAvailableDate": {
                 "type": "date",
                 "constraints": {
                     "required": true
@@ -133,12 +150,13 @@
                             },
                             "description": "Actual end date for this migration job"
                         },
-                        "completedFlag": {
-                            "type": "boolean",
+                        "jobStatus": {
+                            "type": "string",
                             "constraints": {
-                                "required": true
+                                "required": true,
+                                "enum": "jobStatusType"
                             },
-                            "description": "Indicates whether or not this job successfully completed"
+                            "description": "Indicates the status of the execution of this job"
                         },
                         "processedDocumentCount": {
                             "type": "integer",
@@ -215,7 +233,7 @@
         },
         "version": {
             "changelog": "Initial version",
-            "value": "0.1.3-SNAPSHOT"
+            "value": "0.1.4-SNAPSHOT"
         }
     }
 }
