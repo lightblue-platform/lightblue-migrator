@@ -60,11 +60,10 @@ public class MigrationJob implements Runnable {
     protected static final ObjectMapper mapper = new ObjectMapper()
             .setDateFormat(ClientConstants.getDateFormat())
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    public static final String STATUS = "status";
-    public static final String COMPLETE = "complete";
-    public static final String PARTIAL = "partial";
-    public static final String ASYNC = "async";
-    public static final String ERROR = "error";
+    public static final String STATUS_COMPLETE = "COMPLETE";
+    public static final String STATUS_PARTIAL = "PARTIAL";
+    public static final String STATUS_ASYNC = "ASYNC";
+    public static final String STATUS_ERROR = "ERROR";
 
     public MigrationJob() {
         migrationConfiguration = new MigrationConfiguration();
@@ -105,8 +104,6 @@ public class MigrationJob implements Runnable {
     private int expectedExecutionMilliseconds;
 
     private boolean hasInconsistentDocuments = false;
-
-    private List<Map.Entry<DataSaveRequest, LightblueResponse>> overwriteProcessedList = new ArrayList<>();
 
     public String get_id() {
         return _id;
@@ -275,7 +272,6 @@ public class MigrationJob implements Runnable {
             currentRun.setHostName(hostName);
             currentRun.setPid(pid);
             currentRun.setActualStartDate(new Date());
-            overwriteProcessedList = new ArrayList<>();
             getJobExecutions().add(currentRun);
 
             configureClients();
@@ -308,12 +304,14 @@ public class MigrationJob implements Runnable {
                 boolean allComplete = true;
                 boolean anyPartial = false;
                 boolean anyAsync = false;
-                
-                if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
-                    currentRun.setOverwrittenDocumentCount(overwriteLightblue(documentsToOverwrite));
 
-                    for (Entry<DataSaveRequest, LightblueResponse> entry : overwriteProcessedList) {
-                        JsonNode jsonNode = entry.getValue().getJson();
+                if (shouldOverwriteDestinationDocuments() && hasInconsistentDocuments) {
+                    List<LightblueResponse> responses = overwriteLightblue(documentsToOverwrite);
+                    int totalOverwrittenDocumentCount = 0;
+
+                    for (LightblueResponse r : responses) {
+                        totalOverwrittenDocumentCount += r.parseModifiedCount();
+                        JsonNode jsonNode = r.getJson();
                         JsonNode jsStatus = jsonNode.findValue("status");
                         if (jsStatus == null || jsStatus instanceof NullNode || jsStatus instanceof MissingNode) {
                             // It should not reach here as is expected lightblue to throw an exception
@@ -321,13 +319,13 @@ public class MigrationJob implements Runnable {
                             throw new RuntimeException("Found 'error' in response's status!");
                         }
                         String status = jsStatus.asText(); // TODO lightblue client should have a better way to handle this
-                        if (!COMPLETE.equalsIgnoreCase(status)) {
+                        if (!STATUS_COMPLETE.equalsIgnoreCase(status)) {
                             allComplete = false;
-                            if ("partial".equalsIgnoreCase(status)) {
+                            if (STATUS_PARTIAL.equalsIgnoreCase(status)) {
                                 anyPartial = true;
-                            } else if ("anyAsync".equalsIgnoreCase(status)) {
+                            } else if (STATUS_ASYNC.equalsIgnoreCase(status)) {
                                 anyAsync = true;
-                            } else if ("error".equalsIgnoreCase(status)) {
+                            } else if (STATUS_ERROR.equalsIgnoreCase(status)) {
                                 // It should not reach here as is expected lightblue to throw an exception
                                 LOGGER.error("In sourceDocuments: Found 'error' in response's status in one of the documents!");
                                 throw new RuntimeException("Found 'error' in response's status!");
@@ -338,6 +336,7 @@ public class MigrationJob implements Runnable {
                             }
                         }
                     }
+                    currentRun.setOverwrittenDocumentCount(totalOverwrittenDocumentCount);
                 }
                 if (allComplete) {
                     currentRun.setJobStatus(JobStatus.COMPLETED_SUCCESS);
@@ -353,7 +352,8 @@ public class MigrationJob implements Runnable {
                 saveJobDetails(jobExecutionPsn);
                 LOGGER.debug("Success Save Response: {}", response.getText());
             } else {
-                // just mark complete and set actual end date.
+                // mark aborted
+                currentRun.setJobStatus(JobStatus.ABORTED_DUPLICATE);
                 LightblueResponse responseMarkExecutionStatus = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), true);
                 LOGGER.debug("No Run Mark Updated Response: {}", responseMarkExecutionStatus.getText());
             }
@@ -508,9 +508,11 @@ public class MigrationJob implements Runnable {
         return callLightblue(updateRequest);
     }
 
-    protected int overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    protected List<LightblueResponse> overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+        List<LightblueResponse> responses = new ArrayList<>();
         if (documentsToOverwrite.size() <= BATCH_SIZE) {
-            return doOverwriteLightblue(documentsToOverwrite);
+            responses.add(doOverwriteLightblue(documentsToOverwrite));
+            return responses;
         }
 
         int totalModified = 0;
@@ -523,24 +525,22 @@ public class MigrationJob implements Runnable {
             }
 
             List<JsonNode> subList = documentsToOverwrite.subList(position, limitedPosition);
-            totalModified += doOverwriteLightblue(subList);
+            responses.add(doOverwriteLightblue(subList));
 
             position = limitedPosition;
         }
 
-        return totalModified;
+        return responses;
     }
 
-    private int doOverwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    private LightblueResponse doOverwriteLightblue(List<JsonNode> documentsToOverwrite) {
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
         saveRequest.create(documentsToOverwrite.toArray());
         List<Projection> projections = new ArrayList<>();
-        projections.add(new FieldProjection("*", true, true));
+        projections.add(new FieldProjection("*", false, true));
         saveRequest.returns(projections);
-        LightblueResponse response = callLightblue(saveRequest);
-        overwriteProcessedList.add(new AbstractMap.SimpleEntry<>(saveRequest, response));
-        return response.parseModifiedCount();
+        return callLightblue(saveRequest);
     }
 
     protected Map<String, JsonNode> getSourceDocuments() throws SQLException, IOException {
