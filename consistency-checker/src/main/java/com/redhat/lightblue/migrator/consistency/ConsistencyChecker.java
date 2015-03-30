@@ -205,31 +205,31 @@ public class ConsistencyChecker implements Runnable {
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
             /*
-             and:
-             whenAvailableDate <= new Date()
-             or:
-             jobExecutions# = 0
-             not:
-             jobExecutions.jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
-             and:
-             not:
-             jobExecutions.jobStatus $not_in [COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
-             jobExecutions.actualStartDate < (new Date() - expectedExecutionMilliseconds)
-
+                and:
+                    whenAvailableDate <= new Date()
+                    or:
+                        jobExecutions# = 0
+                        not:
+                            jobExecutions.jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
+                        and:
+                            not:
+                                jobExecutions.jobStatus $not_in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
+                            jobExecutions.actualStartDate < (new Date() - expectedExecutionMilliseconds)
              */
             findRequest.where(
-                    and(
-                            withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                            or(
-                                    not(
-                                            withSubfield("jobExecutions", withValue("jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
-                                    ),
-                                    and(
-                                            not(
-                                                    withSubfield("jobExecutions", withValue("jobStatus $not_in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']"))
-                                            )
-                                    )
+                and(
+                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
+                    or(
+                        not(
+
+                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                        ),
+                        and(
+                            not(
+
+                                    withSubfield("jobExecutions", withValue("jobStatus $not_in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
                             )
+                        )
                     )
             );
             findRequest.select(includeFieldRecursively("*"));
