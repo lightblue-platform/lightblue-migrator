@@ -207,6 +207,7 @@ public class ConsistencyChecker implements Runnable {
 
             findRequest.where(
                     and(
+                            withValue("configurationName = " + configuration.getConfigurationName()),
                             withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
                             or(
                                     not(
