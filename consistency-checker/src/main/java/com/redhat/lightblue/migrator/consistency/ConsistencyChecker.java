@@ -204,32 +204,20 @@ public class ConsistencyChecker implements Runnable {
         List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            /*
-                and:
-                    whenAvailableDate <= new Date()
-                    or:
-                        jobExecutions# = 0
-                        not:
-                            jobExecutions.jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
-                        and:
-                            not:
-                                jobExecutions.jobStatus $not_in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
-                            jobExecutions.actualStartDate < (new Date() - expectedExecutionMilliseconds)
-             */
+
             findRequest.where(
-                and(
-                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                    or(
-                        not(
-
-                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
-                        ),
-                        and(
-                            not(
-
-                                    withSubfield("jobExecutions", withValue("jobStatus $not_in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                    and(
+                            withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
+                            or(
+                                    not(
+                                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                                    ),
+                                    and(
+                                            not(
+                                                    withSubfield("jobExecutions", withValue("jobStatus $not_in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                                            )
+                                    )
                             )
-                        )
                     )
             );
             findRequest.select(includeFieldRecursively("*"));
@@ -241,25 +229,9 @@ public class ConsistencyChecker implements Runnable {
 
             MigrationJob[] rawJobResponse = client.data(findRequest, MigrationJob[].class);
 
-            // loop through jobs to check expectedExecutionMilliseconds
-            long now = GregorianCalendar.getInstance().getTimeInMillis();
+            // loop through jobs to check if job can be executed
             for (MigrationJob job : rawJobResponse) {
-                if (job.getJobExecutions() != null && !job.getJobExecutions().isEmpty()) {
-                    // get newest execution start date
-                    long newestActualStartDate = 0;
-                    for (MigrationJobExecution exec : job.getJobExecutions()) {
-                        if (exec.getActualStartDate() != null && newestActualStartDate < exec.getActualStartDate().getTime()) {
-                            newestActualStartDate = exec.getActualStartDate().getTime();
-                        }
-                    }
-                    // get the time (msec) at which we call this job too old
-                    long tooOld = newestActualStartDate + job.getWhenAvailableDate().getTime();
-                    if (tooOld > now) {
-                        // this job is too old, we'll assume it has to be processed
-                        jobs.add(job);
-                    }
-                } else {
-                    // hasn't been processed before, we can process it now
+                if (isJobExecutable(job)) {
                     jobs.add(job);
                 }
             }
@@ -269,6 +241,36 @@ public class ConsistencyChecker implements Runnable {
             LOGGER.error("Problem getting migrationJobs", e);
         }
         return jobs;
+    }
+
+    /**
+     * Helper method to determine if a job can be processed right now based on
+     * the execution data (if present). If no execution data exists, it is
+     * automatically executable.
+     */
+    protected static boolean isJobExecutable(MigrationJob job) {
+        boolean executable;
+        long now = GregorianCalendar.getInstance().getTimeInMillis();
+
+        if (job.getJobExecutions() != null && !job.getJobExecutions().isEmpty()) {
+            // get newest execution start date
+            long newestActualStartDate = 0;
+            for (MigrationJobExecution exec : job.getJobExecutions()) {
+                if (exec.getActualStartDate() != null && newestActualStartDate < exec.getActualStartDate().getTime()) {
+                    newestActualStartDate = exec.getActualStartDate().getTime();
+                }
+            }
+            // get the time (msec) at which we call this job too old
+            long expirationTime = newestActualStartDate + job.getExpectedExecutionMilliseconds();
+
+            // this job is too old if expirationTime <= now, else it can be processed
+            executable = expirationTime <= now;
+        } else {
+            // hasn't been processed before, we can process it now
+            executable = true;
+        }
+
+        return executable;
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {

@@ -158,4 +158,37 @@ public class ConsistencyCheckerTest {
 
     }
 
+    @Test
+    public void isJobExecutable_NoExecutions() {
+        MigrationJob job = new MigrationJob();
+
+        Assert.assertTrue(ConsistencyChecker.isJobExecutable(job));
+    }
+
+    @Test
+    public void isJobExecutable_ExpiredExecution() {
+        MigrationJob job = new MigrationJob();
+        MigrationJobExecution exec = new MigrationJobExecution();
+        job.setExpectedExecutionMilliseconds(30000);
+        exec.setActualStartDate(new Date(System.currentTimeMillis() - job.getExpectedExecutionMilliseconds() * 2));
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        job.setJobExecutions(execs);
+
+        Assert.assertTrue(ConsistencyChecker.isJobExecutable(job));
+    }
+    
+        @Test
+    public void isJobExecutable_RunningExecution() {
+        MigrationJob job = new MigrationJob();
+        MigrationJobExecution exec = new MigrationJobExecution();
+        job.setExpectedExecutionMilliseconds(30000);
+        exec.setActualStartDate(new Date(System.currentTimeMillis() - job.getExpectedExecutionMilliseconds() / 2));
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        job.setJobExecutions(execs);
+
+        Assert.assertFalse(ConsistencyChecker.isJobExecutable(job));
+    }
+
 }
