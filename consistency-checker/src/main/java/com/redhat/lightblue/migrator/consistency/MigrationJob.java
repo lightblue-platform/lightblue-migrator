@@ -402,7 +402,7 @@ public class MigrationJob implements Runnable {
         for (MigrationJobExecution execution : jobs[0].getJobExecutions()) {
             // if we find an execution that is not our pid but is active
             // in the array before ours, we do not get to process
-            if (!execution.getJobStatus().isCompleted() && !pid.equals(execution.getPid())) {
+            if (jobExecutionPsn < 0 && !execution.getJobStatus().isCompleted() && !pid.equals(execution.getPid())) {
                 // check if this is a dead job
                 if (execution.getActualStartDate() != null
                         && System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
