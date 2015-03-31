@@ -246,7 +246,7 @@ public class ConsistencyChecker implements Runnable {
 
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
 
-            jobs = Arrays.asList(client.data(findRequest, MigrationJob[].class));
+            jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
