@@ -227,8 +227,9 @@ public class ConsistencyChecker implements Runnable {
 
             // loop through jobs to check if job can be executed
             for (MigrationJob job : rawJobResponse) {
-                // note, isJobExecutable cleans up old execution status / end date!
                 if (isJobExecutable(job)) {
+                    // mark old expirations as dead
+                    markRunningJobExecutionsAsDead(job);
                     // add to list of jobs to process
                     jobs.add(job);
                 }
@@ -280,6 +281,7 @@ public class ConsistencyChecker implements Runnable {
         int psn = 0;
         for (MigrationJobExecution exec : job.getJobExecutions()) {
             if (exec.getJobStatus() != null && exec.getJobStatus().isRunning()) {
+                LOGGER.info("Marking job {} execution {} as {}", job.get_id(), psn, JobStatus.COMPLETED_DEAD);
                 exec.setJobStatus(JobStatus.COMPLETED_DEAD);
                 exec.setActualEndDate(new Date());
                 job.markExecutionStatusAndEndDate(psn, JobStatus.COMPLETED_DEAD, true);
