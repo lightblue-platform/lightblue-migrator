@@ -142,18 +142,41 @@ public class ConsistencyChecker implements Runnable {
 
                 configuration.setConfigFilePath(configPath);
                 configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
-                List<MigrationJob> jobs = getMigrationJobs(configuration);
+                List<MigrationJob> allJobs = getMigrationJobs(configuration);
+                List<MigrationJob> jobs = new ArrayList<>();
 
-                if (!jobs.isEmpty()) {
-                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
-                    executors.add(jobExecutor);
-                    for (MigrationJob job : jobs) {
+                LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
+
+                // loop through jobs to check if job can be executed
+                for (MigrationJob job : allJobs) {
+                    if (isJobExecutable(job)) {
+                        // must initialize job before marking execution as dead
                         job.setJobConfiguration(configuration);
                         job.setOwner(getConsistencyCheckerName());
                         job.setHostName(getHostName());
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
                         job.setSourceConfigPath(sourceConfigPath);
                         job.setDestinationConfigPath(destinationConfigPath);
+
+                        try {
+                            // mark old expirations as dead
+                            markRunningJobExecutionsAsDead(job);
+                        } catch (IOException ex) {
+                            LOGGER.warn("Unable to mark job as dead: {}", job.get_id());
+                        }
+                        // add to list of jobs to process
+                        jobs.add(job);
+                    }
+                }
+
+                if (!jobs.isEmpty()) {
+                    LOGGER.info("Executing {} of {} loaded jobs for {}", jobs.size(), allJobs.size(), configuration.getConfigurationName());
+                }
+
+                if (!jobs.isEmpty()) {
+                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
+                    executors.add(jobExecutor);
+                    for (MigrationJob job : allJobs) {
                         futures.add(jobExecutor.submit(job));
                     }
                 }
@@ -234,8 +257,6 @@ public class ConsistencyChecker implements Runnable {
                     jobs.add(job);
                 }
             }
-
-            LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
