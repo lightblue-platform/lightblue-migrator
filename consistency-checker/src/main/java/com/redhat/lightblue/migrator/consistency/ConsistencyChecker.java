@@ -246,17 +246,7 @@ public class ConsistencyChecker implements Runnable {
 
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
 
-            MigrationJob[] rawJobResponse = client.data(findRequest, MigrationJob[].class);
-
-            // loop through jobs to check if job can be executed
-            for (MigrationJob job : rawJobResponse) {
-                if (isJobExecutable(job)) {
-                    // mark old expirations as dead
-                    markRunningJobExecutionsAsDead(job);
-                    // add to list of jobs to process
-                    jobs.add(job);
-                }
-            }
+            jobs = Arrays.asList(client.data(findRequest, MigrationJob[].class));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
