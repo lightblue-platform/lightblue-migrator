@@ -420,6 +420,9 @@ public class MigrationJob implements Runnable {
             // already if this execution gets to be processed or not.
             if (pid.equals(execution.getPid())) {
                 jobExecutionPsn = i;
+            } else if (jobExecutionPsn >= 0) {
+                // we have found the last execution matching our pid.
+                // this should be the "current" execution
                 break;
             }
 
