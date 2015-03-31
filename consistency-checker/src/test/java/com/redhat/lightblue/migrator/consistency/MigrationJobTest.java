@@ -47,10 +47,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MigrationJobTest {
 
-    private final String sourceConfigPath = "source-lightblue-client.properties";
-    private final String destinationConfigPath = "destination-lightblue-client.properties";
+    private final String sourceConfigPath = "./lightblue-client.properties";
+    private final String destinationConfigPath = "./lightblue-client.properties";
 
     protected MigrationJob migrationJob;
+    protected LightblueClient sourceClientMock;
     protected LightblueClient destinationClientMock;
 
     protected class TestMigrationJob extends MigrationJob {
@@ -113,6 +114,13 @@ public class MigrationJobTest {
         migrationJob.setDestinationConfigPath(destinationConfigPath);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
 
+        // NOTE have to mock source and client, else job initializes clients itself
+        
+        // mock out source client
+        sourceClientMock = mock(LightblueClient.class);
+        migrationJob.setSourceClient(sourceClientMock);
+        
+        // mock out destination client
         destinationClientMock = mock(LightblueClient.class);
         migrationJob.setDestinationClient(destinationClientMock);
     }
@@ -1029,8 +1037,7 @@ public class MigrationJobTest {
 
     @Test
     public void shouldProcessJob_NoExecutions() throws LightblueResponseParseException {
-        MigrationJob job = new MigrationJob();
-        Object[] x = job.shouldProcessJob(new MigrationJob[]{job});
+        Object[] x = MigrationJob.shouldProcessJob("", new MigrationJob[]{migrationJob});
         boolean processJob = (Boolean) x[0];
         int jobExecutionPsn = (Integer) x[1];
 
@@ -1042,15 +1049,14 @@ public class MigrationJobTest {
     public void shouldProcessJob_OneExecution_NotCompleted_pidMatch() throws LightblueResponseParseException {
         String pid = "asdf";
 
-        MigrationJob job = new MigrationJob();
-        job.setPid(pid);
+        migrationJob.setPid(pid);
         MigrationJobExecution exec = new MigrationJobExecution();
         exec.setJobStatus(JobStatus.RUNNING);
         exec.setPid(pid);
         List<MigrationJobExecution> execs = new ArrayList<>();
         execs.add(exec);
-        job.setJobExecutions(execs);
-        Object[] x = job.shouldProcessJob(new MigrationJob[]{job});
+        migrationJob.setJobExecutions(execs);
+        Object[] x = MigrationJob.shouldProcessJob(pid, new MigrationJob[]{migrationJob});
         boolean processJob = (Boolean) x[0];
         int jobExecutionPsn = (Integer) x[1];
 
@@ -1062,15 +1068,14 @@ public class MigrationJobTest {
     public void shouldProcessJob_OneExecution_NotCompleted_pidMismatch() throws LightblueResponseParseException {
         String pid = "asdf";
 
-        MigrationJob job = new MigrationJob();
-        job.setPid(pid);
+        migrationJob.setPid(pid);
         MigrationJobExecution exec = new MigrationJobExecution();
         exec.setJobStatus(JobStatus.RUNNING);
         exec.setPid(pid + "-mismatch");
         List<MigrationJobExecution> execs = new ArrayList<>();
         execs.add(exec);
-        job.setJobExecutions(execs);
-        Object[] x = job.shouldProcessJob(new MigrationJob[]{job});
+        migrationJob.setJobExecutions(execs);
+        Object[] x = MigrationJob.shouldProcessJob(pid, new MigrationJob[]{migrationJob});
         boolean processJob = (Boolean) x[0];
         int jobExecutionPsn = (Integer) x[1];
 

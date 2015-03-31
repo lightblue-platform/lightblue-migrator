@@ -22,6 +22,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.LightblueClientConfiguration;
+import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
@@ -42,6 +44,7 @@ import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -274,12 +277,10 @@ public class MigrationJob implements Runnable {
             currentRun.setActualStartDate(new Date());
             getJobExecutions().add(currentRun);
 
-            configureClients();
-
             LightblueResponse response = saveJobDetails(-1);
             LOGGER.debug("Start Save Response: {}", response.getText());
 
-            Object[] x = shouldProcessJob(response.parseProcessed(MigrationJob[].class));
+            Object[] x = shouldProcessJob(pid, response.parseProcessed(MigrationJob[].class));
             boolean processJob = (Boolean) x[0];
             jobExecutionPsn = (Integer) x[1];
 
@@ -372,6 +373,8 @@ public class MigrationJob implements Runnable {
                 LOGGER.debug("Processing RuntimeException and just updated Status Response for status {}: {}", currentRun.getJobStatus(), lr.getText());
             } catch (RuntimeException re) {
                 LOGGER.error("Couldn't update failed job's status", re);
+            } catch (IOException ex) {
+                LOGGER.error("Couldn't update failed job's status", ex);
             }
         }
 
@@ -382,12 +385,13 @@ public class MigrationJob implements Runnable {
      * Return array with two elements indicating if the job should process and
      * what the index of the jobExecution is.
      *
+     * @param pid the pid of the current job execution
      * @param jobs the jobs that came back from lightblue
      * @return object array where index 0 is a Boolean indicating if the job
      * should be processed, index 1 is an Integer indicating the position in the
      * jobExecutions array for this job execution attempt
      */
-    protected Object[] shouldProcessJob(MigrationJob[] jobs) throws LightblueResponseParseException {
+    protected static Object[] shouldProcessJob(String pid, MigrationJob[] jobs) throws LightblueResponseParseException {
         boolean processJob = true;
         int jobExecutionPsn = -1;
 
@@ -423,29 +427,46 @@ public class MigrationJob implements Runnable {
         return new Object[]{processJob, jobExecutionPsn};
     }
 
-    private void configureClients() {
-        LightblueHttpClient source;
-        LightblueHttpClient destination;
-        if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
-            source = new LightblueHttpClient();
-            destination = new LightblueHttpClient();
-        } else {
-            source = new LightblueHttpClient(getSourceConfigPath());
-            destination = new LightblueHttpClient(getDestinationConfigPath());
+    private void configureClients() throws IOException {
+        if (null == sourceClient || null == destinationClient) {
+            synchronized (this) {
+                if (null == sourceClient || null == destinationClient) {
+                    LightblueHttpClient source;
+                    LightblueHttpClient destination;
+                    if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
+                        source = new LightblueHttpClient();
+                        destination = new LightblueHttpClient();
+                    } else {
+                        // load from config files
+                        try (InputStream is = Thread.currentThread()
+                                .getContextClassLoader().getResourceAsStream(getSourceConfigPath())) {
+                            LightblueClientConfiguration config = PropertiesLightblueClientConfiguration.fromInputStream(is);
+                            source = new LightblueHttpClient(config);
+                        }
+
+                        try (InputStream is = Thread.currentThread()
+                                .getContextClassLoader().getResourceAsStream(getDestinationConfigPath())) {
+                            LightblueClientConfiguration config = PropertiesLightblueClientConfiguration.fromInputStream(is);
+                            destination = new LightblueHttpClient(config);
+                        }
+                    }
+                    sourceClient = new LightblueHystrixClient(source, "migrator", "sourceClient");
+                    destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
+
+                }
+            }
         }
-        sourceClient = new LightblueHystrixClient(source, "migrator", "sourceClient");
-        destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
     }
 
     /**
      * NOTE this does not change the objects in memory!
-     * 
+     *
      * @param jobExecutionPsn
      * @param jobStatus
      * @param updateEndDate
-     * @return 
+     * @return
      */
-    protected LightblueResponse markExecutionStatusAndEndDate(int jobExecutionPsn, JobStatus jobStatus, boolean updateEndDate) {
+    protected LightblueResponse markExecutionStatusAndEndDate(int jobExecutionPsn, JobStatus jobStatus, boolean updateEndDate) throws IOException {
         // LightblueClient - update job status
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
@@ -471,7 +492,7 @@ public class MigrationJob implements Runnable {
      * @param jobExecutionPsn if this is the initial save, set to -1
      * @return
      */
-    private LightblueResponse saveJobDetails(int jobExecutionPsn) {
+    private LightblueResponse saveJobDetails(int jobExecutionPsn) throws IOException {
         // LightblueClient - update job details
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
@@ -508,7 +529,7 @@ public class MigrationJob implements Runnable {
         return callLightblue(updateRequest);
     }
 
-    protected List<LightblueResponse> overwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    protected List<LightblueResponse> overwriteLightblue(List<JsonNode> documentsToOverwrite) throws IOException {
         List<LightblueResponse> responses = new ArrayList<>();
         if (documentsToOverwrite.size() <= BATCH_SIZE) {
             responses.add(doOverwriteLightblue(documentsToOverwrite));
@@ -533,7 +554,7 @@ public class MigrationJob implements Runnable {
         return responses;
     }
 
-    private LightblueResponse doOverwriteLightblue(List<JsonNode> documentsToOverwrite) {
+    private LightblueResponse doOverwriteLightblue(List<JsonNode> documentsToOverwrite) throws IOException {
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
         saveRequest.create(documentsToOverwrite.toArray());
@@ -713,10 +734,12 @@ public class MigrationJob implements Runnable {
     }
 
     protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
+        configureClients();
         return getJsonNodeMap(getSourceClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationIdentityFields());
     }
 
     protected Map<String, JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
+        configureClients();
         return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationIdentityFields());
     }
 
@@ -732,7 +755,8 @@ public class MigrationJob implements Runnable {
         return resultsMap;
     }
 
-    protected LightblueResponse callLightblue(LightblueRequest request) {
+    protected LightblueResponse callLightblue(LightblueRequest request) throws IOException {
+        configureClients();
         LightblueResponse response = getDestinationClient().data(request);
         if (response.hasError()) {
             throw new RuntimeException("Error returned in response " + response.getText() + " for request " + request.getBody());

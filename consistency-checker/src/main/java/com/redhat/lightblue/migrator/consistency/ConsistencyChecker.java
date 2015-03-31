@@ -277,7 +277,7 @@ public class ConsistencyChecker implements Runnable {
      *
      * @param job the job to cleanup
      */
-    protected static void markRunningJobExecutionsAsDead(MigrationJob job) {
+    protected static void markRunningJobExecutionsAsDead(MigrationJob job) throws IOException {
         int psn = 0;
         for (MigrationJobExecution exec : job.getJobExecutions()) {
             if (exec.getJobStatus() != null && exec.getJobStatus().isRunning()) {
