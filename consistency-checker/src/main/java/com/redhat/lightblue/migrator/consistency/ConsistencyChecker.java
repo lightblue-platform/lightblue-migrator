@@ -26,6 +26,7 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.util.GregorianCalendar;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -158,7 +159,7 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             }
-            
+
             LOGGER.info("Done setting up job executors");
 
             if (executors.isEmpty()) {
@@ -191,7 +192,7 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             }
-            
+
             LOGGER.info("Job executors done");
         }
 
@@ -203,37 +204,22 @@ public class ConsistencyChecker implements Runnable {
         List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            /*
-                and:
-                    whenAvailableDate <= new Date()
-                    or:
-                        jobExecutions# = 0
-                        not:
-                            jobExecutions.jobStatus $in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
-                        and:
-                            not:
-                                jobExecutions.jobStatus $not_in ['COMPLETED_SUCCESS', 'COMPLETED_PARTIAL']
-                            jobExecutions.actualStartDate < (new Date() - expectedExecutionMilliseconds)
 
-             */
             findRequest.where(
-                and(
-                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                    or(
-                        not(
-
-                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
-                        ),
-                        and(
-                            not(
-
-                                    withSubfield("jobExecutions", withValue("jobStatus $not_in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
-                            ),
-                            // TODO check how lightblue will handle the next comparison (if it can handle this case), suggestions?
-                            withValue("whenAvailableDate + expectedExecutionMilliseconds < " + ClientConstants.getDateFormat().format(new Date()))
-                        )
+                    and(
+                            withValue("configurationName = " + configuration.getConfigurationName()),
+                            withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
+                            or(
+                                    not(
+                                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                                    ),
+                                    and(
+                                            not(
+                                                    withSubfield("jobExecutions", withValue("jobStatus $not_in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                                            )
+                                    )
+                            )
                     )
-                )
             );
             findRequest.select(includeFieldRecursively("*"));
 
@@ -241,12 +227,51 @@ public class ConsistencyChecker implements Runnable {
             findRequest.range(0, MAX_JOBS_PER_ENTITY);
 
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
-            jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+
+            MigrationJob[] rawJobResponse = client.data(findRequest, MigrationJob[].class);
+
+            // loop through jobs to check if job can be executed
+            for (MigrationJob job : rawJobResponse) {
+                if (isJobExecutable(job)) {
+                    jobs.add(job);
+                }
+            }
+
             LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
         return jobs;
+    }
+
+    /**
+     * Helper method to determine if a job can be processed right now based on
+     * the execution data (if present). If no execution data exists, it is
+     * automatically executable.
+     */
+    protected static boolean isJobExecutable(MigrationJob job) {
+        boolean executable;
+        long now = GregorianCalendar.getInstance().getTimeInMillis();
+
+        if (job.getJobExecutions() != null && !job.getJobExecutions().isEmpty()) {
+            // get newest execution start date
+            long newestActualStartDate = 0;
+            for (MigrationJobExecution exec : job.getJobExecutions()) {
+                if (exec.getActualStartDate() != null && newestActualStartDate < exec.getActualStartDate().getTime()) {
+                    newestActualStartDate = exec.getActualStartDate().getTime();
+                }
+            }
+            // get the time (msec) at which we call this job too old
+            long expirationTime = newestActualStartDate + job.getExpectedExecutionMilliseconds();
+
+            // this job is too old if expirationTime <= now, else it can be processed
+            executable = expirationTime <= now;
+        } else {
+            // hasn't been processed before, we can process it now
+            executable = true;
+        }
+
+        return executable;
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
