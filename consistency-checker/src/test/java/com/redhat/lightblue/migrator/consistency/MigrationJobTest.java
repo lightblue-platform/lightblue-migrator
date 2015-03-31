@@ -34,6 +34,7 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import static com.redhat.lightblue.migrator.consistency.MigrationJob.mapper;
 import com.redhat.lightblue.util.test.FileUtil;
 import java.sql.SQLException;
@@ -1024,5 +1025,56 @@ public class MigrationJobTest {
 
         // and now that we're done, verify everything got processed
         Assert.assertEquals(0, outstandingThreadCount.intValue());
+    }
+
+    @Test
+    public void shouldProcessJob_NoExecutions() throws LightblueResponseParseException {
+        MigrationJob job = new MigrationJob();
+        Object[] x = job.shouldProcessJob(new MigrationJob[]{job});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertTrue(processJob);
+        Assert.assertEquals(-1, jobExecutionPsn);
+    }
+
+    @Test
+    public void shouldProcessJob_OneExecution_NotCompleted_pidMatch() throws LightblueResponseParseException {
+        String pid = "asdf";
+
+        MigrationJob job = new MigrationJob();
+        job.setPid(pid);
+        MigrationJobExecution exec = new MigrationJobExecution();
+        exec.setJobStatus(JobStatus.RUNNING);
+        exec.setPid(pid);
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        job.setJobExecutions(execs);
+        Object[] x = job.shouldProcessJob(new MigrationJob[]{job});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertTrue(processJob);
+        Assert.assertEquals(0, jobExecutionPsn);
+    }
+
+    @Test
+    public void shouldProcessJob_OneExecution_NotCompleted_pidMismatch() throws LightblueResponseParseException {
+        String pid = "asdf";
+
+        MigrationJob job = new MigrationJob();
+        job.setPid(pid);
+        MigrationJobExecution exec = new MigrationJobExecution();
+        exec.setJobStatus(JobStatus.RUNNING);
+        exec.setPid(pid + "-mismatch");
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        job.setJobExecutions(execs);
+        Object[] x = job.shouldProcessJob(new MigrationJob[]{job});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertFalse(processJob);
+        Assert.assertEquals(-1, jobExecutionPsn);
     }
 }

@@ -279,7 +279,7 @@ public class MigrationJob implements Runnable {
             LightblueResponse response = saveJobDetails(-1);
             LOGGER.debug("Start Save Response: {}", response.getText());
 
-            Object[] x = shouldProcessJob(response);
+            Object[] x = shouldProcessJob(response.parseProcessed(MigrationJob[].class));
             boolean processJob = (Boolean) x[0];
             jobExecutionPsn = (Integer) x[1];
 
@@ -354,6 +354,7 @@ public class MigrationJob implements Runnable {
             } else {
                 // mark aborted
                 currentRun.setJobStatus(JobStatus.ABORTED_DUPLICATE);
+                currentRun.setActualEndDate(new Date());
                 LightblueResponse responseMarkExecutionStatus = markExecutionStatusAndEndDate(jobExecutionPsn, currentRun.getJobStatus(), true);
                 LOGGER.debug("No Run Mark Updated Response: {}", responseMarkExecutionStatus.getText());
             }
@@ -381,16 +382,14 @@ public class MigrationJob implements Runnable {
      * Return array with two elements indicating if the job should process and
      * what the index of the jobExecution is.
      *
-     * @param response
+     * @param jobs the jobs that came back from lightblue
      * @return object array where index 0 is a Boolean indicating if the job
      * should be processed, index 1 is an Integer indicating the position in the
      * jobExecutions array for this job execution attempt
      */
-    private Object[] shouldProcessJob(LightblueResponse response) throws LightblueResponseParseException {
+    protected Object[] shouldProcessJob(MigrationJob[] jobs) throws LightblueResponseParseException {
         boolean processJob = true;
         int jobExecutionPsn = -1;
-
-        MigrationJob[] jobs = response.parseProcessed(MigrationJob[].class);
 
         // should only be one job returned, verify
         if (jobs.length > 1) {
@@ -403,26 +402,17 @@ public class MigrationJob implements Runnable {
             // if we find an execution that is not our pid but is active
             // in the array before ours, we do not get to process
             if (jobExecutionPsn < 0 && !execution.getJobStatus().isCompleted() && !pid.equals(execution.getPid())) {
-                // check if this is a dead job
-                if (execution.getActualStartDate() != null
-                        && System.currentTimeMillis() - execution.getActualStartDate().getTime() > JOB_EXECUTION_TIMEOUT_MSEC) {
-                    // job is dead, mark it complete
-                    LightblueResponse responseMarkDead = markExecutionStatusAndEndDate(i, JobStatus.COMPLETED_DEAD, true);
-                    LOGGER.debug("Response is dead update: {}", responseMarkDead.getText());
-                } else {
-                    // we're not the one processing this guy!
-                    processJob = false;
-                }
+                // we shouldn't be processing this particular job.  abort.
+                processJob = false;
+                break;
             }
 
-            // find our job's execution in the array
-            // once we find our job, we can stop looping, we've decided
-            // already if this execution gets to be processed or not.
+            // find last job execution for our pid
             if (pid.equals(execution.getPid())) {
                 jobExecutionPsn = i;
             } else if (jobExecutionPsn >= 0) {
                 // we have found the last execution matching our pid.
-                // this should be the "current" execution
+                // this should be the "current" execution.
                 break;
             }
 
@@ -447,7 +437,15 @@ public class MigrationJob implements Runnable {
         destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
     }
 
-    private LightblueResponse markExecutionStatusAndEndDate(int jobExecutionPsn, JobStatus jobStatus, boolean updateEndDate) {
+    /**
+     * NOTE this does not change the objects in memory!
+     * 
+     * @param jobExecutionPsn
+     * @param jobStatus
+     * @param updateEndDate
+     * @return 
+     */
+    protected LightblueResponse markExecutionStatusAndEndDate(int jobExecutionPsn, JobStatus jobStatus, boolean updateEndDate) {
         // LightblueClient - update job status
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", getJobConfiguration().getMigrationJobEntityVersion());
         updateRequest.where(withValue("_id" + " = " + _id));
@@ -459,8 +457,7 @@ public class MigrationJob implements Runnable {
         List<Update> updates = new ArrayList<>();
 
         if (updateEndDate) {
-            currentRun.setActualEndDate(new Date());
-            updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(currentRun.getActualEndDate()))));
+            updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".actualEndDate", new ObjectRValue(new Date()))));
         }
         updates.add(new SetUpdate(new PathValuePair("jobExecutions." + jobExecutionPsn + ".jobStatus", new ObjectRValue(jobStatus.toString()))));
         updateRequest.updates(updates);

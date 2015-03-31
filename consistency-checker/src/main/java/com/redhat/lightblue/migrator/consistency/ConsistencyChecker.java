@@ -2,7 +2,6 @@ package com.redhat.lightblue.migrator.consistency;
 
 import static com.redhat.lightblue.client.expression.query.ArrayQuery.withSubfield;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.UnaryLogicalQuery.not;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
@@ -228,7 +227,9 @@ public class ConsistencyChecker implements Runnable {
 
             // loop through jobs to check if job can be executed
             for (MigrationJob job : rawJobResponse) {
+                // note, isJobExecutable cleans up old execution status / end date!
                 if (isJobExecutable(job)) {
+                    // add to list of jobs to process
                     jobs.add(job);
                 }
             }
@@ -268,6 +269,23 @@ public class ConsistencyChecker implements Runnable {
         }
 
         return executable;
+    }
+
+    /**
+     * Update all non-complete job executions as "dead".
+     *
+     * @param job the job to cleanup
+     */
+    protected static void markRunningJobExecutionsAsDead(MigrationJob job) {
+        int psn = 0;
+        for (MigrationJobExecution exec : job.getJobExecutions()) {
+            if (exec.getJobStatus() != null && exec.getJobStatus().isRunning()) {
+                exec.setJobStatus(JobStatus.COMPLETED_DEAD);
+                exec.setActualEndDate(new Date());
+                job.markExecutionStatusAndEndDate(psn, JobStatus.COMPLETED_DEAD, true);
+            }
+            psn++;
+        }
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
