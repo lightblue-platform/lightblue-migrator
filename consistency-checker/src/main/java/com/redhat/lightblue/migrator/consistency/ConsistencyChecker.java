@@ -207,17 +207,13 @@ public class ConsistencyChecker implements Runnable {
 
             findRequest.where(
                     and(
+                            // get jobs for this configuration
                             withValue("configurationName = " + configuration.getConfigurationName()),
+                            // only get jobs that are available now
                             withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                            or(
-                                    not(
-                                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
-                                    ),
-                                    and(
-                                            not(
-                                                    withSubfield("jobExecutions", withValue("jobStatus $not_in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
-                                            )
-                                    )
+                            // only get jobs where there does NOT exist an execution with a complete status
+                            not(
+                                    withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
                             )
                     )
             );
