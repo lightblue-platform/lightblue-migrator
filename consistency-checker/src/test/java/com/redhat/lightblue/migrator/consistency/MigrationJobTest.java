@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,6 +20,12 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
 import org.junit.Before;
@@ -32,18 +39,10 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
-import com.redhat.lightblue.client.request.LightblueRequest;
+import com.redhat.lightblue.client.request.AbstractLightblueDataRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueResponseParseException;
-import static com.redhat.lightblue.migrator.consistency.MigrationJob.mapper;
 import com.redhat.lightblue.util.test.FileUtil;
-import java.sql.SQLException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class MigrationJobTest {
 
@@ -79,17 +78,17 @@ public class MigrationJobTest {
         }
 
         @Override
-        protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
+        protected LinkedHashMap<String, JsonNode> findSourceData(AbstractLightblueDataRequest dataRequest) {
             return getProcessedContentsFrom(sourceDataResource);
         }
 
         @Override
-        protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
+        protected LinkedHashMap<String, JsonNode> findDestinationData(AbstractLightblueDataRequest dataRequest) {
             return getProcessedContentsFrom(destinationDataResource);
         }
 
         @Override
-        protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+        protected LightblueResponse callLightblue(AbstractLightblueDataRequest saveRequest) {
             callCounter.incrementAndGet();
             requestBodyList.add(saveRequest.getBody());
             LightblueResponse response = new LightblueResponse();
@@ -115,11 +114,11 @@ public class MigrationJobTest {
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
 
         // NOTE have to mock source and client, else job initializes clients itself
-        
+
         // mock out source client
         sourceClientMock = mock(LightblueClient.class);
         migrationJob.setSourceClient(sourceClientMock);
-        
+
         // mock out destination client
         destinationClientMock = mock(LightblueClient.class);
         migrationJob.setDestinationClient(destinationClientMock);
@@ -502,7 +501,7 @@ public class MigrationJobTest {
         sourceDocuments.put(value, document);
 
         JsonNode[] destinationDocuments = new JsonNode[]{document};
-        when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class))).thenReturn(destinationDocuments);
+        when(destinationClientMock.data(any(AbstractLightblueDataRequest.class), eq(JsonNode[].class))).thenReturn(destinationDocuments);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
 
@@ -533,9 +532,9 @@ public class MigrationJobTest {
         ObjectNode dd2 = factory.objectNode();
         dd2.put(key, value + 101);
         JsonNode[] destinationDocumentsBatch2 = new JsonNode[]{dd2};
-        when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class)))
-                .thenReturn(destinationDocumentsBatch1)
-                .thenReturn(destinationDocumentsBatch2);
+        when(destinationClientMock.data(any(AbstractLightblueDataRequest.class), eq(JsonNode[].class)))
+        .thenReturn(destinationDocumentsBatch1)
+        .thenReturn(destinationDocumentsBatch2);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
 
@@ -565,9 +564,9 @@ public class MigrationJobTest {
         ObjectNode dd2 = factory.objectNode();
         dd2.put(key, value + 101);
         JsonNode[] destinationDocumentsBatch2 = new JsonNode[]{dd2};
-        when(destinationClientMock.data(any(LightblueRequest.class), eq(JsonNode[].class)))
-                .thenReturn(destinationDocumentsBatch1)
-                .thenReturn(destinationDocumentsBatch2);
+        when(destinationClientMock.data(any(AbstractLightblueDataRequest.class), eq(JsonNode[].class)))
+        .thenReturn(destinationDocumentsBatch1)
+        .thenReturn(destinationDocumentsBatch2);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
 
@@ -601,7 +600,7 @@ public class MigrationJobTest {
             documentsToOverwrite.add(document);
         }
 
-        when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
+        when(destinationClientMock.data(any(AbstractLightblueDataRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
 
         List<LightblueResponse> responses = migrationJob.overwriteLightblue(documentsToOverwrite);
 
@@ -624,7 +623,7 @@ public class MigrationJobTest {
             documentsToOverwrite.add(document);
         }
 
-        when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
+        when(destinationClientMock.data(any(AbstractLightblueDataRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
 
         List<LightblueResponse> responses = migrationJob.overwriteLightblue(documentsToOverwrite);
 
@@ -876,15 +875,15 @@ public class MigrationJobTest {
     public void testMultipleJobExecutors_first() throws Exception {
         TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
-                    // initial job save
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                    // update job to running
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                    // save one document
-                    "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}",
-                    // final job save
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-                });
+                        // initial job save
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                        // update job to running
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                        // save one document
+                        "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}",
+                        // final job save
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+        });
 
         // this job will be the first executor and therefore wins
         migrationJob.setPid("pid1");
@@ -915,11 +914,11 @@ public class MigrationJobTest {
     public void testMultipleJobExecutors_second() throws Exception {
         TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
-                    // initial job save
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                    // final job save (since this is a noop, there is nothing in the middle)
-                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-                });
+                        // initial job save
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                        // final job save (since this is a noop, there is nothing in the middle)
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+        });
 
         // this job will be the second executor and therefore looses
         migrationJob.setPid("pid2");
@@ -958,14 +957,14 @@ public class MigrationJobTest {
             outstandingThreadCount.getAndIncrement();
             MigrationJob job = new TestMigrationJob(null, null,
                     new String[]{
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-                    }) {
-                        @Override
-                        protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
-                            outstandingThreadCount.getAndDecrement();
-                            throw new SQLException("forced failure for testing");
-                        }
-                    };
+                            FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+            }) {
+                @Override
+                protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
+                    outstandingThreadCount.getAndDecrement();
+                    throw new SQLException("forced failure for testing");
+                }
+            };
 
             job.setPid("pid1");
 
@@ -1007,14 +1006,14 @@ public class MigrationJobTest {
             outstandingThreadCount.getAndIncrement();
             MigrationJob job = new TestMigrationJob(null, null,
                     new String[]{
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-                    }) {
-                        @Override
-                        protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
-                            outstandingThreadCount.getAndDecrement();
-                            throw new SQLException("forced failure for testing");
-                        }
-                    };
+                            FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+            }) {
+                @Override
+                protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
+                    outstandingThreadCount.getAndDecrement();
+                    throw new SQLException("forced failure for testing");
+                }
+            };
 
             job.setPid("pid1");
 
