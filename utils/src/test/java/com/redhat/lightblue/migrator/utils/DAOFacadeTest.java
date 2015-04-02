@@ -182,7 +182,7 @@ public class DAOFacadeTest {
         Mockito.verify(lightblueDAO).createCountry(pl);
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == (Long)((DAOFacadeBase)facade).getEntityIdStore().restoreId());
+        Assert.assertTrue(101l == (Long)((DAOFacadeBase)facade).getEntityIdStore().pop());
     }
 
     @Test
@@ -201,7 +201,7 @@ public class DAOFacadeTest {
         Mockito.verify(lightblueDAO).createCountry(pl);
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == (Long) ((DAOFacadeBase) facade).getEntityIdStore().restoreId());
+        Assert.assertTrue(101l == (Long) ((DAOFacadeBase) facade).getEntityIdStore().pop());
 
         // when there is a conflict, facade will return what legacy dao returned
         Assert.assertEquals(createdByLegacy, createdCountry);

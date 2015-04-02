@@ -264,7 +264,7 @@ public class DAOFacadeBase<D> {
 
             if (entityIdStore != null) {
                 Long id = entityIdExtractor.extractId(legacyEntity);
-                entityIdStore.storeId(id);
+                entityIdStore.push(id);
             }
 
             Method method = lightblueDAO.getClass().getMethod(methodName, types);
