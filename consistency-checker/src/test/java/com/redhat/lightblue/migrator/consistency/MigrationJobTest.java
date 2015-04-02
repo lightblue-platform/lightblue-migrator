@@ -34,6 +34,7 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import static com.redhat.lightblue.migrator.consistency.MigrationJob.mapper;
 import com.redhat.lightblue.util.test.FileUtil;
 import java.sql.SQLException;
@@ -46,10 +47,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MigrationJobTest {
 
-    private final String sourceConfigPath = "source-lightblue-client.properties";
-    private final String destinationConfigPath = "destination-lightblue-client.properties";
+    private final String sourceConfigPath = "./lightblue-client.properties";
+    private final String destinationConfigPath = "./lightblue-client.properties";
 
     protected MigrationJob migrationJob;
+    protected LightblueClient sourceClientMock;
     protected LightblueClient destinationClientMock;
 
     protected class TestMigrationJob extends MigrationJob {
@@ -112,6 +114,13 @@ public class MigrationJobTest {
         migrationJob.setDestinationConfigPath(destinationConfigPath);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
 
+        // NOTE have to mock source and client, else job initializes clients itself
+        
+        // mock out source client
+        sourceClientMock = mock(LightblueClient.class);
+        migrationJob.setSourceClient(sourceClientMock);
+        
+        // mock out destination client
         destinationClientMock = mock(LightblueClient.class);
         migrationJob.setDestinationClient(destinationClientMock);
     }
@@ -1024,5 +1033,53 @@ public class MigrationJobTest {
 
         // and now that we're done, verify everything got processed
         Assert.assertEquals(0, outstandingThreadCount.intValue());
+    }
+
+    @Test
+    public void shouldProcessJob_NoExecutions() throws LightblueResponseParseException {
+        Object[] x = MigrationJob.shouldProcessJob("", new MigrationJob[]{migrationJob});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertTrue(processJob);
+        Assert.assertEquals(-1, jobExecutionPsn);
+    }
+
+    @Test
+    public void shouldProcessJob_OneExecution_NotCompleted_pidMatch() throws LightblueResponseParseException {
+        String pid = "asdf";
+
+        migrationJob.setPid(pid);
+        MigrationJobExecution exec = new MigrationJobExecution();
+        exec.setJobStatus(JobStatus.RUNNING);
+        exec.setPid(pid);
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        migrationJob.setJobExecutions(execs);
+        Object[] x = MigrationJob.shouldProcessJob(pid, new MigrationJob[]{migrationJob});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertTrue(processJob);
+        Assert.assertEquals(0, jobExecutionPsn);
+    }
+
+    @Test
+    public void shouldProcessJob_OneExecution_NotCompleted_pidMismatch() throws LightblueResponseParseException {
+        String pid = "asdf";
+
+        migrationJob.setPid(pid);
+        MigrationJobExecution exec = new MigrationJobExecution();
+        exec.setJobStatus(JobStatus.RUNNING);
+        exec.setPid(pid + "-mismatch");
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        migrationJob.setJobExecutions(execs);
+        Object[] x = MigrationJob.shouldProcessJob(pid, new MigrationJob[]{migrationJob});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertFalse(processJob);
+        Assert.assertEquals(-1, jobExecutionPsn);
     }
 }

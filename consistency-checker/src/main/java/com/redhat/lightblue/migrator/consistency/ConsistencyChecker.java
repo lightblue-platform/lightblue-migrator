@@ -2,7 +2,6 @@ package com.redhat.lightblue.migrator.consistency;
 
 import static com.redhat.lightblue.client.expression.query.ArrayQuery.withSubfield;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.UnaryLogicalQuery.not;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
@@ -143,18 +142,41 @@ public class ConsistencyChecker implements Runnable {
 
                 configuration.setConfigFilePath(configPath);
                 configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
-                List<MigrationJob> jobs = getMigrationJobs(configuration);
+                List<MigrationJob> allJobs = getMigrationJobs(configuration);
+                List<MigrationJob> jobs = new ArrayList<>();
 
-                if (!jobs.isEmpty()) {
-                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
-                    executors.add(jobExecutor);
-                    for (MigrationJob job : jobs) {
+                LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
+
+                // loop through jobs to check if job can be executed
+                for (MigrationJob job : allJobs) {
+                    if (isJobExecutable(job)) {
+                        // must initialize job before marking execution as dead
                         job.setJobConfiguration(configuration);
                         job.setOwner(getConsistencyCheckerName());
                         job.setHostName(getHostName());
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
                         job.setSourceConfigPath(sourceConfigPath);
                         job.setDestinationConfigPath(destinationConfigPath);
+
+                        try {
+                            // mark old expirations as dead
+                            markRunningJobExecutionsAsDead(job);
+                        } catch (IOException ex) {
+                            LOGGER.warn("Unable to mark job as dead: {}", job.get_id());
+                        }
+                        // add to list of jobs to process
+                        jobs.add(job);
+                    }
+                }
+
+                if (!jobs.isEmpty()) {
+                    LOGGER.info("Executing {} of {} loaded jobs for {}", jobs.size(), allJobs.size(), configuration.getConfigurationName());
+                }
+
+                if (!jobs.isEmpty()) {
+                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
+                    executors.add(jobExecutor);
+                    for (MigrationJob job : allJobs) {
                         futures.add(jobExecutor.submit(job));
                     }
                 }
@@ -224,16 +246,7 @@ public class ConsistencyChecker implements Runnable {
 
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
 
-            MigrationJob[] rawJobResponse = client.data(findRequest, MigrationJob[].class);
-
-            // loop through jobs to check if job can be executed
-            for (MigrationJob job : rawJobResponse) {
-                if (isJobExecutable(job)) {
-                    jobs.add(job);
-                }
-            }
-
-            LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
+            jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
@@ -268,6 +281,24 @@ public class ConsistencyChecker implements Runnable {
         }
 
         return executable;
+    }
+
+    /**
+     * Update all non-complete job executions as "dead".
+     *
+     * @param job the job to cleanup
+     */
+    protected static void markRunningJobExecutionsAsDead(MigrationJob job) throws IOException {
+        int psn = 0;
+        for (MigrationJobExecution exec : job.getJobExecutions()) {
+            if (exec.getJobStatus() != null && exec.getJobStatus().isRunning()) {
+                LOGGER.info("Marking job {} execution {} as {}", job.get_id(), psn, JobStatus.COMPLETED_DEAD);
+                exec.setJobStatus(JobStatus.COMPLETED_DEAD);
+                exec.setActualEndDate(new Date());
+                job.markExecutionStatusAndEndDate(psn, JobStatus.COMPLETED_DEAD, true);
+            }
+            psn++;
+        }
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
