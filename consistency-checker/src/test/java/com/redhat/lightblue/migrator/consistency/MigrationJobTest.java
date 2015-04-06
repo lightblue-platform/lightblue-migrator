@@ -875,15 +875,15 @@ public class MigrationJobTest {
     public void testMultipleJobExecutors_first() throws Exception {
         TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
-                        // initial job save
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                        // update job to running
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                        // save one document
-                        "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}",
-                        // final job save
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-        });
+                // initial job save
+                FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                // update job to running
+                FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                // save one document
+                "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}",
+                // final job save
+                FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                });
 
         // this job will be the first executor and therefore wins
         migrationJob.setPid("pid1");
@@ -914,11 +914,11 @@ public class MigrationJobTest {
     public void testMultipleJobExecutors_second() throws Exception {
         TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
                 new String[]{
-                        // initial job save
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                        // final job save (since this is a noop, there is nothing in the middle)
-                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-        });
+                // initial job save
+                FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                // final job save (since this is a noop, there is nothing in the middle)
+                FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                });
 
         // this job will be the second executor and therefore looses
         migrationJob.setPid("pid2");
@@ -957,8 +957,8 @@ public class MigrationJobTest {
             outstandingThreadCount.getAndIncrement();
             MigrationJob job = new TestMigrationJob(null, null,
                     new String[]{
-                            FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-            }) {
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                    }) {
                 @Override
                 protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
                     outstandingThreadCount.getAndDecrement();
@@ -1006,8 +1006,8 @@ public class MigrationJobTest {
             outstandingThreadCount.getAndIncrement();
             MigrationJob job = new TestMigrationJob(null, null,
                     new String[]{
-                            FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-            }) {
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                    }) {
                 @Override
                 protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
                     outstandingThreadCount.getAndDecrement();
