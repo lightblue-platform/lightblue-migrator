@@ -533,8 +533,8 @@ public class MigrationJobTest {
         dd2.put(key, value + 101);
         JsonNode[] destinationDocumentsBatch2 = new JsonNode[]{dd2};
         when(destinationClientMock.data(any(AbstractLightblueDataRequest.class), eq(JsonNode[].class)))
-        .thenReturn(destinationDocumentsBatch1)
-        .thenReturn(destinationDocumentsBatch2);
+                .thenReturn(destinationDocumentsBatch1)
+                .thenReturn(destinationDocumentsBatch2);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
 
@@ -565,8 +565,8 @@ public class MigrationJobTest {
         dd2.put(key, value + 101);
         JsonNode[] destinationDocumentsBatch2 = new JsonNode[]{dd2};
         when(destinationClientMock.data(any(AbstractLightblueDataRequest.class), eq(JsonNode[].class)))
-        .thenReturn(destinationDocumentsBatch1)
-        .thenReturn(destinationDocumentsBatch2);
+                .thenReturn(destinationDocumentsBatch1)
+                .thenReturn(destinationDocumentsBatch2);
 
         Map<String, JsonNode> actual = migrationJob.getDestinationDocuments(sourceDocuments);
 
