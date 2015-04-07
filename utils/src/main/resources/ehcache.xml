@@ -1,0 +1,14 @@
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="ehcache.xsd" updateCheck="true"
+    monitoring="autodetect" dynamicConfig="true">
+
+    <!--
+        timeToLiveSeconds: It's important to expire the IDs in case there are not removed by Lightblue DAO (can happen if there is an error).
+        maxEntriesLocalHeap: we should never reach that limit
+    -->
+    <defaultCache
+        timeToLiveSeconds="60"
+        maxEntriesLocalHeap="1000000"
+    />
+
+</ehcache>
