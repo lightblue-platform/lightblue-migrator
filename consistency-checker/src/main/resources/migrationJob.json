@@ -250,8 +250,8 @@
             "value": "active"
         },
         "version": {
-            "changelog": "Initial version",
-            "value": "0.1.4-SNAPSHOT"
+            "changelog": "Initial release",
+            "value": "1.0.0"
         }
     }
 }
