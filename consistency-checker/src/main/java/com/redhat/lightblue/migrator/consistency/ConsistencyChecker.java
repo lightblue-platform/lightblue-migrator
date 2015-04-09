@@ -145,7 +145,7 @@ public class ConsistencyChecker implements Runnable {
                 List<MigrationJob> allJobs = getMigrationJobs(configuration);
                 List<MigrationJob> jobs = new ArrayList<>();
 
-                LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
+                LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), allJobs.size());
 
                 // loop through jobs to check if job can be executed
                 for (MigrationJob job : allJobs) {
