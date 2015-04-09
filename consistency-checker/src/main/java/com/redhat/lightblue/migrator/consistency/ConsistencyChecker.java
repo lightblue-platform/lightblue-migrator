@@ -331,7 +331,10 @@ public class ConsistencyChecker implements Runnable {
             findRequest.select(includeFieldRecursively("*"));
 
             LOGGER.debug("Get next job: {}", findRequest.getBody());
-            job = client.data(findRequest, MigrationJob.class);
+            MigrationJob[] jobs = client.data(findRequest, MigrationJob[].class);
+            if (jobs != null && jobs.length > 0) {
+                job = jobs[0];
+            }
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJob", e);
         }
