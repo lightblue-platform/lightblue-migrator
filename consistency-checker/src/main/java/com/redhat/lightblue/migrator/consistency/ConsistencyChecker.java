@@ -241,9 +241,12 @@ public class ConsistencyChecker implements Runnable {
             );
             findRequest.select(includeFieldRecursively("*"));
 
+            // sort by whenAvailableDate ascending to process oldest jobs first
+            findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASCENDING));
+
             // only pick up the first MAX_JOBS_PER_ENTITY jobs
             findRequest.range(0, MAX_JOBS_PER_ENTITY);
-
+            
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
 
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
