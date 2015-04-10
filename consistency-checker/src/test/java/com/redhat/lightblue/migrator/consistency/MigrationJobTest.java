@@ -34,16 +34,78 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.LightblueRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import static com.redhat.lightblue.migrator.consistency.MigrationJob.mapper;
 import com.redhat.lightblue.util.test.FileUtil;
+import java.sql.SQLException;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class MigrationJobTest {
 
-    private final String sourceConfigPath = "source-lightblue-client.properties";
-    private final String destinationConfigPath = "destination-lightblue-client.properties";
+    private final String sourceConfigPath = "./lightblue-client.properties";
+    private final String destinationConfigPath = "./lightblue-client.properties";
 
     protected MigrationJob migrationJob;
+    protected LightblueClient sourceClientMock;
     protected LightblueClient destinationClientMock;
+
+    protected class TestMigrationJob extends MigrationJob {
+        private final String[] jsonResponses;
+        private final String sourceDataResource;
+        private final String destinationDataResource;
+        private final AtomicInteger callCounter = new AtomicInteger(0);
+        private final List<String> requestBodyList = new ArrayList<>();
+
+        private int jsonResponsesPsn = 0;
+
+        /**
+         * @param sourceDataResource resource to load for the findSourceData
+         * method
+         * @param destinationDataResource resource to load for the
+         * findDestinationData method
+         * @param jsonResponses array of response json (String) to iterate
+         * through for callLightblue method, returns last element in array if
+         * all are consumed
+         */
+        public TestMigrationJob(String sourceDataResource, String destinationDataResource, String[] jsonResponses) {
+            this.sourceDataResource = sourceDataResource;
+            this.destinationDataResource = destinationDataResource;
+            this.jsonResponses = jsonResponses;
+        }
+
+        @Override
+        protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
+            return getProcessedContentsFrom(sourceDataResource);
+        }
+
+        @Override
+        protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
+            return getProcessedContentsFrom(destinationDataResource);
+        }
+
+        @Override
+        protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
+            callCounter.incrementAndGet();
+            requestBodyList.add(saveRequest.getBody());
+            LightblueResponse response = new LightblueResponse();
+            JsonNode node = null;
+            if (jsonResponses != null && jsonResponsesPsn >= jsonResponses.length) {
+                jsonResponsesPsn = jsonResponses.length - 1;
+            }
+            try {
+                node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
+            } catch (IOException e) {
+                Assert.fail("Unable to parse json response: " + e.toString());
+            }
+            response.setJson(node);
+            return response;
+        }
+    };
 
     @Before
     public void setup() {
@@ -52,6 +114,13 @@ public class MigrationJobTest {
         migrationJob.setDestinationConfigPath(destinationConfigPath);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
 
+        // NOTE have to mock source and client, else job initializes clients itself
+        
+        // mock out source client
+        sourceClientMock = mock(LightblueClient.class);
+        migrationJob.setSourceClient(sourceClientMock);
+        
+        // mock out destination client
         destinationClientMock = mock(LightblueClient.class);
         migrationJob.setDestinationClient(destinationClientMock);
     }
@@ -508,12 +577,12 @@ public class MigrationJobTest {
     }
 
     @Test
-    public void testGetDestinationDocuments_NullMap() {
+    public void testGetDestinationDocuments_NullMap() throws IOException {
         assertTrue(migrationJob.getDestinationDocuments(null).isEmpty());
     }
 
     @Test
-    public void testGetDestinationDocuments_EmptyMap() {
+    public void testGetDestinationDocuments_EmptyMap() throws IOException {
         assertTrue(migrationJob.getDestinationDocuments(new HashMap<String, JsonNode>()).isEmpty());
     }
 
@@ -525,7 +594,8 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
 
         List<JsonNode> documentsToOverwrite = new ArrayList<>();
-        for (int x = 0; x < (MigrationJob.BATCH_SIZE * 2); x++) {
+        int documentCount = MigrationJob.BATCH_SIZE * 2;
+        for (int x = 0; x < documentCount; x++) {
             ObjectNode document = factory.objectNode();
             document.put(key, factory.textNode(value + x));
             documentsToOverwrite.add(document);
@@ -533,9 +603,10 @@ public class MigrationJobTest {
 
         when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
 
-        int actual = migrationJob.overwriteLightblue(documentsToOverwrite);
+        List<LightblueResponse> responses = migrationJob.overwriteLightblue(documentsToOverwrite);
 
-        assertEquals(4, actual);
+        Assert.assertNotNull(responses);
+        Assert.assertEquals((int) Math.ceil(((double) documentCount) / (double) MigrationJob.BATCH_SIZE), responses.size());
     }
 
     @Test
@@ -546,7 +617,8 @@ public class MigrationJobTest {
         JsonNodeFactory factory = JsonNodeFactory.withExactBigDecimals(false);
 
         List<JsonNode> documentsToOverwrite = new ArrayList<>();
-        for (int x = 0; x < (MigrationJob.BATCH_SIZE + 1); x++) {
+        int documentCount = MigrationJob.BATCH_SIZE + 1;
+        for (int x = 0; x < documentCount; x++) {
             ObjectNode document = factory.objectNode();
             document.put(key, factory.textNode(value + x));
             documentsToOverwrite.add(document);
@@ -554,40 +626,17 @@ public class MigrationJobTest {
 
         when(destinationClientMock.data(any(LightblueRequest.class))).thenReturn(new LightblueResponse("{\"modifiedCount\":2}"));
 
-        int actual = migrationJob.overwriteLightblue(documentsToOverwrite);
+        List<LightblueResponse> responses = migrationJob.overwriteLightblue(documentsToOverwrite);
 
-        assertEquals(4, actual);
+        Assert.assertNotNull(responses);
+        Assert.assertEquals((int) Math.ceil(((double) documentCount) / (double) MigrationJob.BATCH_SIZE), responses.size());
     }
 
     @Test
     public void testExecuteExistsInSourceAndDestination() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "singleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
-                } catch (IOException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
@@ -595,6 +644,10 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     private LinkedHashMap<String, JsonNode> getProcessedContentsFrom(String filename) {
@@ -616,31 +669,9 @@ public class MigrationJobTest {
 
     @Test
     public void testExecuteExistsInSourceButNotDestination() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertTrue(migrationJob.hasInconsistentDocuments());
@@ -648,36 +679,18 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is saving destination data
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteExistsInSourceButNotDestinationDoNotOverwrite() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "emptyFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-
-        };
         configureMigrationJob(migrationJob);
         migrationJob.setOverwriteDestinationDocuments(false);
         migrationJob.run();
@@ -686,35 +699,17 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteExistsInDestinationButNotSource() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("emptyFindResponse.json", "singleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
@@ -722,36 +717,17 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceAndDestination() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "multipleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
@@ -759,35 +735,24 @@ public class MigrationJobTest {
         Assert.assertEquals(2, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+
+        // verify source query is set
+        Assert.assertNotNull(migrationJob.getJobExecutions());
+        Assert.assertEquals(1, migrationJob.getJobExecutions().size());
+        Assert.assertNotNull(migrationJob.getJobExecutions().get(0).getSourceQuery());
+
+        // verify statuses
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceButNotDestination() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "emptyFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":2,\"modifiedCount\":2,\"status\":\"OK\",\"processed\":[{}]}}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertTrue(migrationJob.hasInconsistentDocuments());
@@ -795,35 +760,18 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(2, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(2, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is data save request
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInDestinationButNotSource() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("emptyFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("emptyFindResponse.json", "multipleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
@@ -831,35 +779,17 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleSameExceptForTimestamp() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponseSource.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "multipleFindResponseDestination.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponseDestination.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
@@ -867,35 +797,17 @@ public class MigrationJobTest {
         Assert.assertEquals(2, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteSingleMultipleExistsInDestinationButNotSource() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("singleFindResponse.json", "multipleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":0,\"modifiedCount\":0,\"status\":\"OK\",\"processed\":[{}]}}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertFalse(migrationJob.hasInconsistentDocuments());
@@ -903,35 +815,17 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(3, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(2).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     @Test
     public void testExecuteMultipleExistsInSourceAndSingleExistsInDestination() {
-        migrationJob = new MigrationJob() {
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponse.json");
-            }
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponse.json", "singleFindResponse.json",
+                new String[]{"{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}}"});
 
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree("{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}}");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
         configureMigrationJob(migrationJob);
         migrationJob.run();
         Assert.assertTrue(migrationJob.hasInconsistentDocuments());
@@ -939,6 +833,11 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is data save request
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     private void configureMigrationJob(MigrationJob migrationJob) {
@@ -947,7 +846,7 @@ public class MigrationJobTest {
         pathsToExclude.add("lastUpdateTime");
         jobConfiguration.setComparisonExclusionPaths(pathsToExclude);
         jobConfiguration.setDestinationIdentityFields(new ArrayList<String>());
-        jobConfiguration.setSourceTimestampPath("source-timestamp");
+        jobConfiguration.setSourceTimestampPath("sourceTimestamp");
         migrationJob.setJobConfiguration(jobConfiguration);
         migrationJob.setOverwriteDestinationDocuments(true);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
@@ -962,7 +861,7 @@ public class MigrationJobTest {
         try {
             actualObj = mapper.readTree(readFile(fileName));
         } catch (IOException | URISyntaxException e) {
-            e.printStackTrace();
+            Assert.fail("Unable to parse json response: " + e.toString());
         }
         return actualObj;
     }
@@ -975,42 +874,17 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_first() throws Exception {
-        migrationJob = new MigrationJob() {
-            // array of responses to return
-            private String[] jsonResponses = new String[]{
-                // initial job save
-                FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                // save one document
-                "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"OK\",\"processed\":[{}]}",
-                // final job save
-                FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-            };
-
-            private int jsonResponsesPsn = 0;
-
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponseSource.json");
-            }
-
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
+                new String[]{
+                    // initial job save
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                    // update job to running
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                    // save one document
+                    "{\"errors\":[],\"matchCount\":1,\"modifiedCount\":1,\"status\":\"COMPLETE\",\"processed\":[{}]}",
+                    // final job save
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                });
 
         // this job will be the first executor and therefore wins
         migrationJob.setPid("pid1");
@@ -1022,6 +896,13 @@ public class MigrationJobTest {
         Assert.assertEquals(1, migrationJob.getConsistentDocuments());
         Assert.assertEquals(1, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(1, migrationJob.getRecordsOverwritten());
+        // verify marked complete
+        Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+        Assert.assertEquals(4, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.RUNNING.toString()));
+        // index 2 is data save request
+        Assert.assertTrue(migrationJob.requestBodyList.get(3).contains(JobStatus.COMPLETED_SUCCESS.toString()));
     }
 
     /**
@@ -1032,40 +913,13 @@ public class MigrationJobTest {
      */
     @Test
     public void testMultipleJobExecutors_second() throws Exception {
-        migrationJob = new MigrationJob() {
-            // array of responses to return
-            private String[] jsonResponses = new String[]{
-                // initial job save
-                FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
-                // final job save (since this is a noop, there is nothing in the middle)
-                FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
-            };
-
-            private int jsonResponsesPsn = 0;
-
-            @Override
-            protected LinkedHashMap<String, JsonNode> findSourceData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("multipleFindResponseSource.json");
-            }
-
-            @Override
-            protected LinkedHashMap<String, JsonNode> findDestinationData(LightblueRequest dataRequest) {
-                return getProcessedContentsFrom("singleFindResponse.json");
-            }
-
-            @Override
-            protected LightblueResponse callLightblue(LightblueRequest saveRequest) {
-                LightblueResponse response = new LightblueResponse();
-                JsonNode node = null;
-                try {
-                    node = mapper.readTree(jsonResponses[jsonResponsesPsn++]);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                response.setJson(node);
-                return response;
-            }
-        };
+        TestMigrationJob migrationJob = new TestMigrationJob("multipleFindResponseSource.json", "singleFindResponse.json",
+                new String[]{
+                    // initial job save
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json"),
+                    // final job save (since this is a noop, there is nothing in the middle)
+                    FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                });
 
         // this job will be the second executor and therefore looses
         migrationJob.setPid("pid2");
@@ -1077,5 +931,155 @@ public class MigrationJobTest {
         Assert.assertEquals(0, migrationJob.getConsistentDocuments());
         Assert.assertEquals(0, migrationJob.getInconsistentDocuments());
         Assert.assertEquals(0, migrationJob.getRecordsOverwritten());
+
+        Assert.assertNotNull(migrationJob.currentRun.getActualEndDate());
+
+        Assert.assertEquals(2, migrationJob.callCounter.get());
+        Assert.assertTrue(migrationJob.requestBodyList.get(0).contains(JobStatus.STARTING.toString()));
+        Assert.assertTrue(migrationJob.requestBodyList.get(1).contains(JobStatus.ABORTED_DUPLICATE.toString()));
+    }
+
+    /**
+     * Thread starvation:
+     * https://github.com/lightblue-platform/lightblue-migrator/issues/129
+     *
+     * Test with ExecutorService#submit
+     */
+    @Test
+    public void testException_getSourceDocuments_submit() throws IOException, URISyntaxException, InterruptedException {
+        final int JOB_COUNT = 100;
+        final int THREAD_COUNT = 2;
+        final AtomicInteger outstandingThreadCount = new AtomicInteger(0);
+
+        // create a job executor with more jobs than threads
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < JOB_COUNT; i++) {
+            outstandingThreadCount.getAndIncrement();
+            MigrationJob job = new TestMigrationJob(null, null,
+                    new String[]{
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                    }) {
+                        @Override
+                        protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
+                            outstandingThreadCount.getAndDecrement();
+                            throw new SQLException("forced failure for testing");
+                        }
+                    };
+
+            job.setPid("pid1");
+
+            futures.add(executor.submit(job));
+        }
+
+        Assert.assertTrue(JOB_COUNT > THREAD_COUNT);
+
+        // all jobs are created.  There are JOB_COUNT of them but only THREAD_COUNT threads
+        // but we want to be sure to have *some* jobs to run before we wait for termination
+        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 5));
+        for (Future future : futures) {
+            try {
+                future.get();
+            } catch (ExecutionException ex) {
+                Assert.fail(ex.getCause().toString());
+            }
+        }
+        // and now that we're done, verify everything got processed
+        Assert.assertEquals(0, outstandingThreadCount.intValue());
+    }
+
+    /**
+     * Thread starvation:
+     * https://github.com/lightblue-platform/lightblue-migrator/issues/129
+     *
+     * Test with ExecutorService#execute
+     */
+    @Test
+    public void testException_getSourceDocuments_execute() throws IOException, URISyntaxException, InterruptedException {
+        final int JOB_COUNT = 100;
+        final int THREAD_COUNT = 2;
+        final AtomicInteger outstandingThreadCount = new AtomicInteger(0);
+
+        // create a job executor with more jobs than threads
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<?>> futures = new ArrayList<>();
+        for (int i = 0; i < JOB_COUNT; i++) {
+            outstandingThreadCount.getAndIncrement();
+            MigrationJob job = new TestMigrationJob(null, null,
+                    new String[]{
+                        FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
+                    }) {
+                        @Override
+                        protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
+                            outstandingThreadCount.getAndDecrement();
+                            throw new SQLException("forced failure for testing");
+                        }
+                    };
+
+            job.setPid("pid1");
+
+            executor.execute(job);
+        }
+
+        Assert.assertTrue(JOB_COUNT > THREAD_COUNT);
+
+        executor.shutdown();
+
+        // all jobs are created.  There are JOB_COUNT of them but only THREAD_COUNT threads
+        // but we want to be sure to have *some* jobs to run before we wait for termination
+        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 2));
+
+        executor.awaitTermination(60, TimeUnit.SECONDS);
+
+        // and now that we're done, verify everything got processed
+        Assert.assertEquals(0, outstandingThreadCount.intValue());
+    }
+
+    @Test
+    public void shouldProcessJob_NoExecutions() throws LightblueResponseParseException {
+        Object[] x = MigrationJob.shouldProcessJob("", new MigrationJob[]{migrationJob});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertTrue(processJob);
+        Assert.assertEquals(-1, jobExecutionPsn);
+    }
+
+    @Test
+    public void shouldProcessJob_OneExecution_NotCompleted_pidMatch() throws LightblueResponseParseException {
+        String pid = "asdf";
+
+        migrationJob.setPid(pid);
+        MigrationJobExecution exec = new MigrationJobExecution();
+        exec.setJobStatus(JobStatus.RUNNING);
+        exec.setPid(pid);
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        migrationJob.setJobExecutions(execs);
+        Object[] x = MigrationJob.shouldProcessJob(pid, new MigrationJob[]{migrationJob});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertTrue(processJob);
+        Assert.assertEquals(0, jobExecutionPsn);
+    }
+
+    @Test
+    public void shouldProcessJob_OneExecution_NotCompleted_pidMismatch() throws LightblueResponseParseException {
+        String pid = "asdf";
+
+        migrationJob.setPid(pid);
+        MigrationJobExecution exec = new MigrationJobExecution();
+        exec.setJobStatus(JobStatus.RUNNING);
+        exec.setPid(pid + "-mismatch");
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        migrationJob.setJobExecutions(execs);
+        Object[] x = MigrationJob.shouldProcessJob(pid, new MigrationJob[]{migrationJob});
+        boolean processJob = (Boolean) x[0];
+        int jobExecutionPsn = (Integer) x[1];
+
+        Assert.assertFalse(processJob);
+        Assert.assertEquals(-1, jobExecutionPsn);
     }
 }

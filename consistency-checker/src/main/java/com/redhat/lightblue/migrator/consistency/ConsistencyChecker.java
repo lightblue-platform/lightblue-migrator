@@ -14,7 +14,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +25,9 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
+import java.util.GregorianCalendar;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class ConsistencyChecker implements Runnable {
 
@@ -34,7 +36,8 @@ public class ConsistencyChecker implements Runnable {
     public static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyChecker.class);
 
     public static final int MAX_JOB_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
-    public static final int MAX_THREAD_WAIT_MSEC = 5 * 60 * 1000; // 5 minutes
+    public static final int MAX_JOBS_PER_ENTITY = 2000; // # of jobs to pick up each execution
+    public static final int MAX_EXECUTOR_TERMINATION_WAIT_MSEC = 30 * 60 * 1000; // 30 minutes
 
     private String consistencyCheckerName;
     private String hostName;
@@ -130,6 +133,7 @@ public class ConsistencyChecker implements Runnable {
         while (run && !Thread.interrupted()) {
             List<ExecutorService> executors = new ArrayList<>();
             List<MigrationConfiguration> configurations = getJobConfigurations();
+            List<Future<?>> futures = new ArrayList<>();
 
             for (MigrationConfiguration configuration : configurations) {
                 if (configuration.getThreadCount() < 1) {
@@ -138,23 +142,46 @@ public class ConsistencyChecker implements Runnable {
 
                 configuration.setConfigFilePath(configPath);
                 configuration.setMigrationJobEntityVersion(migrationJobEntityVersion);
-                List<MigrationJob> jobs = getMigrationJobs(configuration);
+                List<MigrationJob> allJobs = getMigrationJobs(configuration);
+                List<MigrationJob> jobs = new ArrayList<>();
 
-                if (!jobs.isEmpty()) {
-                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
-                    executors.add(jobExecutor);
-                    for (MigrationJob job : jobs) {
+                LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), allJobs.size());
+
+                // loop through jobs to check if job can be executed
+                for (MigrationJob job : allJobs) {
+                    if (isJobExecutable(job)) {
+                        // must initialize job before marking execution as dead
                         job.setJobConfiguration(configuration);
                         job.setOwner(getConsistencyCheckerName());
                         job.setHostName(getHostName());
                         job.setPid(ManagementFactory.getRuntimeMXBean().getName());
                         job.setSourceConfigPath(sourceConfigPath);
                         job.setDestinationConfigPath(destinationConfigPath);
-                        jobExecutor.execute(job);
+
+                        try {
+                            // mark old expirations as dead
+                            markRunningJobExecutionsAsDead(job);
+                        } catch (IOException ex) {
+                            LOGGER.warn("Unable to mark job as dead: {}", job.get_id());
+                        }
+                        // add to list of jobs to process
+                        jobs.add(job);
+                    }
+                }
+
+                if (!jobs.isEmpty()) {
+                    LOGGER.info("Executing {} of {} loaded jobs for {}", jobs.size(), allJobs.size(), configuration.getConfigurationName());
+                }
+
+                if (!jobs.isEmpty()) {
+                    ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
+                    executors.add(jobExecutor);
+                    for (MigrationJob job : allJobs) {
+                        futures.add(jobExecutor.submit(job));
                     }
                 }
             }
-            
+
             LOGGER.info("Done setting up job executors");
 
             if (executors.isEmpty()) {
@@ -176,22 +203,22 @@ public class ConsistencyChecker implements Runnable {
                     }
                 }
             } else {
-                for (ExecutorService executor : executors) {
-                    executor.shutdown();
-                }
-                if ((!Thread.interrupted())) {
+                for (Future future : futures) {
                     try {
-                        for (ExecutorService executor : executors) {
-                            executor.awaitTermination(MAX_THREAD_WAIT_MSEC, TimeUnit.MILLISECONDS);
-                        }
-                    } catch (InterruptedException e) {
+                        future.get();
+                    } catch (InterruptedException ex) {
                         run = false;
+                        LOGGER.error("Future was interrupted, will stop execution of migrator");
+                    } catch (ExecutionException ex) {
+                        LOGGER.warn("Future execution failed", ex);
                     }
                 }
             }
-            
+
             LOGGER.info("Job executors done");
         }
+
+        LOGGER.info("ConsistencyChecker done");
     }
 
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
@@ -199,19 +226,82 @@ public class ConsistencyChecker implements Runnable {
         List<MigrationJob> jobs = new ArrayList<>();
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(and(
-                    withValue("configurationName = " + configuration.getConfigurationName()),
-                    withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
-                    not(withSubfield("jobExecutions", withValue("completedFlag = true")))));
+
+            findRequest.where(
+                    and(
+                            // get jobs for this configuration
+                            withValue("configurationName = " + configuration.getConfigurationName()),
+                            // only get jobs that are available now
+                            withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
+                            // only get jobs where there does NOT exist an execution with a complete status
+                            not(
+                                    withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
+                            )
+                    )
+            );
             findRequest.select(includeFieldRecursively("*"));
 
+            // sort by whenAvailableDate ascending to process oldest jobs first
+            findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASCENDING));
+
+            // only pick up the first MAX_JOBS_PER_ENTITY jobs
+            findRequest.range(0, MAX_JOBS_PER_ENTITY);
+            
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
+
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
-            LOGGER.info("Loaded jobs for {}: {}", configuration.getConfigurationName(), jobs.size());
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
         return jobs;
+    }
+
+    /**
+     * Helper method to determine if a job can be processed right now based on
+     * the execution data (if present). If no execution data exists, it is
+     * automatically executable.
+     */
+    protected static boolean isJobExecutable(MigrationJob job) {
+        boolean executable;
+        long now = GregorianCalendar.getInstance().getTimeInMillis();
+
+        if (job.getJobExecutions() != null && !job.getJobExecutions().isEmpty()) {
+            // get newest execution start date
+            long newestActualStartDate = 0;
+            for (MigrationJobExecution exec : job.getJobExecutions()) {
+                if (exec.getActualStartDate() != null && newestActualStartDate < exec.getActualStartDate().getTime()) {
+                    newestActualStartDate = exec.getActualStartDate().getTime();
+                }
+            }
+            // get the time (msec) at which we call this job too old
+            long expirationTime = newestActualStartDate + job.getExpectedExecutionMilliseconds();
+
+            // this job is too old if expirationTime <= now, else it can be processed
+            executable = expirationTime <= now;
+        } else {
+            // hasn't been processed before, we can process it now
+            executable = true;
+        }
+
+        return executable;
+    }
+
+    /**
+     * Update all non-complete job executions as "dead".
+     *
+     * @param job the job to cleanup
+     */
+    protected static void markRunningJobExecutionsAsDead(MigrationJob job) throws IOException {
+        int psn = 0;
+        for (MigrationJobExecution exec : job.getJobExecutions()) {
+            if (exec.getJobStatus() != null && exec.getJobStatus().isRunning()) {
+                LOGGER.info("Marking job {} execution {} as {}", job.get_id(), psn, JobStatus.COMPLETED_DEAD);
+                exec.setJobStatus(JobStatus.COMPLETED_DEAD);
+                exec.setActualEndDate(new Date());
+                job.markExecutionStatusAndEndDate(psn, JobStatus.COMPLETED_DEAD, true);
+            }
+            psn++;
+        }
     }
 
     protected List<MigrationConfiguration> getJobConfigurations() {
@@ -231,7 +321,8 @@ public class ConsistencyChecker implements Runnable {
 
     /**
      * Gets the next job available for processing.
-     * @return 
+     *
+     * @return
      */
     protected MigrationJob getNextAvailableJob() {
         MigrationJob job = null;
@@ -243,7 +334,10 @@ public class ConsistencyChecker implements Runnable {
             findRequest.select(includeFieldRecursively("*"));
 
             LOGGER.debug("Get next job: {}", findRequest.getBody());
-            job = client.data(findRequest, MigrationJob.class);
+            MigrationJob[] jobs = client.data(findRequest, MigrationJob[].class);
+            if (jobs != null && jobs.length > 0) {
+                job = jobs[0];
+            }
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJob", e);
         }

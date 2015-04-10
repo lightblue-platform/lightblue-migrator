@@ -11,9 +11,10 @@ public class MigrationJobExecution {
     // actual run times for job
     private Date actualStartDate;
     private Date actualEndDate;
+    
+    public String sourceQuery;
 
-    // did job complete successfully?
-    private boolean completedFlag = false;
+    private JobStatus jobStatus = JobStatus.STARTING;
 
     // summary info on what the job did
     private int processedDocumentCount = 0;
@@ -60,13 +61,13 @@ public class MigrationJobExecution {
     public void setActualEndDate(Date actualEndDate) {
         this.actualEndDate = actualEndDate;
     }
-
-    public boolean isCompletedFlag() {
-        return completedFlag;
+    
+    public String getSourceQuery() {
+        return sourceQuery;
     }
-
-    public void setCompletedFlag(boolean completedFlag) {
-        this.completedFlag = completedFlag;
+    
+    public void setSourceQuery(String sourceQuery) {
+        this.sourceQuery = sourceQuery;
     }
 
     public int getProcessedDocumentCount() {
@@ -99,5 +100,13 @@ public class MigrationJobExecution {
 
     public void setOverwrittenDocumentCount(int overwrittenDocumentCount) {
         this.overwrittenDocumentCount = overwrittenDocumentCount;
+    }
+
+    public JobStatus getJobStatus() {
+        return jobStatus;
+    }
+
+    public void setJobStatus(JobStatus jobStatus) {
+        this.jobStatus = jobStatus;
     }
 }

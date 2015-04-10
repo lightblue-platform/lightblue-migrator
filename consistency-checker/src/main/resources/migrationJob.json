@@ -6,7 +6,24 @@
             "datasource": "mongodata"
         },
         "enums": [
-            
+            {
+                "name": "jobStatusType",
+                "values": [
+                    "STARTING",
+                    "RUNNING",
+                    "RUNNING_ASYNC",
+                    "COMPLETED_SUCCESS",
+                    "COMPLETED_PARTIAL",
+                    "COMPLETED_DEAD",
+                    "COMPLETED_IGNORED",
+                    "COMPLETED_FAILED",
+                    "ABORTED_DUPLICATE",
+                    "ABORTED_TIMEOUT",
+                    "ABORTED_AUTH",
+                    "ABORTED_UNKNOWN",
+                    "UNKNOWN"
+                ]
+            }
         ],
         "indexes": [
             {
@@ -18,6 +35,24 @@
                 ],
                 "name": null,
                 "unique": true
+            },
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "whenAvailableDate"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "jobExecutions.jobStatus"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "configurationName"
+                    }
+                ],
+                "name": "MigrationJobsToExecute",
+                "unique": false
             }
         ],
         "name": "migrationJob"
@@ -81,7 +116,7 @@
                 },
                 "description": "Document end date for this migration job"
             },
-            "whenAvailableDate" : {
+            "whenAvailableDate": {
                 "type": "date",
                 "constraints": {
                     "required": true
@@ -129,16 +164,17 @@
                         "actualEndDate": {
                             "type": "date",
                             "constraints": {
-                                "required": true
+                                "required": false
                             },
                             "description": "Actual end date for this migration job"
                         },
-                        "completedFlag": {
-                            "type": "boolean",
+                        "jobStatus": {
+                            "type": "string",
                             "constraints": {
-                                "required": true
+                                "required": true,
+                                "enum": "jobStatusType"
                             },
-                            "description": "Indicates whether or not this job successfully completed"
+                            "description": "Indicates the status of the execution of this job"
                         },
                         "processedDocumentCount": {
                             "type": "integer",
@@ -167,6 +203,13 @@
                                 "required": true
                             },
                             "description": "Number of documents that were overwritten in destination"
+                        },
+                        "sourceQuery": {
+                            "type": "string",
+                            "constraints": {
+                                "required": false
+                            },
+                            "description": "The query used to load data from source"
                         }
                     },
                     "type": "object"
@@ -207,8 +250,8 @@
             "value": "active"
         },
         "version": {
-            "changelog": "Initial version",
-            "value": "0.1.0-SNAPSHOT"
+            "changelog": "Initial release",
+            "value": "1.0.0"
         }
     }
 }

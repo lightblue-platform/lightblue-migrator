@@ -13,6 +13,9 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.request.LightblueRequest;
+import com.redhat.lightblue.client.response.LightblueResponse;
+import java.io.IOException;
 
 public class ConsistencyCheckerTest {
 
@@ -157,5 +160,67 @@ public class ConsistencyCheckerTest {
         checker.run();
 
     }
+    
+    @Test
+    public void isJobExecutable_NoExecutions() {
+        MigrationJob job = new MigrationJob();
 
+        Assert.assertTrue(ConsistencyChecker.isJobExecutable(job));
+    }
+
+    @Test
+    public void isJobExecutable_ExpiredExecution() {
+        MigrationJob job = new MigrationJob();
+        MigrationJobExecution exec = new MigrationJobExecution();
+        job.setExpectedExecutionMilliseconds(30000);
+        exec.setActualStartDate(new Date(System.currentTimeMillis() - job.getExpectedExecutionMilliseconds() * 2));
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        job.setJobExecutions(execs);
+
+        Assert.assertTrue(ConsistencyChecker.isJobExecutable(job));
+    }
+    
+        @Test
+    public void isJobExecutable_RunningExecution() {
+        MigrationJob job = new MigrationJob();
+        MigrationJobExecution exec = new MigrationJobExecution();
+        job.setExpectedExecutionMilliseconds(30000);
+        exec.setActualStartDate(new Date(System.currentTimeMillis() - job.getExpectedExecutionMilliseconds() / 2));
+        List<MigrationJobExecution> execs = new ArrayList<>();
+        execs.add(exec);
+        job.setJobExecutions(execs);
+
+        Assert.assertFalse(ConsistencyChecker.isJobExecutable(job));
+    }
+
+    @Test
+    public void getNextAvailableJob() {
+        final String pid = "jewzaam was here";
+        
+        checker.setClient(new LightblueClient() {
+            @Override
+            public LightblueResponse metadata(LightblueRequest lr) {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public LightblueResponse data(LightblueRequest lr) {
+                throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+            }
+
+            @Override
+            public <T> T data(LightblueRequest lr, Class<T> type) throws IOException {
+                MigrationJob[] jobs = new MigrationJob[1];
+                jobs[0] = new MigrationJob();
+                jobs[0].setPid(pid);
+                return (T)jobs;
+            }
+        });
+        
+        MigrationJob job = checker.getNextAvailableJob();
+        
+        Assert.assertNotNull(job);
+        Assert.assertEquals(pid, job.getPid());
+    }
 }

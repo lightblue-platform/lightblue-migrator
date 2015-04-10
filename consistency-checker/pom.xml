@@ -66,7 +66,7 @@
     </dependency>
     <dependency>
       <groupId>com.redhat.lightblue</groupId>
-      <artifactId>util</artifactId>
+      <artifactId>lightblue-core-util</artifactId>
       <scope>test</scope>
     </dependency>
    <dependency>
