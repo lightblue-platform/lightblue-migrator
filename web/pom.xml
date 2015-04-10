@@ -9,7 +9,6 @@
   <groupId>com.redhat.lightblue.migrator</groupId>
   <artifactId>lightblue-migrator-web</artifactId>
   <packaging>war</packaging>
-  <version>0.0.1-SNAPSHOT</version>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <dependencies>
     <dependency>
