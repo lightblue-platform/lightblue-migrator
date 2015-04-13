@@ -1,0 +1,32 @@
+{
+    "entityInfo": {
+        "name": "origCustomer",
+        "datastore": {
+            "backend":"mongo",
+            "collection": "source_customer",
+            "datasource": "mongodata"
+        }
+    },
+    "schema": {
+        "name": "customer",
+        "version": {
+            "value": "1.0.0",
+            "changelog": "blahblah"
+        },
+        "status": {
+            "value": "active"
+        },
+        "access" : {
+             "insert": ["anyone"],
+             "update": ["anyone"],
+             "delete": ["anyone"],
+             "find": ["anyone"]
+        },
+        "fields": {
+            "_id": {"type": "integer"},
+            "firstName": {"type": "string"},
+            "lastName": {"type": "string"},
+            "creationDate": {"type": "date"}
+        }
+    }
+}
