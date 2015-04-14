@@ -11,9 +11,12 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +28,6 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
-import java.util.GregorianCalendar;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class ConsistencyChecker implements Runnable {
 
@@ -238,7 +238,7 @@ public class ConsistencyChecker implements Runnable {
                                     withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
                             )
                     )
-            );
+                    );
             findRequest.select(includeFieldRecursively("*"));
 
             // sort by whenAvailableDate ascending to process oldest jobs first
@@ -246,7 +246,7 @@ public class ConsistencyChecker implements Runnable {
 
             // only pick up the first MAX_JOBS_PER_ENTITY jobs
             findRequest.range(0, MAX_JOBS_PER_ENTITY);
-            
+
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
 
             jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
@@ -328,7 +328,7 @@ public class ConsistencyChecker implements Runnable {
         MigrationJob job = null;
         try {
             DataFindRequest findRequest = new DataFindRequest("migrationJob", migrationJobEntityVersion);
-            findRequest.where(withValue("whenAvailableDate >= " + ClientConstants.getDateFormat().format(new Date())));
+            findRequest.where(withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())));
             findRequest.sort(new SortCondition("whenAvailableDate", SortDirection.ASC));
             findRequest.range(0, 0); // range is inclusive
             findRequest.select(includeFieldRecursively("*"));
