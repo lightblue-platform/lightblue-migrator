@@ -1,3 +1,6 @@
+#!/usr/bin/env bash
+set -e
+
 ENTITY_NAME=$1
 START_DATE=$2
 END_DATE=$3
@@ -43,7 +46,7 @@ while true; do
     echo }
     startDate="$endDate"
     [ "$endDate" \< "$END_DATE" ] || break
-    let i=i+1
+    i=$((i+1))
     echo ,
 done
 
