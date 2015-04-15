@@ -5,13 +5,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
@@ -19,49 +17,35 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
     private final ConsistencyChecker consistencyChecker;
     private static boolean initialized = false;
 
+    private static String versionMigrationJob;
+    private static String versionMigrationConfiguration;
+
     public ITCaseConsistencyCheckerTest() throws Exception {
         super();
 
         if (!initialized) {
-            loadData("migrationConfiguration", "1.0.0", "./test/data/load-migration-configurations.json");
-            loadData("migrationJob", "1.0.0", "./test/data/load-migration-jobs.json");
+            loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations.json");
+            loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
             initialized = true;
         }
 
         consistencyChecker = new ConsistencyChecker();
         consistencyChecker.setClient(getLightblueClient());
-        consistencyChecker.setMigrationJobEntityVersion(parseEntityVersion((ObjectNode) loadJsonNode("./migrationJob.json")));
+        consistencyChecker.setMigrationJobEntityVersion(versionMigrationJob);
     }
 
     @Override
     protected JsonNode[] getMetadataJsonNodes() throws Exception {
+        ObjectNode jsonMigrationJob = (ObjectNode) loadJsonNode("./migrationJob.json");
+        ObjectNode jsonMigrationConfiguration = (ObjectNode) loadJsonNode("./migrationConfiguration.json");
+
+        versionMigrationJob = parseEntityVersion(jsonMigrationJob);
+        versionMigrationConfiguration = parseEntityVersion(jsonMigrationConfiguration);
+
         return new JsonNode[]{
-                grantAnyoneAccess((ObjectNode) loadJsonNode("./migrationJob.json")),
-                grantAnyoneAccess((ObjectNode) loadJsonNode("./migrationConfiguration.json"))
+                grantAnyoneAccess(jsonMigrationJob),
+                grantAnyoneAccess(jsonMigrationConfiguration)
         };
-    }
-
-    /**
-     * Work around method until a way to pass in security access level is
-     * found.
-     */
-    private JsonNode grantAnyoneAccess(ObjectNode node) {
-        ObjectNode schema = (ObjectNode) node.get("schema");
-        ObjectNode access = (ObjectNode) schema.get("access");
-        Iterator<JsonNode> children = access.iterator();
-        while (children.hasNext()) {
-            ArrayNode child = (ArrayNode) children.next();
-            child.removeAll();
-            child.add("anyone");
-        }
-
-        return node;
-    }
-
-    private String parseEntityVersion(ObjectNode node) {
-        ObjectNode schema = (ObjectNode) node.get("schema");
-        ObjectNode version = (ObjectNode) schema.get("version");
-        return version.get("value").textValue();
     }
 
     @Test
