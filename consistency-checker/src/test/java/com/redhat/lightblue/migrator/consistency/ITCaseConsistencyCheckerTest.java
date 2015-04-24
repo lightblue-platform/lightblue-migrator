@@ -43,8 +43,8 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
         versionMigrationConfiguration = parseEntityVersion(jsonMigrationConfiguration);
 
         return new JsonNode[]{
-                grantAnyoneAccess(jsonMigrationJob),
-                grantAnyoneAccess(jsonMigrationConfiguration)
+                removeHooks(grantAnyoneAccess(jsonMigrationJob)),
+                removeHooks(grantAnyoneAccess(jsonMigrationConfiguration))
         };
     }
 
