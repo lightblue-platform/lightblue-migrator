@@ -6,7 +6,6 @@
     <artifactId>lightblue-migrator-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>com.redhat.lightblue.migrator</groupId>
   <artifactId>lightblue-migrator-utils</artifactId>
   <packaging>jar</packaging>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
