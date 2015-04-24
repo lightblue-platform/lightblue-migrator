@@ -38,6 +38,16 @@ public abstract class AbstractMigratorController extends AbstractCRUDControllerW
     }
 
     /**
+     * Temporary method that will remove the hooks from  metadata. Ideally, this
+     * method will go away once the test generic metadata supports arbitrary configurations.
+     */
+    protected ObjectNode removeHooks(ObjectNode node) {
+        ObjectNode schema = (ObjectNode) node.get("entityInfo");
+        schema.remove("hooks");
+        return node;
+    }
+
+    /**
      *
      * @param node
      * @return the schema version for the passed in node.

@@ -3,15 +3,23 @@ package com.redhat.lightblue.migrator.consistency;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.*;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.sql.SQLException;
 import java.text.DateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
-import com.fasterxml.jackson.databind.node.MissingNode;
-import com.fasterxml.jackson.databind.node.NullNode;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +29,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.MissingNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
 import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
@@ -36,7 +46,7 @@ import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.projection.FieldProjection;
 import com.redhat.lightblue.client.projection.Projection;
-import com.redhat.lightblue.client.request.LightblueRequest;
+import com.redhat.lightblue.client.request.AbstractLightblueDataRequest;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
@@ -44,9 +54,6 @@ import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueResponseParseException;
 import com.redhat.lightblue.client.util.ClientConstants;
-import java.io.InputStream;
-import java.sql.SQLException;
-import java.util.List;
 
 public class MigrationJob implements Runnable {
 
@@ -733,12 +740,12 @@ public class MigrationJob implements Runnable {
         }
     }
 
-    protected Map<String, JsonNode> findSourceData(LightblueRequest findRequest) throws IOException {
+    protected Map<String, JsonNode> findSourceData(AbstractLightblueDataRequest findRequest) throws IOException {
         configureClients();
         return getJsonNodeMap(getSourceClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationIdentityFields());
     }
 
-    protected Map<String, JsonNode> findDestinationData(LightblueRequest findRequest) throws IOException {
+    protected Map<String, JsonNode> findDestinationData(AbstractLightblueDataRequest findRequest) throws IOException {
         configureClients();
         return getJsonNodeMap(getDestinationClient().data(findRequest, JsonNode[].class), getJobConfiguration().getDestinationIdentityFields());
     }
@@ -755,7 +762,7 @@ public class MigrationJob implements Runnable {
         return resultsMap;
     }
 
-    protected LightblueResponse callLightblue(LightblueRequest request) throws IOException {
+    protected LightblueResponse callLightblue(AbstractLightblueDataRequest request) throws IOException {
         configureClients();
         LightblueResponse response = getDestinationClient().data(request);
         if (response.hasError()) {
