@@ -13,8 +13,11 @@ INCREMENT_ID=$8
 if [ $1"x" == "x" ] || [ $2"x" == "x" ] || [ $3"x" == "x" ] || [ $4"x" == "x" ] || [ $5"x" == "x" ] || [ $6"x" == "x" ]; then
     echo "Usage: ./yearlyMigrationJobs.sh <entityName> <startDate> <endDate> <frequency> <expectedExecutionTime> <createdBy> [<startingId>] [<yearlyIdIncrement>]"
     echo "Example: ./yearlyMigrationJobs.sh user 2014-01-01 2014-12-31 1 30000 derek63 0 5000 "
+    echo "Results will be stored in /tmp/jobs/"
     exit 1
 fi
+
+echo "Processing (results will be available on /tmp/jobs/)"
 
 if [ "${STARTING_ID}x" == "x" ]; then
     STARTING_ID=0
