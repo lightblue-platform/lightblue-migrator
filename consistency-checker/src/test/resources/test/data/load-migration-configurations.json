@@ -1,0 +1,32 @@
+{
+    "data":[
+        {
+            "_id": "customerMigration_0", 
+            "authorizedHostnames": [
+                "localhost"
+            ], 
+            "comparisonExclusionPaths": [
+                "creationDate"
+            ], 
+            "configurationName": "customers", 
+            "consistencyCheckerName": "continuum", 
+            "createdBy": "lingram", 
+            "creationDate": "20150111T12:00:00.000+0000", 
+            "destinationEntityName": "newCustomer", 
+            "destinationEntityVersion": "1.0.0", 
+            "destinationIdentityFields": [
+                "_id"
+            ], 
+            "destinationServiceURI": "https://localhost/rest/data", 
+            "lastUpdateDate": "20150111T12:00:00.000+0000", 
+            "lastUpdatedBy": "lingram", 
+            "objectType": "migrationConfiguration", 
+            "overwriteDestinationDocuments": true, 
+            "sourceEntityName": "origCustomer", 
+            "sourceEntityVersion": "1.0.0", 
+            "sourceServiceURI": "https://localhost/rest/data", 
+            "sourceTimestampPath": "creationDate", 
+            "threadCount": 1
+        }
+    ]
+}
