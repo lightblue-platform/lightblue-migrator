@@ -17,7 +17,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.redhat.lightblue.migrator.features.LightblueMigration;
-import com.redhat.lightblue.migrator.features.LightblueMigrationConfiguration;
+import com.redhat.lightblue.migrator.features.LightblueMigrationTogglzConfig;
 import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
 /**
@@ -30,7 +30,7 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 @SuppressWarnings("all")
 public class DAOFacadeBase<D> {
 
-    private static final Logger log = LoggerFactory.getLogger(LightblueMigrationConfiguration.class);
+    private static final Logger log = LoggerFactory.getLogger(LightblueMigrationTogglzConfig.class);
 
     protected final D legacyDAO, lightblueDAO;
 
