@@ -20,8 +20,13 @@ public class LightblueMigrationTogglzConfig implements TogglzConfig {
 
     private LightblueMigrationStateRepositoryProvider stateRepositoryProvider;
 
+    public LightblueMigrationTogglzConfig() {
+        logger.info("Initialized!");
+    }
+
     @Inject
     public LightblueMigrationTogglzConfig(LightblueMigrationStateRepositoryProvider stateRepositoryProvider) throws IOException, NamingException {
+        logger.info("Initialized with stateRepositoryProvider!");
         this.stateRepositoryProvider = stateRepositoryProvider;
     }
 
