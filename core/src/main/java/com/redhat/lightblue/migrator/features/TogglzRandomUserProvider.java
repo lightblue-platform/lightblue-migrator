@@ -1,14 +1,12 @@
-package com.redhat.lightblue.migrator.utils.togglz;
+package com.redhat.lightblue.migrator.features;
 
 import org.togglz.core.user.FeatureUser;
 import org.togglz.core.user.SimpleFeatureUser;
 import org.togglz.core.user.UserProvider;
 
-import com.redhat.lightblue.migrator.utils.DAOFacadeBase;
-
 /**
  * Call {@link TogglzRandomUsername#init()} to generate new random username before
- * the provider is used. {@link DAOFacadeBase} apis already handle that.
+ * this provider is used. {@link DAOFacadeBase} apis already handle that.
  *
  * @author mpatercz
  *

@@ -1,43 +1,72 @@
 package com.redhat.lightblue.migrator.features;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Properties;
+import java.util.concurrent.TimeUnit;
+
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.naming.InitialContext;
+import javax.naming.NamingException;
+import javax.sql.DataSource;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.togglz.core.Feature;
 import org.togglz.core.manager.TogglzConfig;
 import org.togglz.core.repository.StateRepository;
-import org.togglz.core.repository.file.FileBasedStateRepository;
+import org.togglz.core.repository.cache.CachingStateRepository;
+import org.togglz.core.repository.jdbc.JDBCStateRepository;
+import org.togglz.core.repository.util.DefaultMapSerializer;
 import org.togglz.core.user.UserProvider;
-import org.togglz.servlet.user.ServletUserProvider;
-
-import javax.enterprise.context.ApplicationScoped;
-import java.io.File;
-import java.io.IOException;
-import java.util.Properties;
 
 @ApplicationScoped
 public class LightblueMigrationConfiguration implements TogglzConfig {
 
-    private String configFilePath = "lightblue-featureflags.properties";
+    Logger logger = LoggerFactory.getLogger(LightblueMigrationConfiguration.class);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LightblueMigrationConfiguration.class);
+    private DataSource dataSource;
 
-    public String getConfigFilePath() {
-        return configFilePath;
+    // http://www.togglz.org/apidocs/2.1.0.Final/org/togglz/core/repository/jdbc/JDBCStateRepository.Builder.html#noCommit(boolean)
+    private boolean noCommit = true;
+
+    private String tableName;
+
+    private int cacheSeconds = 180;
+
+    public LightblueMigrationConfiguration(String jndiPathToConfigDatasource, String tableName) throws NamingException {
+        init(jndiPathToConfigDatasource, tableName, 180, true);
     }
 
-    public void setConfigFilePath(String configFilePath) {
-        this.configFilePath = configFilePath;
+    public LightblueMigrationConfiguration(String jndiPathToConfigDatasource, String tableName, int cacheSeconds, boolean noCommit) throws NamingException {
+        init(jndiPathToConfigDatasource, tableName, cacheSeconds, noCommit);
     }
 
-    private String getStateRepositoryFilePath() {
-        try {
-            Properties properties = new Properties();
-            properties.load(getClass().getClassLoader().getResourceAsStream(getConfigFilePath()));
-            return properties.getProperty("stateRepositoryPath");
-        } catch (IOException io) {
-            LOGGER.error(getConfigFilePath() + " could not be found/read", io);
-            throw new RuntimeException(io);
-        }
+    @Inject
+    public LightblueMigrationConfiguration(@Named("lightblueMigrationConfigurationFileName") String configFileName) throws IOException, NamingException {
+        InputStream in = getClass().getResourceAsStream(configFileName);
+
+        Properties props = new Properties();
+        props.load(in);
+
+        String datasourceJndi = props.getProperty("datasourceJndi");
+        String tableName = props.getProperty("tableName");
+        int cacheSeconds = Integer.parseInt(props.getProperty("cacheSeconds", "180"));
+        boolean noCommit = Boolean.parseBoolean(props.getProperty("noCommit", "true"));
+
+        init(datasourceJndi, tableName, cacheSeconds, noCommit);
+    }
+
+    public void init(String jndiPathToConfigDatasource, String tableName, int cacheSeconds, boolean noCommit) throws NamingException {
+        InitialContext ctx = new InitialContext();
+        this.dataSource = (DataSource)ctx.lookup(jndiPathToConfigDatasource);
+        this.tableName = tableName;
+        this.cacheSeconds = cacheSeconds;
+        this.noCommit = noCommit;
+
+        logger.debug("Initialized LightblueMigrationConfiguration: jndiPathToConfigDatasource="+jndiPathToConfigDatasource+", tableName="+tableName+", cacheSeonds="+cacheSeconds+",noCommit="+noCommit);
     }
 
     @Override
@@ -47,23 +76,12 @@ public class LightblueMigrationConfiguration implements TogglzConfig {
 
     @Override
     public StateRepository getStateRepository() {
-        return new FileBasedStateRepository(new File(getStateRepositoryFilePath()));
-
+        return new CachingStateRepository(new JDBCStateRepository(dataSource, tableName, true, DefaultMapSerializer.singleline(), noCommit), cacheSeconds, TimeUnit.SECONDS);
     }
 
+    @Override
     public UserProvider getUserProvider() {
-        return new ServletUserProvider(getMigrationAdminGroup());
-    }
-
-    private String getMigrationAdminGroup() {
-        try {
-            Properties properties = new Properties();
-            properties.load(getClass().getClassLoader().getResourceAsStream(getConfigFilePath()));
-            return properties.getProperty("migrationAdminRole");
-        } catch (IOException io) {
-            LOGGER.error(getConfigFilePath() + " could not be found/read", io);
-            throw new RuntimeException(io);
-        }
+        return new TogglzRandomUserProvider();
     }
 
 }

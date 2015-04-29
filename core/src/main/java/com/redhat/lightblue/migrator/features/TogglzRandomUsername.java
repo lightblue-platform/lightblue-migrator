@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.utils.togglz;
+package com.redhat.lightblue.migrator.features;
 
 import java.util.Random;
 

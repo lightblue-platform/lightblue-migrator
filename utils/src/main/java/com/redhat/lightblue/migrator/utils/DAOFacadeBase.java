@@ -18,7 +18,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.LightblueMigrationConfiguration;
-import com.redhat.lightblue.migrator.utils.togglz.TogglzRandomUsername;
+import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
 /**
  * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
