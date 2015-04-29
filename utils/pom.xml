@@ -30,7 +30,7 @@
     </dependency>
     <dependency>
       <groupId>org.togglz</groupId>
-      <artifactId>togglz-servlet</artifactId>
+      <artifactId>togglz-core</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
