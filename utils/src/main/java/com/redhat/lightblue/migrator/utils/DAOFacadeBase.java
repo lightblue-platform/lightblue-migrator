@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.LightblueMigrationConfiguration;
+import com.redhat.lightblue.migrator.utils.togglz.TogglzRandomUsername;
 
 /**
  * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
@@ -106,6 +107,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
+        TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
         ListenableFuture<T> listenableFuture = null;
@@ -180,6 +182,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
         ListenableFuture<T> listenableFuture = null;
@@ -249,6 +252,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
 
