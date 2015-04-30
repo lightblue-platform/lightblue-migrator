@@ -13,6 +13,13 @@ import org.togglz.core.manager.TogglzConfig;
 import org.togglz.core.repository.StateRepository;
 import org.togglz.core.user.UserProvider;
 
+/**
+ * TogglzConfig configured for lightblue migration needs: @{link {@link LightblueMigrationFeatures}, database state repository and
+ * randomized usernames (see {@link TogglzRandomUsername}).
+ *
+ * @author mpatercz
+ *
+ */
 @ApplicationScoped
 public class LightblueMigrationTogglzConfig implements TogglzConfig {
 
@@ -21,12 +28,12 @@ public class LightblueMigrationTogglzConfig implements TogglzConfig {
     private LightblueMigrationStateRepositoryProvider stateRepositoryProvider;
 
     public LightblueMigrationTogglzConfig() {
-        logger.info("Initialized!");
+        logger.info("LightblueMigrationTogglzConfig initialized");
     }
 
     @Inject
     public LightblueMigrationTogglzConfig(LightblueMigrationStateRepositoryProvider stateRepositoryProvider) throws IOException, NamingException {
-        logger.info("Initialized with stateRepositoryProvider!");
+        logger.info("LightblueMigrationTogglzConfig initialized with stateRepositoryProvider");
         this.stateRepositoryProvider = stateRepositoryProvider;
     }
 

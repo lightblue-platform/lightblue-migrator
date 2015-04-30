@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.naming.InitialContext;
@@ -18,6 +19,7 @@ import org.togglz.core.repository.cache.CachingStateRepository;
 import org.togglz.core.repository.jdbc.JDBCStateRepository;
 import org.togglz.core.repository.util.DefaultMapSerializer;
 
+@ApplicationScoped
 public class LightblueMigrationStateRepositoryProvider {
 
     Logger logger = LoggerFactory.getLogger(LightblueMigrationStateRepositoryProvider.class);
