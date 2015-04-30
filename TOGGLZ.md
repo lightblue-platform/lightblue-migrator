@@ -5,14 +5,14 @@ Classes from [core](core) module will help you with that.
 
 ### Setting up Togglz with cached jdbc backend
 
-There are different repository state provides for Togglz. Keeping your feature flag configurations in a database provides an easy way to manipulate those configs for clustered applications. Example usage:
+Keeping your feature flag configurations in a database provides an easy way to manipulate those configs for clustered applications. ```LightblueMigrationStateRepositoryProvider``` provides a convient way to initialize JDBCStateRepository from a property file. Example usage:
 
 ```java
 featureManager = new FeatureManagerBuilder()
                 .togglzConfig(new LightblueMigrationTogglzConfig(new LightblueMigrationStateRepositoryProvider("features.properties")))
                 .build();
 ```
-See (Togglz documentation for information on FeatureManagerProvider)[http://www.togglz.org/documentation/advanced-config.html].
+See [Togglz documentation for information on FeatureManagerProvider](http://www.togglz.org/documentation/advanced-config.html).
 
 features.properties is a file on the classpath with following settings:
 ```
@@ -51,4 +51,4 @@ UPDATE `TOGGLZ_TEST` SET STRATEGY_PARAMS='percentage=15' WHERE FEATURE_NAME='WRI
 
 ### Using gradual activation strategy to control load
 
-Feature flags are designed to control features, not load balancing. However, with some tweaking, it's possible to use the Togglz' gradual activation strategy for this purpose. The tweak is to generate username for each call to DAOFacade (```TogglzRandomUsername.init()```). For information on DAOFacade and it's role during migration see (utils)[utils].
+Feature flags are designed to control features, not load balancing. However, with some tweaking, it's possible to use the Togglz' gradual activation strategy for this purpose. The tweak is to generate username for each call to DAOFacade (```TogglzRandomUsername.init()```). For information on DAOFacade and it's role during migration see [utils](utils).

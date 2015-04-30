@@ -2,7 +2,7 @@ lightblue-migrator
 ==================
 
 ###core
-This includes classes and configurations to manage feature flags for migrating data between one lightblue entity and another.  Much of this is a wrapper around Togglz functionality, with lightblue migration-specific features. See (How to configure togglz for migration to lightblue?)[TOGGLZ.md].
+This includes classes and configurations to manage feature flags for migrating data between one lightblue entity and another.  Much of this is a wrapper around Togglz functionality, with lightblue migration-specific features. See [How to configure togglz for migration to lightblue?](TOGGLZ.md).
 
 See http://slideshare.net/derek63/lightblue-migration for more information on how to do a lightblue migration.
 
