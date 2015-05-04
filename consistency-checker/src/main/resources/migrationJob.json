@@ -5,20 +5,6 @@
             "collection": "migrationJob",
             "datasource": "mongodata"
         },
-        "hooks": [
-            {
-                "actions": [
-                    "insert",
-                    "update",
-                    "delete"
-                ],
-                "configuration": {
-                    "entityName": "audit",
-                    "version": "1.0.0"
-                },
-                "name": "auditHook"
-            }
-        ],
         "enums": [
             {
                 "name": "jobStatusType",
