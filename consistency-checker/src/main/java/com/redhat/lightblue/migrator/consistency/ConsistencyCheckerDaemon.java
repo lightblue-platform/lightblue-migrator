@@ -34,7 +34,7 @@ public final class ConsistencyCheckerDaemon implements Daemon{
     }
 
     @Override
-    public synchronized void start() throws Exception {
+    public void start() throws Exception {
         LOGGER.info("Starting " + getClass().getSimpleName());
 
         consistencyCheckerThread.start();
@@ -46,7 +46,7 @@ public final class ConsistencyCheckerDaemon implements Daemon{
     }
 
     @Override
-    public synchronized void stop() throws Exception {
+    public void stop() throws Exception {
         LOGGER.info("Stopping " + getClass().getSimpleName());
 
         isThreadAliveWatcher.cancel();
