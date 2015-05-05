@@ -580,8 +580,10 @@ public class MigrationJob implements Runnable {
     protected Map<String, JsonNode> getSourceDocuments() throws SQLException, IOException {
         DataFindRequest sourceRequest = new DataFindRequest(getJobConfiguration().getSourceEntityName(), getJobConfiguration().getSourceEntityVersion());
         List<Query> conditions = new LinkedList<>();
-        conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= " + getStartDate()));
-        conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= " + getEndDate()));
+        conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " >= "
+                + ClientConstants.getDateFormat().format(getStartDate())));
+        conditions.add(withValue(getJobConfiguration().getSourceTimestampPath() + " <= "
+                + ClientConstants.getDateFormat().format(getEndDate())));
         sourceRequest.where(and(conditions));
         sourceRequest.select(includeFieldRecursively("*"));
         currentRun.setSourceQuery(sourceRequest.getBody());
