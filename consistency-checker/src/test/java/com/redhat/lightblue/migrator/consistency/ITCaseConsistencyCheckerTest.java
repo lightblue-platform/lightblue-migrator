@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNull;
 
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -91,9 +90,14 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
     }
 
     @Test
-    @Ignore
     public void testRun() throws Exception {
-        consistencyChecker.run();
+        Thread consistencyThread = new Thread(consistencyChecker);
+        try {
+            consistencyThread.start();
+            Thread.sleep(10000);
+        } finally {
+            consistencyThread.interrupt();
+        }
 
         DataFindRequest findRequest = new DataFindRequest("destCustomer", versionDestinationCustomer);
         findRequest.where(ValueQuery.withValue("type = destCustomer"));
