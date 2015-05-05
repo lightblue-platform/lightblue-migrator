@@ -6,7 +6,7 @@
     <artifactId>lightblue-migrator-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <artifactId>lightblue-migrator-consistency-checker</artifactId>
+  <artifactId>lightblue-migrator</artifactId>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

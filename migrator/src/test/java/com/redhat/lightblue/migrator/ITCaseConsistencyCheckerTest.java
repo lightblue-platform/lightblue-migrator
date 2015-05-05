@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.consistency;
+package com.redhat.lightblue.migrator;
 
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 import static org.junit.Assert.assertEquals;
