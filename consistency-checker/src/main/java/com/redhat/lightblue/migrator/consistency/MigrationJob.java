@@ -440,7 +440,7 @@ public class MigrationJob implements Runnable {
                 if (null == sourceClient) {
                     LightblueHttpClient source;
 
-                    if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
+                    if (getSourceConfigPath() == null) {
                         source = new LightblueHttpClient();
                     } else {
                         try (InputStream is = Thread.currentThread()
