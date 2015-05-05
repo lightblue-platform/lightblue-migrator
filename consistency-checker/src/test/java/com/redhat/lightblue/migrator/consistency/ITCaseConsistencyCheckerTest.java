@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -94,13 +95,14 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
         Thread consistencyThread = new Thread(consistencyChecker);
         try {
             consistencyThread.start();
-            Thread.sleep(10000);
+            Thread.sleep(1000);
         } finally {
             consistencyThread.interrupt();
         }
 
         DataFindRequest findRequest = new DataFindRequest("destCustomer", versionDestinationCustomer);
-        findRequest.where(ValueQuery.withValue("type = destCustomer"));
+        findRequest.where(ValueQuery.withValue("objectType = destCustomer"));
+        findRequest.select(includeFieldRecursively("*"));
 
         Customer[] customers = getLightblueClient().data(findRequest, Customer[].class);
 
