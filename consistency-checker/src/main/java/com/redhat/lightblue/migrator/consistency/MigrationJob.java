@@ -437,29 +437,35 @@ public class MigrationJob implements Runnable {
     private void configureClients() throws IOException {
         if (null == sourceClient || null == destinationClient) {
             synchronized (this) {
-                if (null == sourceClient || null == destinationClient) {
+                if (null == sourceClient) {
                     LightblueHttpClient source;
-                    LightblueHttpClient destination;
-                    if (getSourceConfigPath() == null && getDestinationConfigPath() == null) {
+
+                    if (getSourceConfigPath() == null) {
                         source = new LightblueHttpClient();
-                        destination = new LightblueHttpClient();
                     } else {
-                        // load from config files
                         try (InputStream is = Thread.currentThread()
                                 .getContextClassLoader().getResourceAsStream(getSourceConfigPath())) {
                             LightblueClientConfiguration config = PropertiesLightblueClientConfiguration.fromInputStream(is);
                             source = new LightblueHttpClient(config);
                         }
+                    }
 
+                    sourceClient = new LightblueHystrixClient(source, "migrator", "sourceClient");
+                }
+                if (null == destinationClient) {
+                    LightblueHttpClient destination;
+
+                    if (getDestinationConfigPath() == null) {
+                        destination = new LightblueHttpClient();
+                    } else {
                         try (InputStream is = Thread.currentThread()
                                 .getContextClassLoader().getResourceAsStream(getDestinationConfigPath())) {
                             LightblueClientConfiguration config = PropertiesLightblueClientConfiguration.fromInputStream(is);
                             destination = new LightblueHttpClient(config);
                         }
                     }
-                    sourceClient = new LightblueHystrixClient(source, "migrator", "sourceClient");
-                    destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
 
+                    destinationClient = new LightblueHystrixClient(destination, "migrator", "destinationClient");
                 }
             }
         }
