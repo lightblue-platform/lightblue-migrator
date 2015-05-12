@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.consistency;
+package com.redhat.lightblue.migrator;
 
 import static com.redhat.lightblue.client.expression.query.ArrayQuery.withSubfield;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;

@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.consistency;
+package com.redhat.lightblue.migrator;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;

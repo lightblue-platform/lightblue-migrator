@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.consistency;
+package com.redhat.lightblue.migrator;
 
 import java.util.Timer;
 import java.util.TimerTask;
