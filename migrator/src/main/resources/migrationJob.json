@@ -1,0 +1,257 @@
+{
+    "entityInfo": {
+        "datastore": {
+            "backend": "mongo",
+            "collection": "migrationJob",
+            "datasource": "mongodata"
+        },
+        "enums": [
+            {
+                "name": "jobStatusType",
+                "values": [
+                    "STARTING",
+                    "RUNNING",
+                    "RUNNING_ASYNC",
+                    "COMPLETED_SUCCESS",
+                    "COMPLETED_PARTIAL",
+                    "COMPLETED_DEAD",
+                    "COMPLETED_IGNORED",
+                    "COMPLETED_FAILED",
+                    "ABORTED_DUPLICATE",
+                    "ABORTED_TIMEOUT",
+                    "ABORTED_AUTH",
+                    "ABORTED_UNKNOWN",
+                    "UNKNOWN"
+                ]
+            }
+        ],
+        "indexes": [
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "_id"
+                    }
+                ],
+                "name": null,
+                "unique": true
+            },
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "whenAvailableDate"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "jobExecutions.jobStatus"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "configurationName"
+                    }
+                ],
+                "name": "MigrationJobsToExecute",
+                "unique": false
+            }
+        ],
+        "name": "migrationJob"
+    },
+    "schema": {
+        "access": {
+            "delete": [
+                "lb-migrationjob-delete"
+            ],
+            "find": [
+                "lb-migrationjob-find"
+            ],
+            "insert": [
+                "lb-migrationjob-insert"
+            ],
+            "update": [
+                "lb-migrationjob-update"
+            ]
+        },
+        "fields": {
+            "_id": {
+                "type": "uid",
+                "constraints": {
+                    "identity": true
+                },
+                "description": "The identifier of the migrationJob."
+            },
+            "objectType": {
+                "access": {
+                    "find": [
+                        "anyone"
+                    ],
+                    "update": [
+                        "noone"
+                    ]
+                },
+                "constraints": {
+                    "minLength": 1,
+                    "required": true
+                },
+                "type": "string"
+            },
+            "configurationName": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Name of the configuration that corresponds to this job"
+            },
+            "startDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Document start date for of this migration job"
+            },
+            "endDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Document end date for this migration job"
+            },
+            "whenAvailableDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "First available time for execution of this job"
+            },
+            "expectedExecutionMilliseconds": {
+                "type": "integer",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Expected duration of this job in ms"
+            },
+            "jobExecutions": {
+                "items": {
+                    "fields": {
+                        "ownerName": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Name of the consistency checker instance that owns this execution."
+                        },
+                        "hostName": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Host running this migration job"
+                        },
+                        "pid": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Process id of the consistency checker instance on the host running this migration job"
+                        },
+                        "actualStartDate": {
+                            "type": "date",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Actual start date for of this migration job"
+                        },
+                        "actualEndDate": {
+                            "type": "date",
+                            "constraints": {
+                                "required": false
+                            },
+                            "description": "Actual end date for this migration job"
+                        },
+                        "jobStatus": {
+                            "type": "string",
+                            "constraints": {
+                                "required": true,
+                                "enum": "jobStatusType"
+                            },
+                            "description": "Indicates the status of the execution of this job"
+                        },
+                        "processedDocumentCount": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents processed by this job"
+                        },
+                        "consistentDocumentCount": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents that mathed for this job"
+                        },
+                        "inconsistentDocumentCount": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents that did not match for this job"
+                        },
+                        "overwrittenDocumentCount": {
+                            "type": "integer",
+                            "constraints": {
+                                "required": true
+                            },
+                            "description": "Number of documents that were overwritten in destination"
+                        },
+                        "sourceQuery": {
+                            "type": "string",
+                            "constraints": {
+                                "required": false
+                            },
+                            "description": "The query used to load data from source"
+                        }
+                    },
+                    "type": "object"
+                },
+                "type": "array"
+            },
+            "creationDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Creation date of the configuration"
+            },
+            "createdBy": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "User id of the configuration creator"
+            },
+            "lastUpdateDate": {
+                "type": "date",
+                "constraints": {
+                    "required": true
+                },
+                "description": "Last updated date of the configuration"
+            },
+            "lastUpdatedBy": {
+                "type": "string",
+                "constraints": {
+                    "required": true
+                },
+                "description": "User id of the configuration creator"
+            }
+        },
+        "name": "migrationJob",
+        "status": {
+            "value": "active"
+        },
+        "version": {
+            "changelog": "Initial release",
+            "value": "1.0.0"
+        }
+    }
+}
