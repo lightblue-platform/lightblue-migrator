@@ -20,11 +20,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -997,20 +993,19 @@ public class MigrationJobTest {
     public void testException_getSourceDocuments_execute() throws IOException, URISyntaxException, InterruptedException {
         final int JOB_COUNT = 100;
         final int THREAD_COUNT = 2;
-        final AtomicInteger outstandingThreadCount = new AtomicInteger(0);
+        final CountDownLatch latch = new CountDownLatch(JOB_COUNT);
 
         // create a job executor with more jobs than threads
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
         List<Future<?>> futures = new ArrayList<>();
         for (int i = 0; i < JOB_COUNT; i++) {
-            outstandingThreadCount.getAndIncrement();
             MigrationJob job = new TestMigrationJob(null, null,
                     new String[]{
                             FileUtil.readFile("migrationJobTwoExecutionsResponse.json")
             }) {
                 @Override
                 protected Map<String, JsonNode> getSourceDocuments() throws SQLException {
-                    outstandingThreadCount.getAndDecrement();
+                    latch.countDown();
                     throw new SQLException("forced failure for testing");
                 }
             };
@@ -1022,16 +1017,12 @@ public class MigrationJobTest {
 
         Assert.assertTrue(JOB_COUNT > THREAD_COUNT);
 
+        latch.await(); // wait for all the jobs be processed
+
         executor.shutdown();
 
-        // all jobs are created.  There are JOB_COUNT of them but only THREAD_COUNT threads
-        // but we want to be sure to have *some* jobs to run before we wait for termination
-        Assert.assertTrue(outstandingThreadCount.intValue() > (JOB_COUNT / 2));
-
-        executor.awaitTermination(60, TimeUnit.SECONDS);
-
         // and now that we're done, verify everything got processed
-        Assert.assertEquals(0, outstandingThreadCount.intValue());
+        Assert.assertEquals(0L, latch.getCount());
     }
 
     @Test
