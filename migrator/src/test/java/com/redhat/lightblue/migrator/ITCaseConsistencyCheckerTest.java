@@ -15,7 +15,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.migrator.test.model.Customer;
+import com.redhat.lightblue.migrator.model.Customer;
 
 public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
 

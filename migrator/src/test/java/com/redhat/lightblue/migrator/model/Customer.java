@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.test.model;
+package com.redhat.lightblue.migrator.model;
 
 import java.util.Date;
 
