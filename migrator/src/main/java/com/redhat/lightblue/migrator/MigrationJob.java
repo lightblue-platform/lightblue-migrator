@@ -3,6 +3,7 @@ package com.redhat.lightblue.migrator;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.excludeField;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 import java.io.IOException;
@@ -582,14 +583,14 @@ public class MigrationJob implements Runnable {
         List<Query> conditions = new LinkedList<>();
         conditions.add(withValue(
                 new StringBuilder(getJobConfiguration().getSourceTimestampPath())
-                        .append(" >= ")
-                        .append(ClientConstants.getDateFormat().format(getStartDate())).toString()));
+                .append(" >= ")
+                .append(ClientConstants.getDateFormat().format(getStartDate())).toString()));
         conditions.add(withValue(
                 new StringBuilder(getJobConfiguration().getSourceTimestampPath())
-                        .append(" <= ")
-                        .append(ClientConstants.getDateFormat().format(getEndDate())).toString()));
+                .append(" <= ")
+                .append(ClientConstants.getDateFormat().format(getEndDate())).toString()));
         sourceRequest.where(and(conditions));
-        sourceRequest.select(includeFieldRecursively("*"));
+        sourceRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
         currentRun.setSourceQuery(sourceRequest.getBody());
         return findSourceData(sourceRequest);
     }
@@ -644,7 +645,7 @@ public class MigrationJob implements Runnable {
             requestConditions.add(and(docConditions));
         }
         destinationRequest.where(or(requestConditions));
-        destinationRequest.select(includeFieldRecursively("*"));
+        destinationRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
         destinationRequest.sort(new SortCondition(getJobConfiguration().getSourceTimestampPath(), SortDirection.ASC));
         destinationDocuments = findDestinationData(destinationRequest);
 
