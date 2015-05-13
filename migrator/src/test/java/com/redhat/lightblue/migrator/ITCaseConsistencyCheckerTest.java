@@ -8,7 +8,6 @@ import static org.junit.Assert.assertNull;
 
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -91,8 +90,22 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
         assertNull(job);
     }
 
+    /**
+     * Ensures that the source entity is properly populated.
+     */
     @Test
-    @Ignore
+    public void testSourceEntityIsPopulated() throws Exception {
+        DataFindRequest findRequest = new DataFindRequest("sourceCustomer", versionSourceCustomer);
+        findRequest.where(ValueQuery.withValue("objectType = sourceCustomer"));
+        findRequest.select(includeFieldRecursively("*"));
+
+        Customer[] customers = getLightblueClient().data(findRequest, Customer[].class);
+
+        assertNotNull(customers);
+        assertEquals(5, customers.length);
+    }
+
+    @Test
     public void testRun() throws Exception {
         Thread consistencyThread = new Thread(consistencyChecker);
         try {
@@ -102,6 +115,20 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
             consistencyThread.interrupt();
         }
 
+        //Ensure job ran correctly
+        DataFindRequest jobExecutionsRequest = new DataFindRequest("migrationJob", versionMigrationJob);
+        jobExecutionsRequest.where(ValueQuery.withValue("_id = customerJob_0"));
+        jobExecutionsRequest.select(includeFieldRecursively("*"));
+        MigrationJob job = getLightblueClient().data(jobExecutionsRequest, MigrationJob.class);
+        assertNotNull(job);
+        List<MigrationJobExecution> executions = job.getJobExecutions();
+        assertNotNull(executions);
+        assertEquals(1, executions.size());
+        MigrationJobExecution execution = executions.get(0);
+        assertNotNull(execution);
+        assertEquals(JobStatus.COMPLETED_SUCCESS, execution.getJobStatus());
+
+        //Verify destination customer
         DataFindRequest findRequest = new DataFindRequest("destCustomer", versionDestinationCustomer);
         findRequest.where(ValueQuery.withValue("objectType = destCustomer"));
         findRequest.select(includeFieldRecursively("*"));
