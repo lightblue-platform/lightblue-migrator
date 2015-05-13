@@ -6,6 +6,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
@@ -127,6 +129,8 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
         MigrationJobExecution execution = executions.get(0);
         assertNotNull(execution);
         assertEquals(JobStatus.COMPLETED_SUCCESS, execution.getJobStatus());
+        assertEquals(3, execution.getInconsistentDocumentCount());
+        assertEquals(3, execution.getProcessedDocumentCount());
 
         //Verify destination customer
         DataFindRequest findRequest = new DataFindRequest("destCustomer", versionDestinationCustomer);
@@ -136,6 +140,11 @@ public class ITCaseConsistencyCheckerTest extends AbstractMigratorController {
         Customer[] customers = getLightblueClient().data(findRequest, Customer[].class);
 
         assertNotNull(customers);
-        assertEquals(5, customers.length);
+        assertEquals(3, customers.length); //Only the 3 people created in 2006 should be migrated.
+        List<String> firstNames = new ArrayList<String>();
+        for (Customer cust : customers) {
+            firstNames.add(cust.getFirstName());
+        }
+        firstNames.containsAll(Arrays.asList("Alec", "Julian", "Carlos"));
     }
 }
