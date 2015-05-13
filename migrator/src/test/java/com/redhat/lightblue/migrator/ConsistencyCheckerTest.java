@@ -200,6 +200,7 @@ public class ConsistencyCheckerTest {
         final String pid = "jewzaam was here";
 
         checker.setClient(new LightblueClient() {
+
             @Override
             public LightblueResponse metadata(AbstractLightblueMetadataRequest lr) {
                 throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
