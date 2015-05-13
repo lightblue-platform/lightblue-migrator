@@ -235,9 +235,9 @@ public class ConsistencyChecker implements Runnable {
                             withValue("whenAvailableDate <= " + ClientConstants.getDateFormat().format(new Date())),
                             // only get jobs where there does NOT exist an execution with a complete status
                             not(
-                            withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
-                                    )
+                                    withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
                             )
+                    )
                     );
             findRequest.select(includeFieldRecursively("*"));
 
