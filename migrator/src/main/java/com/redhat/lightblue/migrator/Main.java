@@ -19,6 +19,10 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.cli.HelpFormatter;
 
+import org.apache.commons.daemon.Daemon;
+import org.apache.commons.daemon.DaemonContext;
+import org.apache.commons.daemon.DaemonInitException;
+
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
@@ -27,9 +31,12 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
-public class Main {
+public class Main implements Daemon {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Main.class);
+
+    private DaemonContext context;
+    private Thread consistencyCheckerThread = null;
 
     public static void main(String[] args) throws Exception {
         processArguments(args);
@@ -108,4 +115,38 @@ public class Main {
             System.exit(1);
         }
     }
+
+
+    @Override
+    public void init(DaemonContext context) throws DaemonInitException, Exception {
+        LOGGER.info("Initializing " + getClass().getSimpleName());
+        this.context = context;
+        consistencyCheckerThread = createConsistencyCheckerThread();
+    }
+
+    @Override
+    public void start() throws Exception {
+        LOGGER.info("Starting " + getClass().getSimpleName());
+        consistencyCheckerThread.start();
+    }
+
+    @Override
+    public void stop() throws Exception {
+        LOGGER.info("Stopping " + getClass().getSimpleName());
+        if(consistencyCheckerThread != null){
+            consistencyCheckerThread.interrupt();
+        }
+    }
+
+    @Override
+    public void destroy() {
+        LOGGER.info("Destroying " + getClass().getSimpleName());
+        consistencyCheckerThread = null;
+    }
+
+    private Thread createConsistencyCheckerThread(){
+        processArguments(context.getArguments());
+        return new Thread(buildConsistencyChecker(),"ConsistencyCheckerRunner");
+    }
+
 }
