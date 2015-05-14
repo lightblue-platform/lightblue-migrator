@@ -107,7 +107,7 @@
               <transformers>
                 <transformer
                   implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>com.redhat.lightblue.migrator.consistency.ConsistencyCheckerCLI</mainClass>
+                  <mainClass>com.redhat.lightblue.migrator.Main</mainClass>
                 </transformer>
               </transformers>
               <shadedArtifactAttached>true</shadedArtifactAttached>

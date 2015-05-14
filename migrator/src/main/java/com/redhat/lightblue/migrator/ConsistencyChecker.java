@@ -134,7 +134,7 @@ public class ConsistencyChecker implements Runnable {
 
         while (run && !Thread.interrupted()) {
             List<ExecutorService> executors = new ArrayList<>();
-            List<MigrationConfiguration> configurations = getJobConfigurations();
+            List<MigrationConfiguration> configurations=getJobConfigurations();
             List<Future<?>> futures = new ArrayList<>();
 
             for (MigrationConfiguration configuration : configurations) {
@@ -221,6 +221,18 @@ public class ConsistencyChecker implements Runnable {
         LOGGER.info("ConsistencyChecker done");
     }
 
+    protected List<MigrationConfiguration> getJobConfigurations() {
+        List<MigrationConfiguration> configurations;
+        try {
+            configurations=Arrays.asList(Main.getMigrationConfiguration(getClient(),getMigrationConfigurationEntityVersion(),
+                                                                        getConsistencyCheckerName()));
+        } catch (Exception e) {
+            LOGGER.error("Problem getting migrationConfigurations", e);
+            configurations=new ArrayList<>();
+        }
+        return configurations;
+    }
+    
     protected List<MigrationJob> getMigrationJobs(MigrationConfiguration configuration) {
         LOGGER.info("Loading jobs for {}", configuration.getConfigurationName());
         List<MigrationJob> jobs = new ArrayList<>();
@@ -302,21 +314,6 @@ public class ConsistencyChecker implements Runnable {
             }
             psn++;
         }
-    }
-
-    protected List<MigrationConfiguration> getJobConfigurations() {
-        List<MigrationConfiguration> configurations = new ArrayList<>();
-        try {
-            DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
-            findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
-            findRequest.select(includeFieldRecursively("*"));
-
-            LOGGER.debug("Finding Job Configurations: {}", findRequest.getBody());
-            configurations.addAll(Arrays.asList(getClient().data(findRequest, MigrationConfiguration[].class)));
-        } catch (IOException e) {
-            LOGGER.error("Problem getting migrationConfigurations", e);
-        }
-        return configurations;
     }
 
     /**

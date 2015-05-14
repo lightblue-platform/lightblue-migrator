@@ -65,9 +65,8 @@ public final class ConsistencyCheckerDaemon implements Daemon{
     }
 
     private Thread createConsistencyCheckerThread(){
-        return new Thread(
-                ConsistencyCheckerCLI.buildConsistencyChecker(context.getArguments()),
-                "ConsistencyCheckerRunner");
+        Main.processArguments(context.getArguments());
+        return new Thread(Main.buildConsistencyChecker(),"ConsistencyCheckerRunner");
     }
 
     /**
