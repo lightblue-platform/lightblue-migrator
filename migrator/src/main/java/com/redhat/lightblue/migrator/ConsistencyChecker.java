@@ -224,7 +224,7 @@ public class ConsistencyChecker implements Runnable {
     protected List<MigrationConfiguration> getJobConfigurations() {
         List<MigrationConfiguration> configurations;
         try {
-            configurations=Arrays.asList(Main.getMigrationConfiguration(client,getMigrationConfigurationEntityVersion(),
+            configurations=Arrays.asList(Main.getMigrationConfiguration(getClient(),getMigrationConfigurationEntityVersion(),
                                                                         getConsistencyCheckerName()));
         } catch (Exception e) {
             LOGGER.error("Problem getting migrationConfigurations", e);
