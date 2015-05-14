@@ -12,7 +12,7 @@
             "consistencyCheckerName": "continuum", 
             "createdBy": "lingram", 
             "creationDate": "20150111T12:00:00.000+0000", 
-            "destinationEntityName": "newCustomer", 
+            "destinationEntityName": "destCustomer", 
             "destinationEntityVersion": "1.0.0", 
             "destinationIdentityFields": [
                 "_id"
@@ -22,7 +22,7 @@
             "lastUpdatedBy": "lingram", 
             "objectType": "migrationConfiguration", 
             "overwriteDestinationDocuments": true, 
-            "sourceEntityName": "origCustomer", 
+            "sourceEntityName": "sourceCustomer", 
             "sourceEntityVersion": "1.0.0", 
             "sourceServiceURI": "https://localhost/rest/data", 
             "sourceTimestampPath": "creationDate", 

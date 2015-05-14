@@ -15,12 +15,17 @@ import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -845,6 +850,8 @@ public class MigrationJobTest {
         migrationJob.setJobConfiguration(jobConfiguration);
         migrationJob.setOverwriteDestinationDocuments(true);
         migrationJob.setJobExecutions(new ArrayList<MigrationJobExecution>());
+        migrationJob.setStartDate(new Date());
+        migrationJob.setEndDate(new Date());
 
         LightblueClient client = new LightblueHttpClient();
         migrationJob.setSourceClient(client);

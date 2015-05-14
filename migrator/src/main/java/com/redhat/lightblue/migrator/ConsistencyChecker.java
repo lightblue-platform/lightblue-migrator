@@ -11,9 +11,12 @@ import java.lang.management.ManagementFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,9 +28,6 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.util.ClientConstants;
-import java.util.GregorianCalendar;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 public class ConsistencyChecker implements Runnable {
 
@@ -62,6 +62,16 @@ public class ConsistencyChecker implements Runnable {
     }
 
     public LightblueClient getClient() {
+        if (client == null) {
+            LightblueClient httpClient;
+            if (configPath != null) {
+                httpClient = new LightblueHttpClient(configPath);
+            } else {
+                httpClient = new LightblueHttpClient();
+            }
+            client = new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
+        }
+
         return client;
     }
 
@@ -122,14 +132,6 @@ public class ConsistencyChecker implements Runnable {
 
         LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
 
-        LightblueHttpClient httpClient;
-        if (configPath != null) {
-            httpClient = new LightblueHttpClient(configPath);
-        } else {
-            httpClient = new LightblueHttpClient();
-        }
-        client = new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
-
         while (run && !Thread.interrupted()) {
             List<ExecutorService> executors = new ArrayList<>();
             List<MigrationConfiguration> configurations=getJobConfigurations();
@@ -171,9 +173,7 @@ public class ConsistencyChecker implements Runnable {
 
                 if (!jobs.isEmpty()) {
                     LOGGER.info("Executing {} of {} loaded jobs for {}", jobs.size(), allJobs.size(), configuration.getConfigurationName());
-                }
 
-                if (!jobs.isEmpty()) {
                     ExecutorService jobExecutor = Executors.newFixedThreadPool(configuration.getThreadCount());
                     executors.add(jobExecutor);
                     for (MigrationJob job : allJobs) {
@@ -250,7 +250,7 @@ public class ConsistencyChecker implements Runnable {
                                     withSubfield("jobExecutions", withValue("jobStatus $in [COMPLETED_SUCCESS, COMPLETED_PARTIAL]"))
                             )
                     )
-            );
+                    );
             findRequest.select(includeFieldRecursively("*"));
 
             // sort by whenAvailableDate ascending to process oldest jobs first
@@ -258,10 +258,10 @@ public class ConsistencyChecker implements Runnable {
 
             // only pick up the first MAX_JOBS_PER_ENTITY jobs
             findRequest.range(0, MAX_JOBS_PER_ENTITY);
-            
+
             LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
 
-            jobs.addAll(Arrays.asList(client.data(findRequest, MigrationJob[].class)));
+            jobs.addAll(Arrays.asList(getClient().data(findRequest, MigrationJob[].class)));
         } catch (IOException e) {
             LOGGER.error("Problem getting migrationJobs", e);
         }
@@ -316,7 +316,6 @@ public class ConsistencyChecker implements Runnable {
         }
     }
 
-
     /**
      * Gets the next job available for processing.
      *
@@ -332,7 +331,7 @@ public class ConsistencyChecker implements Runnable {
             findRequest.select(includeFieldRecursively("*"));
 
             LOGGER.debug("Get next job: {}", findRequest.getBody());
-            MigrationJob[] jobs = client.data(findRequest, MigrationJob[].class);
+            MigrationJob[] jobs = getClient().data(findRequest, MigrationJob[].class);
             if (jobs != null && jobs.length > 0) {
                 job = jobs[0];
             }
