@@ -304,20 +304,6 @@ public class ConsistencyChecker implements Runnable {
         }
     }
 
-    protected List<MigrationConfiguration> getJobConfigurations() {
-        List<MigrationConfiguration> configurations = new ArrayList<>();
-        try {
-            DataFindRequest findRequest = new DataFindRequest("migrationConfiguration", migrationConfigurationEntityVersion);
-            findRequest.where(withValue("consistencyCheckerName = " + getConsistencyCheckerName()));
-            findRequest.select(includeFieldRecursively("*"));
-
-            LOGGER.debug("Finding Job Configurations: {}", findRequest.getBody());
-            configurations.addAll(Arrays.asList(client.data(findRequest, MigrationConfiguration[].class)));
-        } catch (IOException e) {
-            LOGGER.error("Problem getting migrationConfigurations", e);
-        }
-        return configurations;
-    }
 
     /**
      * Gets the next job available for processing.

@@ -25,6 +25,8 @@ public class MigrationConfiguration {
     private String sourceEntityVersion;
     private String sourceTimestampPath;
 
+    private String migratorClass;
+
     private boolean overwriteDestinationDocuments = false;
 
     public String getConfigFilePath() {
@@ -147,6 +149,14 @@ public class MigrationConfiguration {
         return overwriteDestinationDocuments;
     }
 
+    public String getMigratorClass() {
+        return migratorClass;
+    }
+
+    public void setMigratorClass(String s) {
+        migratorClass=s;
+    }
+
     @Override
     public String toString() {
         return "MigrationConfiguration [configFilePath=" + configFilePath
@@ -164,7 +174,8 @@ public class MigrationConfiguration {
                 + sourceEntityName + ", sourceEntityVersion="
                 + sourceEntityVersion + ", sourceTimestampPath="
                 + sourceTimestampPath + ", overwriteDestinationDocuments="
-                + overwriteDestinationDocuments + "]";
+                + overwriteDestinationDocuments + ", migratorClass="
+                + migratorClass+ "]";
     }
 
 }
