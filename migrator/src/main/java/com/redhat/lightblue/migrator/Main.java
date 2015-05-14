@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import java.io.IOException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +21,8 @@ import org.apache.commons.cli.HelpFormatter;
 
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
@@ -28,8 +32,13 @@ public class Main {
     private static final Logger LOGGER=LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
-        processCommandLine(args);
+        processArguments(args);
 
+        ConsistencyChecker checker = buildConsistencyChecker();
+        checker.run();
+    }
+
+    public static ConsistencyChecker buildConsistencyChecker() {
         ConsistencyChecker checker = new ConsistencyChecker();
         checker.setConsistencyCheckerName(System.getProperty("name"));
         checker.setHostName(System.getProperty("hostname"));
@@ -38,15 +47,16 @@ public class Main {
         checker.setMigrationJobEntityVersion(System.getProperty("jobversion"));
         checker.setSourceConfigPath(System.getProperty("sourceconfig"));
         checker.setDestinationConfigPath(System.getProperty("destinationconfig"));
-        checker.run();
+        return checker;
     }
     
     /**
      * Read all configurations from the database
      */
-    private static MigrationConfiguration[] getMigrationConfiguration(LightblueClient client,String cfgVersion) {
+    public static MigrationConfiguration[] getMigrationConfiguration(LightblueClient client,String cfgVersion, String name)
+        throws IOException {
         DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",cfgVersion);
-        findRequest.where(withValue("objectType = migrationConfiguration"));
+        findRequest.where(withValue("consistencyCheckerName = " + name));
         findRequest.select(includeFieldRecursively("*"));
         LOGGER.debug("Loading configuration");
         return client.data(findRequest, MigrationConfiguration[].class);
@@ -66,7 +76,7 @@ public class Main {
     /**
      * Process command line, add all command line options to System properties
      */
-    private static void processCommandLine(String[] args){
+    public static void processArguments(String[] args){
         Options options = new Options();
 
         options.addOption(OptionBuilder.withArgName("name").withLongOpt("name").hasArg(true).withDescription("Name of checker instance").isRequired().create('n'));
@@ -92,7 +102,7 @@ public class Main {
             }
         } catch (ParseException e) {
             HelpFormatter formatter = new HelpFormatter();
-            formatter.printHelp(ConsistencyCheckerCLI.class.getSimpleName(), options, true);
+            formatter.printHelp(Main.class.getSimpleName(), options, true);
             System.out.println("\n");
             System.out.println(e.getMessage());
             System.exit(1);
