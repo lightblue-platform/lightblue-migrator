@@ -115,6 +115,14 @@
                 },
                 "description": "Number of threads that should be devoted to migrator jobs"
             },
+            "migratorClass" : {
+                "type":"string",
+                "description": "Class name of the migrator. If null, DefaultMigrator is used"
+            },
+            "consistencyCheckerClass" : {
+                "type" : "string",
+                "description": "Class name of the consistency checker. If null, DefaultConsistencyChecker is used"
+            },
             "overwriteDestinationDocuments": {
                 "type": "boolean",
                 "constraints": {

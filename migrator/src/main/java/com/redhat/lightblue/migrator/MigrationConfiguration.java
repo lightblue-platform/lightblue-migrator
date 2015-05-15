@@ -26,6 +26,7 @@ public class MigrationConfiguration {
     private String sourceTimestampPath;
 
     private String migratorClass;
+    private String consistencyCheckerClass;
 
     private boolean overwriteDestinationDocuments = false;
 
@@ -157,6 +158,14 @@ public class MigrationConfiguration {
         migratorClass=s;
     }
 
+    public String getConsistencyCheckerClass() {
+        return consistencyCheckerClass;
+    }
+
+    public void setConsistencyCheckerClass(String s) {
+        consistencyCheckerClass=s;
+    }
+
     @Override
     public String toString() {
         return "MigrationConfiguration [configFilePath=" + configFilePath
@@ -175,7 +184,8 @@ public class MigrationConfiguration {
                 + sourceEntityVersion + ", sourceTimestampPath="
                 + sourceTimestampPath + ", overwriteDestinationDocuments="
                 + overwriteDestinationDocuments + ", migratorClass="
-                + migratorClass+ "]";
+                + migratorClass+ ", consistencyCheckerClass="
+                + consistencyCheckerClass+ "]";
     }
 
 }

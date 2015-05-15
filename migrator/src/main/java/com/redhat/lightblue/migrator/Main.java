@@ -38,9 +38,21 @@ public class Main implements Daemon {
     private DaemonContext context;
     private Thread consistencyCheckerThread = null;
 
+    private String name;
+    private String hostName;
+    private String configPath;
+    private String configEntityVersion;
+    private String jobEntityVersion;
+    
+
     public static void main(String[] args) throws Exception {
         processArguments(args);
-
+        // name=System.getProperty("name");
+        // hostName=System.getProperty("hostname");
+        // configPath=System.getProperty("config");
+        // configEntityVersion=System.getProperty("configversion");
+        // jobEntityVersion=System.getProperty("jobversion");
+        
         ConsistencyChecker checker = buildConsistencyChecker();
         checker.run();
     }
@@ -58,7 +70,7 @@ public class Main implements Daemon {
     }
     
     /**
-     * Read all configurations from the database
+     * Read configurations from the database whose name matches 'name'
      */
     public static MigrationConfiguration[] getMigrationConfiguration(LightblueClient client,String cfgVersion, String name)
         throws IOException {
@@ -67,16 +79,6 @@ public class Main implements Daemon {
         findRequest.select(includeFieldRecursively("*"));
         LOGGER.debug("Loading configuration");
         return client.data(findRequest, MigrationConfiguration[].class);
-    }
-
-    private static LightblueClient getLightblueClient(String configPath) {
-        LightblueHttpClient httpClient;
-        if (configPath != null) {
-            httpClient = new LightblueHttpClient(configPath);
-        } else {
-            httpClient = new LightblueHttpClient();
-        }
-        return new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
     }
 
 
