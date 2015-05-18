@@ -48,6 +48,7 @@ public class ConsistencyChecker implements Runnable {
     private String destinationConfigPath;
 
     private boolean run = true;
+    private List<ExecutorService> executors;
 
     public void setRun(boolean run) {
         this.run = run;
@@ -129,11 +130,10 @@ public class ConsistencyChecker implements Runnable {
 
     @Override
     public void run() {
-
-        LOGGER.info("From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
+        LOGGER.info("ConsistencyChecker.run() - From CLI - consistencyCheckerName: " + getConsistencyCheckerName() + " hostName: " + getHostName());
 
         while (run && !Thread.interrupted()) {
-            List<ExecutorService> executors = new ArrayList<>();
+            executors = new ArrayList<ExecutorService>();
             List<MigrationConfiguration> configurations=getJobConfigurations();
             List<Future<?>> futures = new ArrayList<>();
 
@@ -339,6 +339,24 @@ public class ConsistencyChecker implements Runnable {
             LOGGER.error("Problem getting migrationJob", e);
         }
         return job;
+    }
+
+    public void stop() throws Exception {
+        LOGGER.info("Stopping " + getClass().getSimpleName());
+        if(executors != null){
+            for (ExecutorService executor : executors) {
+                executor.shutdown();
+            }
+        }
+    }
+
+    public void destroy() {
+        LOGGER.info("Destroying " + getClass().getSimpleName());
+        if(executors != null){
+            for (ExecutorService executor : executors) {
+                executor.shutdownNow(); // we can analyse to use awaitTermination
+            }
+        }
     }
 
 }
