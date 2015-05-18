@@ -6,11 +6,15 @@
     <artifactId>lightblue-migrator-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>com.redhat.lightblue.migrator</groupId>
   <artifactId>lightblue-migrator-utils</artifactId>
   <packaging>jar</packaging>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <dependencies>
+    <dependency>
+        <groupId>org.jboss.spec</groupId>
+        <artifactId>jboss-javaee-6.0</artifactId>
+        <type>pom</type>
+    </dependency>
     <dependency>
       <groupId>com.redhat.lightblue.migrator</groupId>
       <artifactId>lightblue-migrator-core</artifactId>
@@ -26,7 +30,7 @@
     </dependency>
     <dependency>
       <groupId>org.togglz</groupId>
-      <artifactId>togglz-servlet</artifactId>
+      <artifactId>togglz-core</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
@@ -42,6 +46,13 @@
       <artifactId>ehcache</artifactId>
       <version>2.9.0</version>
     </dependency>
+    <dependency>
+        <groupId>javax.enterprise</groupId>
+        <artifactId>cdi-api</artifactId>
+        <version>1.1</version>
+        <scope>provided</scope>
+    </dependency>
+
 
     <dependency>
       <groupId>org.mockito</groupId>

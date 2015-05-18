@@ -1,0 +1,18 @@
+{
+    "data":[
+        {
+          "_id": "customerJob_0",
+          "objectType": "migrationJob",
+          "configurationName": "customers",
+          "startDate": "20060101T00:00:00.000+0000",
+          "endDate": "20070101T00:00:00.000+0000",
+          "whenAvailableDate" : "20150101T00:00:00.000+0000",
+          "expectedExecutionMilliseconds" : 30000,
+          "jobExecutions": [],
+          "creationDate": "20150224T00:00:00.000+0000",
+          "createdBy": "lingram",
+          "lastUpdateDate": "20150224T00:00:00.000+0000",
+          "lastUpdatedBy": "lingram"
+        }
+    ]
+}

@@ -6,7 +6,6 @@
     <artifactId>lightblue-migrator-pom</artifactId>
     <version>0.0.1-SNAPSHOT</version>
   </parent>
-  <groupId>com.redhat.lightblue.migrator</groupId>
   <artifactId>lightblue-migrator-core</artifactId>
   <packaging>jar</packaging>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
@@ -26,7 +25,7 @@
     </dependency>
     <dependency>
       <groupId>org.togglz</groupId>
-      <artifactId>togglz-servlet</artifactId>
+      <artifactId>togglz-core</artifactId>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
