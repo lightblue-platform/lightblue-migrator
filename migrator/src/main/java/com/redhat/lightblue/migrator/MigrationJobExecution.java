@@ -4,17 +4,14 @@ import java.util.Date;
 
 public class MigrationJobExecution {
 
-    private String ownerName;
-    private String hostName;
-    private String pid;
-
+    private String activeExecutionId;
     // actual run times for job
     private Date actualStartDate;
     private Date actualEndDate;
     
     public String sourceQuery;
 
-    private JobStatus jobStatus = JobStatus.STARTING;
+    private String status;
 
     // summary info on what the job did
     private int processedDocumentCount = 0;
@@ -22,30 +19,14 @@ public class MigrationJobExecution {
     private int inconsistentDocumentCount = 0;
     private int overwrittenDocumentCount = 0;
 
-    public String getOwnerName() {
-        return ownerName;
+    public String getActiveExecutionId() {
+        return activeExecutionId;
     }
 
-    public void setOwnerName(String ownerName) {
-        this.ownerName = ownerName;
+    public void setActiveExecutionId(String s) {
+        activeExecutionId=s;
     }
-
-    public String getHostName() {
-        return hostName;
-    }
-
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
-    }
-
-    public String getPid() {
-        return pid;
-    }
-
-    public void setPid(String pid) {
-        this.pid = pid;
-    }
-
+    
     public Date getActualStartDate() {
         return actualStartDate;
     }
@@ -102,11 +83,11 @@ public class MigrationJobExecution {
         this.overwrittenDocumentCount = overwrittenDocumentCount;
     }
 
-    public JobStatus getJobStatus() {
-        return jobStatus;
+    public String getStatus() {
+        return status;
     }
 
-    public void setJobStatus(JobStatus jobStatus) {
-        this.jobStatus = jobStatus;
+    public void setStatus(String jobStatus) {
+        this.status = jobStatus;
     }
 }

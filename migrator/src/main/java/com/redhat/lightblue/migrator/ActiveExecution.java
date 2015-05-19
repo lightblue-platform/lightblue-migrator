@@ -16,8 +16,10 @@ import java.util.Date;
  */
 public class ActiveExecution {
 
+    private String _id;
+
     /**
-     * The migration job id, also the unique id of active execution
+     * The migration job id, there must be a unique index on this field
      */
     private String migrationJobId;
 
@@ -36,12 +38,20 @@ public class ActiveExecution {
      */
     private int numDocsProcessed;
 
+    public String get_id() {
+        return _id;
+    }
+
+    public void set_id(String id) {
+        _id=id;
+    }
+
     public String getMigrationJobId() {
         return migrationJobId;
     }
 
-    public void setMigrationJobId(String id) {
-        migrationJobId=id;
+    public void setMigrationJobId(String s) {
+        migrationJobId=s;
     }
 
     public Date getStartTime() {

@@ -4,10 +4,15 @@ import java.util.Date;
 
 public class MigrationJob {
 
+    public static final String STATE_AVAILABLE="available";
+    public static final String STATE_ACTIVE="active";
+    public static final String STATE_COMPLETED="completed";
+    public static final String STATE_FAILED="failed";
+    
     /**
      * The migration job id
      */
-    private String migrationJobId;
+    private String _id;
 
     private String configurationName;
 
@@ -29,12 +34,12 @@ public class MigrationJob {
 
     private String state; // available, processing, complete
 
-    public String getMigrationJobId() {
-        return migrationJobId;
+    public String get_id() {
+        return _id;
     }
 
-    public void setMigrationJobId(String s) {
-        migrationJobId=s;
+    public void set_id(String s) {
+        _id=s;
     }
 
     public String getConfigurationName() {
