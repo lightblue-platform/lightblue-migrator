@@ -2,6 +2,9 @@ package com.redhat.lightblue.migrator;
 
 import java.io.IOException;
 
+import java.util.Map;
+import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,85 +16,92 @@ import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
-public class Controller {
+public class Controller extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Controller.class);
     
-    // Name of the daemon instance
-    private final String instanceName;
-    private final String configPath;
-    private final String cfgVersion;
-
+    private final MainConfiguration cfg;
     private final LightblueClient lightblueClient;
+    private final Map<String,MigrationProcess> migrationMap=new HashMap<>();
 
-    private ThreadGroup migratorControllers;
-    private ThreadGroup consistencyCheckerControllers;
+    private static class MigrationProcess {
+        private final MigrationConfiguration cfg;
+        private final MigratorController mig;
+
+        public MigrationProcess(MigrationConfiguration cfg,
+                                MigratorController mig) {
+            this.cfg=cfg;
+            this.mig=mig;
+        }
+    }
     
-    public Controller(String instanceName,
-                      String configPath,
-                      String cfgVersion) {
-        this.instanceName=instanceName;
-        this.configPath=configPath;
-        this.cfgVersion=cfgVersion;
-
+    public Controller(MainConfiguration cfg) {
+        this.cfg=cfg;
         this.lightblueClient=getLightblueClient();
     }
 
+    /**
+     * Read configurations from the database whose name matches this instance name
+     */
+    public MigrationConfiguration[] getMigrationConfigurations()
+        throws IOException {
+        DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
+        findRequest.where(withValue("consistencyCheckerName = " + cfg.getName()));
+        findRequest.select(includeFieldRecursively("*"));
+        LOGGER.debug("Loading configuration");
+        return lightblueClient.data(findRequest, MigrationConfiguration[].class);
+    }
+    
     public LightblueClient getLightblueClient() {
         LightblueHttpClient httpClient;
-        if (configPath != null) {
-            httpClient = new LightblueHttpClient(configPath);
+        if (cfg.getClientConfig() != null) {
+            httpClient = new LightblueHttpClient(cfg.getClientConfig());
         } else {
             httpClient = new LightblueHttpClient();
         }
         return new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
     }
 
-    public MigrationConfiguration[] getConfiguration()
-        throws IOException {
-        DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",cfgVersion);
-        findRequest.where(withValue("consistencyCheckerName = " + instanceName));
-        findRequest.select(includeFieldRecursively("*"));
-        LOGGER.debug("Loading configuration");
-        return lightblueClient.data(findRequest, MigrationConfiguration[].class);
-    }
-
-    public ThreadGroup getMigratorControllers() {
-        return migratorControllers;
-    }
-
-    public ThreadGroup getConsistencyCheckerControllers() {
-        return consistencyCheckerControllers;
-    }
-    
     /**
      * Creates controller threads for migrators and consistency
-     * checkers based on the configuration loaded from the db
+     * checkers based on the configuration loaded from the db.
      *
-     * For each configuration item, a migrator controller thread and a
-     * consistency checker controller thread is created. Threads are
-     * not started.
+     * For each configuration item, a migrator controller thread is
+     * created and started.
+     *
+     * Once created, each thread manages its own lifecycle. If the
+     * corresponding configuration is removed, thread terminates, or
+     * it is modified, thread behaves accordingly.
      */
-    public void createControllers() throws IOException {
-        if(migratorControllers==null&&consistencyCheckerControllers==null) {
-            MigrationConfiguration[] cfg=getConfiguration();
-            if(cfg==null||cfg.length==0) {
-                LOGGER.error("No configurations for {}",instanceName);
-                // Let it terminate
-            } else {
-                LOGGER.debug("Configuration loaded, {} items",cfg.length);
-                migratorControllers=new ThreadGroup("MigratorControllers");
-                consistencyCheckerControllers=new ThreadGroup("ConsistencyCheckers");
-                
-                for(MigrationConfiguration configItem:cfg) {
-                    LOGGER.debug("Creating a migration controller thread for {}",configItem.getConfigurationName());
-                    new Thread(new MigratorController(configItem,this),"migratorController:"+configItem.getConfigurationName());
-                    LOGGER.debug("Creating a consistency checker controller thread for {}",configItem.getConfigurationName());
-                    new Thread(new ConsistencyCheckerController(configItem,this),"ConsistencyCheckerController:"+configItem.getConfigurationName());
+    public void createControllers(MigrationConfiguration[] configurations) throws IOException {
+        for(MigrationConfiguration cfg:configurations) {
+            if(!migrationMap.containsKey(cfg.get_id())) {
+                LOGGER.debug("Creating a controller thread for configuration {}: {}",cfg.get_id(),cfg.getConfigurationName());
+                MigratorController c=new MigratorController(this,cfg);
+                migrationMap.put(cfg.get_id(),new MigrationProcess(cfg,c));
+                c.start();
+            }
+        }
+    }
+
+    @Override
+    public void run() {
+        boolean interrupted=false;
+        while(!interrupted) {
+            interrupted=Thread.interrupted();
+            if(!interrupted) {
+                try {
+                    MigrationConfiguration[] cfg=getMigrationConfigurations();
+                    createControllers(cfg);
+                } catch (Exception e) {
+                    LOGGER.error("Error during configuration load:"+e);
                 }
             }
-        } else {
-            throw new IllegalStateException("Controller threads are already created");
+            if(!interrupted) {
+                try {
+                    Thread.sleep(30000);
+                } catch (Exception e) {}
+            }
         }
     }
 }

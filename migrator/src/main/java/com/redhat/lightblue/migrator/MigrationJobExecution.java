@@ -4,13 +4,14 @@ import java.util.Date;
 
 public class MigrationJobExecution {
 
+    private String ownerName;
+    private String hostName;
+    
     private String activeExecutionId;
     // actual run times for job
     private Date actualStartDate;
     private Date actualEndDate;
     
-    public String sourceQuery;
-
     private String status;
 
     // summary info on what the job did
@@ -25,6 +26,22 @@ public class MigrationJobExecution {
 
     public void setActiveExecutionId(String s) {
         activeExecutionId=s;
+    }
+
+    public String getOwnerName() {
+        return ownerName;
+    }
+
+    public void setOwnerName(String s) {
+        ownerName=s;
+    }
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String s) {
+        hostName=s;
     }
     
     public Date getActualStartDate() {
@@ -43,14 +60,6 @@ public class MigrationJobExecution {
         this.actualEndDate = actualEndDate;
     }
     
-    public String getSourceQuery() {
-        return sourceQuery;
-    }
-    
-    public void setSourceQuery(String sourceQuery) {
-        this.sourceQuery = sourceQuery;
-    }
-
     public int getProcessedDocumentCount() {
         return processedDocumentCount;
     }

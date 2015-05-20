@@ -2,29 +2,10 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migrationJob",
+            "collection": "migration",
             "datasource": "mongodata"
         },
-        "enums": [
-            {
-                "name": "jobStatusType",
-                "values": [
-                    "STARTING",
-                    "RUNNING",
-                    "RUNNING_ASYNC",
-                    "COMPLETED_SUCCESS",
-                    "COMPLETED_PARTIAL",
-                    "COMPLETED_DEAD",
-                    "COMPLETED_IGNORED",
-                    "COMPLETED_FAILED",
-                    "ABORTED_DUPLICATE",
-                    "ABORTED_TIMEOUT",
-                    "ABORTED_AUTH",
-                    "ABORTED_UNKNOWN",
-                    "UNKNOWN"
-                ]
-            }
-        ],
+        "enums": [],
         "indexes": [
             {
                 "fields": [
@@ -33,7 +14,6 @@
                         "field": "_id"
                     }
                 ],
-                "name": null,
                 "unique": true
             },
             {
@@ -102,37 +82,34 @@
                 },
                 "description": "Name of the configuration that corresponds to this job"
             },
-            "startDate": {
-                "type": "date",
+            "query": {
+                "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "Document start date for of this migration job"
+                "description": "The query to retrieve documents for this job"
             },
-            "endDate": {
-                "type": "date",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Document end date for this migration job"
-            },
-            "whenAvailableDate": {
+            "scheduledDate": {
                 "type": "date",
                 "constraints": {
                     "required": true
                 },
                 "description": "First available time for execution of this job"
             },
-            "expectedExecutionMilliseconds": {
-                "type": "integer",
-                "constraints": {
-                    "required": true
+            "status" : {
+                "type" : "string",
+                "constraints" : {
+                    "required":true
                 },
-                "description": "Expected duration of this job in ms"
-            },
+                "description":"Status of the job, available, active, completed, failed"
+            }
             "jobExecutions": {
                 "items": {
                     "fields": {
+                        "activeExecutionId" : {
+                            "type" :"string"
+                            "description":"ID of the active execution, if exists"
+                        },
                         "ownerName": {
                             "type": "string",
                             "constraints": {
@@ -146,13 +123,6 @@
                                 "required": true
                             },
                             "description": "Host running this migration job"
-                        },
-                        "pid": {
-                            "type": "string",
-                            "constraints": {
-                                "required": true
-                            },
-                            "description": "Process id of the consistency checker instance on the host running this migration job"
                         },
                         "actualStartDate": {
                             "type": "date",
@@ -168,11 +138,10 @@
                             },
                             "description": "Actual end date for this migration job"
                         },
-                        "jobStatus": {
+                        "status": {
                             "type": "string",
                             "constraints": {
-                                "required": true,
-                                "enum": "jobStatusType"
+                                "required": true
                             },
                             "description": "Indicates the status of the execution of this job"
                         },
@@ -203,13 +172,6 @@
                                 "required": true
                             },
                             "description": "Number of documents that were overwritten in destination"
-                        },
-                        "sourceQuery": {
-                            "type": "string",
-                            "constraints": {
-                                "required": false
-                            },
-                            "description": "The query used to load data from source"
                         }
                     },
                     "type": "object"
@@ -252,6 +214,7 @@
         "version": {
             "changelog": "Initial release",
             "value": "1.0.0"
-        }
+        },
+        "defaultVersion":"1.0.0"
     }
 }

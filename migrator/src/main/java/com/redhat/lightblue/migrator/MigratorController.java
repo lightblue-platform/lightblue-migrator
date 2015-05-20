@@ -33,11 +33,11 @@ import static com.redhat.lightblue.client.projection.FieldProjection.includeFiel
 import static com.redhat.lightblue.client.projection.FieldProjection.includeField;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 
-public class MigratorController implements Runnable {
+public class MigratorController extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(MigratorController.class);
     
-    private final MigrationConfiguration migrationConfiguration;
+    private MigrationConfiguration migrationConfiguration;
     private final Class migratorClass;
     private final Controller controller;
     private final LightblueClient lbClient;
@@ -57,8 +57,7 @@ public class MigratorController implements Runnable {
     }
         
     
-    public MigratorController(MigrationConfiguration migrationConfiguration,
-                              Controller controller) {
+    public MigratorController(Controller controller,MigrationConfiguration migrationConfiguration) {
         this.migrationConfiguration=migrationConfiguration;
         this.controller=controller;
         lbClient=controller.getLightblueClient();
@@ -66,15 +65,36 @@ public class MigratorController implements Runnable {
         if(migrationConfiguration.getMigratorClass()==null)
             migratorClass=DefaultMigrator.class;
         else
-            migratorClass=Class.forName(migrationConfiguration.getMigratorClass());
+            try {
+                migratorClass=Class.forName(migrationConfiguration.getMigratorClass());
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         
         migratorThreads=new ThreadGroup("Migrators:"+migrationConfiguration.getConfigurationName());
+    }
+
+    public Controller getController() {
+        return controller;
     }
 
     public MigrationConfiguration getMigrationConfiguration() {
         return migrationConfiguration;
     }
 
+    public MigrationConfiguration reloadMigrationConfiguration() {
+        try {
+            LOGGER.debug("Reloading migration configuration {}",migrationConfiguration.get_id());
+            DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
+            findRequest.where(withValue("_id",ExpressionOperation.EQ,migrationConfiguration.get_id()));
+            findRequest.select(includeFieldRecursively("*"));
+            LOGGER.debug("Loading configuration");
+            return lightblueClient.data(findRequest, MigrationConfiguration[].class);
+        } catch (Exception e) {
+            LOGGER.error("Cannot reload migration configuration:"+e);
+        }
+    }
+    
     /**
      * Retrieves jobs that are available, and their scheduled time has passed. Returns at most batchSize jobs starting at startIndex
      */
@@ -82,8 +102,7 @@ public class MigratorController implements Runnable {
         throws IOException {
         LOGGER.debug("Retrieving jobs: batchSize={}, startIndex={}",batchSize,startIndex);
         
-        DataFindRequest findRequest = new DataFindRequest("migrationJob",
-                                                          migrationConfiguration.getMigrationJobEntityVersion());
+        DataFindRequest findRequest = new DataFindRequest("migrationJob",null);
         
         findRequest.where(
                           and(
@@ -104,13 +123,14 @@ public class MigratorController implements Runnable {
         
         LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
         
-        return lbClient.data(findRequest, MigrationJob[].class);;
+        return lbClient.data(findRequest, MigrationJob[].class);
     }
 
     /**
      * Attempts to lock a migration job. If successful, return the migration job and the active execution
      */
-    private LockRecord lock(MigrationJob mj) {
+    private LockRecord lock(MigrationJob mj)
+        throws Exception {
         DataInsertRequest insRequest=new DataInsertRequest("activeExecution",null);
         ActiveExecution ae=new ActiveExecution();
         ae.setMigrationJobId(mj.get_id());
@@ -142,7 +162,8 @@ public class MigratorController implements Runnable {
         }
     }
     
-    private LockRecord findAndLockMigrationJob() {
+    private LockRecord findAndLockMigrationJob()
+        throws Exception {
         // We retrieve a batch of migration jobs, and try to lock
         // one of them randomly. This works, because all the jobs
         // we retrieve are already passed their scheduled times,
@@ -186,66 +207,16 @@ public class MigratorController implements Runnable {
         return null;
     }
 
-
-    private void processMigrationJob(LockRecord lck) {
-        Migrator migrator=migratorClass.newInstance();
+    private void processMigrationJob(LockRecord lck)
+        throws Exception {
+        Migrator migrator=(Migrator)migratorClass.newInstance();
         migrator.setController(this);
         migrator.setMigrationJob(lck.mj);
         migrator.setActiveExecution(lck.ae);
         Thread thread=new Thread(migratorThreads,migrator);
         thread.start();
     }
-        
-        // First update the migration job, mark its status as being
-        // processed, so it doesn't show up in other controllers'
-        // tasks lists       
-        DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", migrationConfiguration.getMigrationJobEntityVersion());
-        updateRequest.where(withValue("_id",ExpressionOperation.EQ, lck.mj.get_id()));
-        updateRequest.returns(includeField("_id"));
-
-        // State is active
-        updateRequest.updates(new SetUpdate(new PathValuePair("state",new LiteralRValue(MigrationJob.STATE_ACTIVE))),
-                              // Add a new execution element
-                              new AppendUpdate("executions",new ObjectRValue(new HashMap())),
-                              // Execution id
-                              new SetUpdate(new PathValuePair("executions.-1.activeExecutionId",new LiteralRValue(lck.ae.get_id()))),
-                              // Start date
-                              new SetUpdate(new PathValuePair("executions.-1.actualStartDate",new LiteralRValue(ClientConstants.getDateFormat().format(lck.ae.getStartTime())))),
-                              // Status
-                              new SetUpdate(new PathValuePair("executions.-1.status",new LiteralRValue(MigrationJob.STATE_ACTIVE))));       
-        LOGGER.debug("Marking job {} as active",lck.mj.get_id());
-        LightblueResponse response;
-        try {
-            response = lbClient.data(updateRequest);
-            if(!response.hasError()) {
-                // Do the migration
-                String error=migrate(lck);
-
-                // If there is error, 'error' will contain a messages, otherwise it'll be null
-                // Update the state
-                updateRequest=new DataUpdateRequest("migrationJob",migrationConfiguration.getMigrationJobEntityVersion());
-                updateRequest.where(withValue("_id = "+lck.mj.get_id()));
-                updateRequest.returns(includeField("_id"));
-                updateRequest.updates(new SetUpdate(new PathValuePair("state",new LiteralRValue(error==null? MigrationJob.STATE_COMPLETED:
-                                                                                                MigrationJob.STATE_FAILED))) ,
-                                      new ForeachUpdate("executions",
-                                                        withValue("activeExecutionId",ExpressionOperation.EQ,lck.ae.get_id()),
-                                                        new SetUpdate(new PathValuePair("status",new LiteralRValue(error==null?MigrationJob.STATE_COMPLETED:
-                                                                                                                   MigrationJob.STATE_FAILED)),
-                                                                      new PathValuePair("errorMsg",new LiteralRValue(error==null?"":error)),
-                                                                      new PathValuePair("actualEndDate", new LiteralRValue(ClientConstants.getDateFormat().format(new Date()))))));
-
-                response=lbClient.data(updateRequest);
-                if(response.hasError())
-                    throw new RuntimeException("Failed to update:"+response);
-
-            } else
-                throw new RuntimeException("Failed to update:"+response);
-        } catch (Exception e) {
-            LOGGER.error("Cannot update job {}, {}",lck.mj.get_id(),e);
-        }
-    }
-    
+            
     @Override
     public void run() {
         LOGGER.debug("Starting controller thread");
@@ -254,7 +225,9 @@ public class MigratorController implements Runnable {
         while(!interrupted) {
             interrupted=Thread.interrupted();
             if(!interrupted) {
+                // All active threads will notify on migratorThreads when they finish
                 synchronized(migratorThreads) {
+                    int k=0;
                     // Are we already running all the threads we can?
                     while(!interrupted&&migratorThreads.activeCount()>=migrationConfiguration.getThreadCount()) {
                         // Wait until someone terminates (1 sec)
@@ -263,25 +236,38 @@ public class MigratorController implements Runnable {
                         } catch(InterruptedException e) {
                             interrupted=true;
                         }
+                        if(k++%10==0) {
+                            // refresh configuration every 10 iteration
+                            MigrationConfiguration x=reloadMigrationConfiguration();
+                            if(x==null) {
+                                // Terminate
+                                LOGGER.debug("Controller terminating");
+                                interrupted=true;
+                            } else {
+                                migrationConfiguration=x;
+                            }
+                        }
                     }
                 }
             }
             if(!interrupted) {
                 LOGGER.debug("Find a migration job to process");
-                LockRecord lockedJob=findAndLockMigrationJob();
-                if(lockedJob!=null) {
-                    LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
-                    processMigrationJob(lockedJob);
-                    // Unlock
-                    unlock(lockedJob.ae.get_id());
-                } else {
-                    // No jobs are available, wait a bit (10sec-30sec), and retry
-                    LOGGER.debug("Waiting");
-                    try {
+                try {
+                    LockRecord lockedJob=findAndLockMigrationJob();
+                    if(lockedJob!=null) {
+                        LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
+                        processMigrationJob(lockedJob);
+                        // Unlock
+                        unlock(lockedJob.ae.get_id());
+                    } else {
+                        // No jobs are available, wait a bit (10sec-30sec), and retry
+                        LOGGER.debug("Waiting");
                         Thread.sleep(rnd.nextInt(20000)+10000);
-                    } catch(InterruptedException e) {
-                        interrupted=true;
                     }
+                } catch (InterruptedException ie) {
+                    interrupted=true;
+                } catch (Exception e) {
+                    LOGGER.error("Cannot lock migration job:"+e);
                 }
             }
         }

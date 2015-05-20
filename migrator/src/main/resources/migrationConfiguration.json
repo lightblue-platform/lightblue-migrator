@@ -2,10 +2,9 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migrationConfiguration",
+            "collection": "migration",
             "datasource": "mongodata"
         },
-        "enums": [],
         "hooks": [
             {
                 "actions": [
@@ -193,13 +192,6 @@
                 },
                 "description": "source Entity Version for data being migrated"
             },
-            "sourceTimestampPath" : {
-                "type": "string",
-                "constraints": {
-                    "required": true
-                },
-                "description": "source Entity timestamp field name"
-            },
             "creationDate": {
                 "type": "date",
                 "constraints": {
@@ -236,6 +228,7 @@
         "version": {
             "changelog": "Initial release",
             "value": "1.0.0"
-        }
+        },
+        "defaultVersion":"1.0.0"
     }
 }

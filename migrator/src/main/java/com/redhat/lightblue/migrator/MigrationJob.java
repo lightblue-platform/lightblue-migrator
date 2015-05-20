@@ -26,13 +26,7 @@ public class MigrationJob {
      */
     private String query;
 
-    /**
-     * Entity to be migrated
-     */
-    private String entityName;
-    private String entityVersion;
-
-    private String state; // available, processing, complete
+    private String status; // available, processing, complete
 
     public String get_id() {
         return _id;
@@ -66,20 +60,4 @@ public class MigrationJob {
         query=s;
     }
 
-
-    public String getEntityName() {
-        return entityName;
-    }
-
-    public void setEntityName(String s) {
-        entityName=s;
-    }
-
-    public String getEntityVersion() {
-        return entityVersion;
-    }
-
-    public void setEntityVersion(String s) {
-        entityVersion=s;
-    }
 }

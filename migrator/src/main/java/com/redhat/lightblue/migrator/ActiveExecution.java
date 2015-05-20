@@ -38,6 +38,8 @@ public class ActiveExecution {
      */
     private int numDocsProcessed;
 
+    private Date ping;
+
     public String get_id() {
         return _id;
     }
@@ -77,4 +79,23 @@ public class ActiveExecution {
     public void setNumDocsProcessed(int i) {
         numDocsProcessed=i;
     }
+
+    /**
+     * Gets the value of ping
+     *
+     * @return the value of ping
+     */
+    public final Date getPing() {
+        return this.ping;
+    }
+
+    /**
+     * Sets the value of ping
+     *
+     * @param argPing Value to assign to this.ping
+     */
+    public final void setPing(final Date argPing) {
+        this.ping = argPing;
+    }
+
 }
