@@ -118,7 +118,12 @@ public class DAOFacadeBase<D> {
                 @Override
                 public T call() throws Exception {
                     Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                    return (T) method.invoke(lightblueDAO, values);
+                    Timer dest = new Timer("destination."+methodName);
+                    try {
+                        return (T) method.invoke(lightblueDAO, values);
+                    } finally {
+                        dest.complete();
+                    }
                 }
             });
         }
@@ -127,7 +132,12 @@ public class DAOFacadeBase<D> {
             // fetch from oracle, synchronously
             log.debug("."+methodName+" reading from legacy");
             Method method = legacyDAO.getClass().getMethod(methodName,types);
-            legacyEntity = (T) method.invoke(legacyDAO, values);
+            Timer source = new Timer("source."+methodName);
+            try {
+                legacyEntity = (T) method.invoke(legacyDAO, values);
+            } finally {
+                source.complete();
+            }
         }
 
         if (LightblueMigration.shouldReadDestinationEntity()) {
@@ -193,7 +203,12 @@ public class DAOFacadeBase<D> {
                 @Override
                 public T call() throws Exception {
                     Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                    return (T) method.invoke(lightblueDAO, values);
+                    Timer dest = new Timer("destination."+methodName);
+                    try {
+                        return (T) method.invoke(lightblueDAO, values);
+                    } finally {
+                        dest.complete();
+                    }
                 }
             });
         }
@@ -202,7 +217,12 @@ public class DAOFacadeBase<D> {
             // fetch from oracle, synchronously
             log.debug("."+methodName+" writing to legacy");
             Method method = legacyDAO.getClass().getMethod(methodName,types);
-            legacyEntity = (T) method.invoke(legacyDAO, values);
+            Timer source = new Timer("source."+methodName);
+            try {
+                legacyEntity = (T) method.invoke(legacyDAO, values);
+            } finally {
+                source.complete();
+            }
         }
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
@@ -259,7 +279,12 @@ public class DAOFacadeBase<D> {
             // insert to oracle, synchronously
             log.debug("."+methodName+" creating in legacy");
             Method method = legacyDAO.getClass().getMethod(methodName,types);
-            legacyEntity = (T) method.invoke(legacyDAO, values);
+            Timer source = new Timer("source."+methodName);
+            try {
+                legacyEntity = (T) method.invoke(legacyDAO, values);
+            } finally {
+                source.complete();
+            }
         }
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
@@ -271,8 +296,14 @@ public class DAOFacadeBase<D> {
             }
 
             Method method = lightblueDAO.getClass().getMethod(methodName, types);
+
+            Timer dest = new Timer("destination."+methodName);
             // it's expected that this method in lightblueDAO will extract id from idStore
-            lightblueEntity = (T) method.invoke(lightblueDAO, values);
+            try {
+                lightblueEntity = (T) method.invoke(lightblueDAO, values);
+            } finally {
+                dest.complete();
+            }
 
         }
 
