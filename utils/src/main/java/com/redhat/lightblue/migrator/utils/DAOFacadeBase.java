@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
@@ -63,7 +64,7 @@ public class DAOFacadeBase<D> {
         setEntityIdStore(entityIdStore);
     }
 
-    private ListeningExecutorService getExecutor() {
+    private ListeningExecutorService createExecutor() {
         return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
     }
 
@@ -112,20 +113,25 @@ public class DAOFacadeBase<D> {
         ListenableFuture<T> listenableFuture = null;
 
         if (LightblueMigration.shouldReadDestinationEntity()) {
-            // fetch from lightblue using future (asynchronously)
-            log.debug("."+methodName+" reading from lightblue");
-            listenableFuture = getExecutor().submit(new Callable<T>(){
-                @Override
-                public T call() throws Exception {
-                    Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                    Timer dest = new Timer("destination."+methodName);
-                    try {
-                        return (T) method.invoke(lightblueDAO, values);
-                    } finally {
-                        dest.complete();
+            ListeningExecutorService executor = createExecutor();
+            try {
+                // fetch from lightblue using future (asynchronously)
+                log.debug("."+methodName+" reading from lightblue");
+                listenableFuture = executor.submit(new Callable<T>(){
+                    @Override
+                    public T call() throws Exception {
+                        Method method = lightblueDAO.getClass().getMethod(methodName, types);
+                        Timer dest = new Timer("destination."+methodName);
+                        try {
+                            return (T) method.invoke(lightblueDAO, values);
+                        } finally {
+                            dest.complete();
+                        }
                     }
-                }
-            });
+                });
+            } finally {
+                executor.shutdown();
+            }
         }
 
         if (LightblueMigration.shouldReadSourceEntity()) {
@@ -197,9 +203,11 @@ public class DAOFacadeBase<D> {
         ListenableFuture<T> listenableFuture = null;
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
+            ListeningExecutorService executor = createExecutor();
+            try {
             // fetch from lightblue using future (asynchronously)
             log.debug("."+methodName+" writing to lightblue");
-            listenableFuture = getExecutor().submit(new Callable<T>(){
+            listenableFuture = executor.submit(new Callable<T>(){
                 @Override
                 public T call() throws Exception {
                     Method method = lightblueDAO.getClass().getMethod(methodName, types);
@@ -211,6 +219,9 @@ public class DAOFacadeBase<D> {
                     }
                 }
             });
+            } finally {
+                executor.shutdown();
+            }
         }
 
         if (LightblueMigration.shouldWriteSourceEntity()) {
