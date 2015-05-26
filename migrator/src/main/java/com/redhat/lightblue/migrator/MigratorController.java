@@ -89,10 +89,11 @@ public class MigratorController extends Thread {
             findRequest.where(withValue("_id",ExpressionOperation.EQ,migrationConfiguration.get_id()));
             findRequest.select(includeFieldRecursively("*"));
             LOGGER.debug("Loading configuration");
-            return lightblueClient.data(findRequest, MigrationConfiguration[].class);
+            return lbClient.data(findRequest, MigrationConfiguration.class);
         } catch (Exception e) {
             LOGGER.error("Cannot reload migration configuration:"+e);
         }
+        return null;
     }
     
     /**

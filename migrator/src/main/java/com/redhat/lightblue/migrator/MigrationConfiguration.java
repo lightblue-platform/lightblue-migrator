@@ -13,9 +13,11 @@ public class MigrationConfiguration {
     private String consistencyCheckerClass;
     private boolean overwriteDestinationDocuments = false;
     private List<String> comparisonExclusionPaths;
+    private String destinationConfigPath;
     private String destinationServiceURI;
     private String destinationEntityName;
     private String destinationEntityVersion;
+    private String sourceConfigPath;
     private List<String> destinationIdentityFields;
     private String sourceServiceURI;
     private String sourceEntityName;
@@ -270,6 +272,42 @@ public class MigrationConfiguration {
 
     public final void setDestinationIdentityFields(List<String> s) {
         destinationIdentityFields=s;
+    }
+
+    /**
+     * Gets the value of destinationConfigPath
+     *
+     * @return the value of destinationConfigPath
+     */
+    public final String getDestinationConfigPath() {
+        return this.destinationConfigPath;
+    }
+
+    /**
+     * Sets the value of destinationConfigPath
+     *
+     * @param argDestinationConfigPath Value to assign to this.destinationConfigPath
+     */
+    public final void setDestinationConfigPath(final String argDestinationConfigPath) {
+        this.destinationConfigPath = argDestinationConfigPath;
+    }
+
+    /**
+     * Gets the value of sourceConfigPath
+     *
+     * @return the value of sourceConfigPath
+     */
+    public final String getSourceConfigPath() {
+        return this.sourceConfigPath;
+    }
+
+    /**
+     * Sets the value of sourceConfigPath
+     *
+     * @param argSourceConfigPath Value to assign to this.sourceConfigPath
+     */
+    public final void setSourceConfigPath(final String argSourceConfigPath) {
+        this.sourceConfigPath = argSourceConfigPath;
     }
     
     @Override

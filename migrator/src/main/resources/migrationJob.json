@@ -2,9 +2,10 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migration",
+            "collection": "migrationJob",
             "datasource": "mongodata"
         },
+        "defaultVersion" : "1.0.0",
         "enums": [],
         "indexes": [
             {
@@ -20,11 +21,11 @@
                 "fields": [
                     {
                         "dir": "$asc",
-                        "field": "whenAvailableDate"
+                        "field": "status"
                     },
                     {
                         "dir": "$asc",
-                        "field": "jobExecutions.jobStatus"
+                        "field": "scheduledDate"
                     },
                     {
                         "dir": "$asc",
@@ -102,12 +103,12 @@
                     "required":true
                 },
                 "description":"Status of the job, available, active, completed, failed"
-            }
+            },
             "jobExecutions": {
                 "items": {
                     "fields": {
                         "activeExecutionId" : {
-                            "type" :"string"
+                            "type" :"string",
                             "description":"ID of the active execution, if exists"
                         },
                         "ownerName": {
@@ -214,7 +215,6 @@
         "version": {
             "changelog": "Initial release",
             "value": "1.0.0"
-        },
-        "defaultVersion":"1.0.0"
+        }
     }
 }

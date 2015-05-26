@@ -2,9 +2,10 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migration",
+            "collection": "migrationConfig",
             "datasource": "mongodata"
         },
+        "defaultVersion" : "1.0.0",
         "hooks": [
             {
                 "actions": [
@@ -228,7 +229,6 @@
         "version": {
             "changelog": "Initial release",
             "value": "1.0.0"
-        },
-        "defaultVersion":"1.0.0"
+        }
     }
 }

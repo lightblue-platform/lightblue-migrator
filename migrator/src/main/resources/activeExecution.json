@@ -2,9 +2,10 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migration",
+            "collection": "activeExecution",
             "datasource": "mongodata"
         },
+        "defaultVersion" : "1.0.0",
         "enums": [],
         "indexes": [
             {
@@ -82,11 +83,11 @@
                 "description":"The time job started executing"
             },
             "numDocsToProcess":{
-                "type":"int",
+                "type":"integer",
                 "description":"Number of docs to process"
             },
             "numDocsProcessed":{
-                "type":"int",
+                "type":"integer",
                 "description":"Number of docs processed so far"
             },
             "ping":{
@@ -101,7 +102,6 @@
         "version": {
             "changelog": "Initial release",
             "value": "1.0.0"
-        },
-        "defaultVersion" : "1.0.0"
+        }
     }
 }

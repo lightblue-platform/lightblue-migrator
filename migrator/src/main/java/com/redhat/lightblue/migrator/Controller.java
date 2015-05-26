@@ -24,7 +24,12 @@ public class Controller extends Thread {
     private final LightblueClient lightblueClient;
     private final Map<String,MigrationProcess> migrationMap=new HashMap<>();
 
-    private static class MigrationProcess {
+    // Testing/debugging aids
+    public final Breakpoint startbp=new Breakpoint();
+    public final Breakpoint loadconfigbp=new Breakpoint();
+    public final Breakpoint createconfigbp=new Breakpoint();
+
+    public static class MigrationProcess {
         private final MigrationConfiguration cfg;
         private final MigratorController mig;
 
@@ -40,6 +45,10 @@ public class Controller extends Thread {
         this.lightblueClient=getLightblueClient();
     }
 
+    public Map<String,MigrationProcess> getMigrationProcesses() {
+        return migrationMap;
+    }
+
     /**
      * Read configurations from the database whose name matches this instance name
      */
@@ -48,7 +57,7 @@ public class Controller extends Thread {
         DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
         findRequest.where(withValue("consistencyCheckerName = " + cfg.getName()));
         findRequest.select(includeFieldRecursively("*"));
-        LOGGER.debug("Loading configuration");
+        LOGGER.debug("Loading configuration:{}",findRequest.getBody());
         return lightblueClient.data(findRequest, MigrationConfiguration[].class);
     }
     
@@ -86,13 +95,17 @@ public class Controller extends Thread {
 
     @Override
     public void run() {
+        LOGGER.debug("Starting controller");
         boolean interrupted=false;
+        startbp.run("controller startup");
         while(!interrupted) {
             interrupted=Thread.interrupted();
             if(!interrupted) {
                 try {
+                    loadconfigbp.run("Loading configurations");
                     MigrationConfiguration[] cfg=getMigrationConfigurations();
                     createControllers(cfg);
+                    createconfigbp.run("Controllers created");
                 } catch (Exception e) {
                     LOGGER.error("Error during configuration load:"+e);
                 }
