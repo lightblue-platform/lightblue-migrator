@@ -148,7 +148,13 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldReadDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
-            lightblueEntity = listenableFuture.get();
+            try {
+                lightblueEntity = listenableFuture.get();
+            } catch (Exception e) {
+                log.error("Error when calling lightblue DAO", e);
+                log.debug("Returing data from legacy due to lightblue error");
+                return legacyEntity;
+            }
         }
 
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity()) {
@@ -238,7 +244,13 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
-            lightblueEntity = listenableFuture.get();
+            try {
+                lightblueEntity = listenableFuture.get();
+            } catch (Exception e) {
+                log.error("Error when calling lightblue DAO", e);
+                log.debug("Returing data from legacy due to lightblue error");
+                return legacyEntity;
+            }
         }
 
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
@@ -312,6 +324,10 @@ public class DAOFacadeBase<D> {
             // it's expected that this method in lightblueDAO will extract id from idStore
             try {
                 lightblueEntity = (T) method.invoke(lightblueDAO, values);
+            } catch (Exception e) {
+                log.error("Error when calling lightblue DAO", e);
+                log.debug("Returing data from legacy due to lightblue error");
+                return legacyEntity;
             } finally {
                 dest.complete();
             }

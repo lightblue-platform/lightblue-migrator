@@ -223,4 +223,58 @@ public class DAOFacadeTest {
         Mockito.verify(lightblueDAO).createCountry(pl);
     }
 
+    /* lightblue failure tests */
+
+    @Test
+    public void ligtblueFailureDuringReadTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        Mockito.when(legacyDAO.getCountry("PL")).thenReturn(pl);
+        Mockito.when(lightblueDAO.getCountry(Mockito.anyString())).thenThrow(new RuntimeException("Lightblue failure!"));
+
+        Country returnedCountry = facade.getCountry("PL");
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void ligtblueFailureDuringUpdateTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+        Country ca = new Country("CA");
+
+        Mockito.when(legacyDAO.updateCountry(pl)).thenReturn(ca);
+        Mockito.when(lightblueDAO.updateCountry(Mockito.any(Country.class))).thenThrow(new RuntimeException("Lightblue failure!"));
+
+        Country returnedCountry = facade.updateCountry(pl);
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+        Mockito.verify(legacyDAO).updateCountry(pl);
+
+        Assert.assertEquals(ca, returnedCountry);
+    }
+
+    @Test
+    public void ligtblueFailureDuringCreateTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenThrow(new RuntimeException("Lightblue failure!"));
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
 }
