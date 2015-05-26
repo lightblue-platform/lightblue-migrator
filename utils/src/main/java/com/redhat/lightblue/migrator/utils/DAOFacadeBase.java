@@ -91,8 +91,8 @@ public class DAOFacadeBase<D> {
         return str.toString();
     }
 
-    private void logInconsistency(String entityName, String methodName, Object[] values) {
-        log.error(entityName+" inconsistency in "+methodCallToString(methodName, values));
+    private void logInconsistency(String entityName, String methodName, Object[] values, Object legacyEntity, Object lightblueEntity) {
+        log.error(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
     /**
@@ -159,7 +159,7 @@ public class DAOFacadeBase<D> {
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values);
+                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -249,7 +249,7 @@ public class DAOFacadeBase<D> {
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values);
+                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -328,7 +328,7 @@ public class DAOFacadeBase<D> {
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values);
+                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
