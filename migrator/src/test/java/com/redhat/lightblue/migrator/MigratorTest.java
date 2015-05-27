@@ -62,27 +62,52 @@ public class MigratorTest extends AbstractMigratorController {
         cfg.setHostName("hostname");
         Controller controller=new Controller(cfg);
 
-        controller.startbp.stop();
-        controller.loadconfigbp.stop();
-        controller.createconfigbp.stop();
+        Breakpoint.stop("Controller:start");
+        Breakpoint.stop("Controller:loadconfig");
+        Breakpoint.stop("Controller:createconfig");
         
         controller.start();
 
-        controller.startbp.waitUntil();
+        Breakpoint.waitUntil("Controller:start");
         System.out.println("Resuming controller after startup");
-        controller.startbp.resume();
+        Breakpoint.resume("Controller:start");
 
-        controller.loadconfigbp.waitUntil();
+        Breakpoint.waitUntil("Controller:loadconfig");
         System.out.println("Controller will load configurations");
-        controller.loadconfigbp.resume();
+        Breakpoint.resume("Controller:loadconfig");
 
-        controller.createconfigbp.waitUntil();
+        // Put breakpoints in migrator controller before we start one
+        Breakpoint.stop("MigratorController:start");
+        Breakpoint.stop("MigratorController:findandlock");
+        Breakpoint.stop("MigratorController:process");
+        Breakpoint.stop("MigratorController:unlock");
+        Breakpoint.stop("MigratorController:end");
+        
+        Breakpoint.waitUntil("Controller:createconfig");
         System.out.println("Checking controllers");
 
         Map<String,Controller.MigrationProcess> prc=controller.getMigrationProcesses();
         Assert.assertEquals(1,prc.size());
         
-        controller.createconfigbp.resume();
+        Breakpoint.resume("Controller:createconfig");
+
+        // Controller created threads, now check the migrator controller thread progress
+
+        Breakpoint.waitUntil("MigratorController:start");
+        Breakpoint.resume("MigratorController:start");
+        System.out.println("Migrator controller started");
+
+        Breakpoint.waitUntil("MigratorController:findandlock");
+        Breakpoint.resume("MigratorController:findandlock");
+
+        Breakpoint.waitUntil("MigratorController:process");
+        System.out.println("Processing");
+        TestMigrator.count=0;
+        Breakpoint.resume("MigratorController:process");
+
+        Breakpoint.waitUntil("MigratorController:unlock");
+        // At this point, there must be on TestMigrator instance running
+        Assert.assertEquals(1,TestMigrator.count);
 
         controller.interrupt();
     }

@@ -8,6 +8,7 @@
           "creationDate": "20150224T00:00:00.000+0000",
             "query" : "",
             "status":"available",
+            "jobExecutions":[],
           "createdBy": "lingram",
           "lastUpdateDate": "20150224T00:00:00.000+0000",
           "lastUpdatedBy": "lingram"

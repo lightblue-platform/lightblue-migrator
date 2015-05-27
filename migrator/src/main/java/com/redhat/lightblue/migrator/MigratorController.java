@@ -223,6 +223,7 @@ public class MigratorController extends Thread {
         LOGGER.debug("Starting controller thread");
         boolean interrupted=false;
         // This thread never stops
+        Breakpoint.checkpoint("MigratorController:start");
         while(!interrupted) {
             interrupted=Thread.interrupted();
             if(!interrupted) {
@@ -254,12 +255,15 @@ public class MigratorController extends Thread {
             if(!interrupted) {
                 LOGGER.debug("Find a migration job to process");
                 try {
+                    Breakpoint.checkpoint("MigratorController:findandlock");
                     LockRecord lockedJob=findAndLockMigrationJob();
                     if(lockedJob!=null) {
                         LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
+                        Breakpoint.checkpoint("MigratorController:process");
                         processMigrationJob(lockedJob);
                         // Unlock
                         unlock(lockedJob.ae.get_id());
+                        Breakpoint.checkpoint("MigratorController:unlock");
                     } else {
                         // No jobs are available, wait a bit (10sec-30sec), and retry
                         LOGGER.debug("Waiting");
@@ -272,6 +276,7 @@ public class MigratorController extends Thread {
                 }
             }
         }
+        Breakpoint.checkpoint("MigratorController:end");
         LOGGER.debug("Ending controller thread");
     }
 }

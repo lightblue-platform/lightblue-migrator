@@ -1,5 +1,8 @@
 package com.redhat.lightblue.migrator;
 
+import java.util.Map;
+import java.util.HashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,7 +18,22 @@ public class Breakpoint {
     private volatile boolean stopped=false;
     private volatile boolean ran=false;
     private boolean waiting=false;
+    private final String name;
 
+    private static final Map<String,Breakpoint> bps=new HashMap<>();
+
+    public Breakpoint() {
+        name=null;
+    }
+
+    public Breakpoint(String name) {
+        this.name=name;
+    }
+
+    public String getName() {
+        return name;
+    }
+    
     public void stop() {
         stopped=true;
     }
@@ -43,25 +61,21 @@ public class Breakpoint {
             }
         }
     }
-
-    public void run() {
-        run(null);
-    }
     
-    public void run(String msg) {
+    public void checkpoint() {
         if(stopped) {
             synchronized(this) {
                 if(stopped) {
-                    if(msg!=null)
-                        LOGGER.debug("Waiting: {}",msg);
+                    if(name!=null)
+                        LOGGER.debug("Waiting: {}",name);
                     else
                         LOGGER.debug("Waiting...");
                     ran=true;
                     notify();
                     try {
                         wait();
-                        if(msg!=null)
-                            LOGGER.debug("Resumed: {}",msg);
+                        if(name!=null)
+                            LOGGER.debug("Resumed: {}",name);
                         else
                             LOGGER.debug("Resumed");
                     } catch (Exception e) {}
@@ -75,5 +89,28 @@ public class Breakpoint {
                 }
             }
         }
+    }
+
+    public static void stop(String bp) {
+        get(bp).stop();
+    }
+
+    public static void resume(String bp) {
+        get(bp).resume();
+    }
+
+    public static void waitUntil(String bp) {
+        get(bp).waitUntil();
+    }
+
+    public static void checkpoint(String bp) {
+        get(bp).checkpoint();
+    }
+
+    private static Breakpoint get(String bp) {
+        Breakpoint x=bps.get(bp);
+        if(x==null)
+            bps.put(bp,x=new Breakpoint(bp));
+        return x;
     }
 }

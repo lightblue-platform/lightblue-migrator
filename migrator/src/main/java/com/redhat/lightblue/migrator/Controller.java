@@ -24,10 +24,6 @@ public class Controller extends Thread {
     private final LightblueClient lightblueClient;
     private final Map<String,MigrationProcess> migrationMap=new HashMap<>();
 
-    // Testing/debugging aids
-    public final Breakpoint startbp=new Breakpoint();
-    public final Breakpoint loadconfigbp=new Breakpoint();
-    public final Breakpoint createconfigbp=new Breakpoint();
 
     public static class MigrationProcess {
         private final MigrationConfiguration cfg;
@@ -49,6 +45,10 @@ public class Controller extends Thread {
         return migrationMap;
     }
 
+    public MainConfiguration getMainConfiguration() {
+        return cfg;
+    }
+    
     /**
      * Read configurations from the database whose name matches this instance name
      */
@@ -97,15 +97,15 @@ public class Controller extends Thread {
     public void run() {
         LOGGER.debug("Starting controller");
         boolean interrupted=false;
-        startbp.run("controller startup");
+        Breakpoint.checkpoint("Controller:start");
         while(!interrupted) {
             interrupted=Thread.interrupted();
             if(!interrupted) {
                 try {
-                    loadconfigbp.run("Loading configurations");
+                    Breakpoint.checkpoint("Controller:loadconfig");
                     MigrationConfiguration[] cfg=getMigrationConfigurations();
                     createControllers(cfg);
-                    createconfigbp.run("Controllers created");
+                    Breakpoint.checkpoint("Controller:createconfig");
                 } catch (Exception e) {
                     LOGGER.error("Error during configuration load:"+e);
                 }

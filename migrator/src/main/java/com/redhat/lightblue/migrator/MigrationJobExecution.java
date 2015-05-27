@@ -14,6 +14,8 @@ public class MigrationJobExecution {
     
     private String status;
 
+    private String errorMsg;
+
     // summary info on what the job did
     private int processedDocumentCount = 0;
     private int consistentDocumentCount = 0;
@@ -42,6 +44,14 @@ public class MigrationJobExecution {
 
     public void setHostName(String s) {
         hostName=s;
+    }
+
+    public String getErrorMsg() {
+        return errorMsg;
+    }
+
+    public void setErrorMsg(String s) {
+        errorMsg=s;
     }
     
     public Date getActualStartDate() {

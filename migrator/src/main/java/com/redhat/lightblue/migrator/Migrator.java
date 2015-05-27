@@ -123,18 +123,24 @@ public abstract class Migrator extends Thread {
         updateRequest.returns(includeField("_id"));
 
         // State is active
-        updateRequest.updates(new SetUpdate(new PathValuePair("state",new LiteralRValue(MigrationJob.STATE_ACTIVE))),
+        updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(MigrationJob.STATE_ACTIVE)))),
                               // Add a new execution element
-                              new AppendUpdate("executions",new ObjectRValue(new HashMap())),
+                              new AppendUpdate("jobExecutions",new ObjectRValue(new HashMap())),
+                              // Owner name
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName",new LiteralRValue(quote(getMigrationConfiguration().getConsistencyCheckerName())))),
+                              // Host name
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.hostName",new LiteralRValue(quote(getController().getController().getMainConfiguration().getName())))),
                               // Execution id
-                              new SetUpdate(new PathValuePair("executions.-1.activeExecutionId",new LiteralRValue(activeExecution.get_id()))),
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.activeExecutionId",new LiteralRValue(quote(activeExecution.get_id())))),
                               // Start date
-                              new SetUpdate(new PathValuePair("executions.-1.actualStartDate",new LiteralRValue(ClientConstants.getDateFormat().format(activeExecution.getStartTime())))),
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.actualStartDate",new LiteralRValue(quote(ClientConstants.getDateFormat().format(activeExecution.getStartTime()))))),
                               // Status
-                              new SetUpdate(new PathValuePair("executions.-1.status",new LiteralRValue(MigrationJob.STATE_ACTIVE))));       
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.status",new LiteralRValue(quote(MigrationJob.STATE_ACTIVE)))));
         LOGGER.debug("Marking job {} as active",migrationJob.get_id());
-        LightblueResponse response;
+        LightblueResponse response=null;
         try {
+            LOGGER.debug("Req:{}",updateRequest.getBody());
+                         
             response = lbClient.data(updateRequest);
             if(!response.hasError()) {
                 // Do the migration
@@ -145,14 +151,13 @@ public abstract class Migrator extends Thread {
                 updateRequest=new DataUpdateRequest("migrationJob",null);
                 updateRequest.where(withValue("_id = "+migrationJob.get_id()));
                 updateRequest.returns(includeField("_id"));
-                updateRequest.updates(new SetUpdate(new PathValuePair("state",new LiteralRValue(error==null? MigrationJob.STATE_COMPLETED:
-                                                                                                MigrationJob.STATE_FAILED))) ,
-                                      new ForeachUpdate("executions",
+                updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(error==null? MigrationJob.STATE_COMPLETED:MigrationJob.STATE_FAILED)))),
+                                      new ForeachUpdate("jobExecutions",
                                                         withValue("activeExecutionId",ExpressionOperation.EQ,activeExecution.get_id()),
-                                                        new SetUpdate(new PathValuePair("status",new LiteralRValue(error==null?MigrationJob.STATE_COMPLETED:
-                                                                                                                   MigrationJob.STATE_FAILED)),
-                                                                      new PathValuePair("errorMsg",new LiteralRValue(error==null?"":error)),
-                                                                      new PathValuePair("actualEndDate", new LiteralRValue(ClientConstants.getDateFormat().format(new Date()))))));
+                                                        new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(error==null?MigrationJob.STATE_COMPLETED:
+                                                                                                                         MigrationJob.STATE_FAILED))),
+                                                                      new PathValuePair("errorMsg",new LiteralRValue(quote(error==null?"":error))),
+                                                                      new PathValuePair("actualEndDate", new LiteralRValue(quote(ClientConstants.getDateFormat().format(new Date())))))));
 
                 response=lbClient.data(updateRequest);
                 if(response.hasError())
@@ -161,10 +166,13 @@ public abstract class Migrator extends Thread {
             } else
                 throw new RuntimeException("Failed to update:"+response);
         } catch (Exception e) {
-            LOGGER.error("Cannot update job {}, {}",migrationJob.get_id(),e);
+            LOGGER.error("Cannot update job {}, {} response:{}",migrationJob.get_id(),e,response.getJson());
         }
     }
 
+    private String quote(String s) {
+        return s==null?null:"\""+s+"\"";
+    }
 
 }
 

@@ -146,32 +146,24 @@
                             },
                             "description": "Indicates the status of the execution of this job"
                         },
+                        "errorMsg" :{
+                            "type":"string",
+                            "description":"Processing error message"
+                        },
                         "processedDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents processed by this job"
                         },
                         "consistentDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents that mathed for this job"
                         },
                         "inconsistentDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents that did not match for this job"
                         },
                         "overwrittenDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents that were overwritten in destination"
                         }
                     },
