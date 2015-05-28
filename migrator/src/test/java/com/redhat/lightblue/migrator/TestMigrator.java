@@ -10,6 +10,10 @@ import com.redhat.lightblue.client.response.LightblueResponse;
 public class TestMigrator extends Migrator {
 
     public static int count;
+
+    public TestMigrator(ThreadGroup g) {
+        super(g);
+    }
     
     public String migrate() {
         count++;

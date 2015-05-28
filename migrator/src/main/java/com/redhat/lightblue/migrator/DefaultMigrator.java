@@ -47,6 +47,9 @@ public class DefaultMigrator extends Migrator {
     private LightblueClient sourceCli;
     private LightblueClient destCli;
 
+    public DefaultMigrator(ThreadGroup grp) {
+        super(grp);
+    }
 
     private LightblueClient getSourceCli() {
         try {

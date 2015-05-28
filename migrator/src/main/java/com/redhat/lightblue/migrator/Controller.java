@@ -12,6 +12,7 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
+import com.redhat.lightblue.client.expression.query.ValueQuery;
 
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
@@ -26,8 +27,8 @@ public class Controller extends Thread {
 
 
     public static class MigrationProcess {
-        private final MigrationConfiguration cfg;
-        private final MigratorController mig;
+        public final MigrationConfiguration cfg;
+        public final MigratorController mig;
 
         public MigrationProcess(MigrationConfiguration cfg,
                                 MigratorController mig) {

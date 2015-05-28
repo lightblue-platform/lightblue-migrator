@@ -55,6 +55,33 @@ public abstract class Migrator extends Thread {
     private ActiveExecution activeExecution;
 
     private LightblueClient lbClient;
+
+
+    // Migration context, observable by tests
+    private Map<Identity,JsonNode> sourceDocs;
+    private Map<Identity,JsonNode> destDocs;
+    private Set<Identity> insertDocs;
+    private Set<Identity> rewriteDocs;
+
+    public Migrator(ThreadGroup grp) {
+        super(grp,"Migrator");
+    }
+
+    public Map<Identity,JsonNode> getSourceDocs() {
+        return sourceDocs;
+    }
+
+    public Map<Identity,JsonNode> getDestDocs() {
+        return destDocs;
+    }
+
+    public Set<Identity> getInsertDocs() {
+        return insertDocs;
+    }
+
+    public Set<Identity> getRewriteDocs() {
+        return rewriteDocs;
+    }
     
     public void setController(MigratorController c) {
         this.controller=c;
@@ -121,26 +148,29 @@ public abstract class Migrator extends Thread {
     public String migrate() {
         try {
             LOGGER.debug("Retrieving source docs");
-            Map<Identity,JsonNode> sourceDocs=getDocumentIdMap(getSourceDocuments());
+            sourceDocs=getDocumentIdMap(getSourceDocuments());
+            Breakpoint.checkpoint("Migrator:sourceDocs");
             LOGGER.debug("There are {} source docs",sourceDocs.size());
             LOGGER.debug("Retrieving destination docs");
-            Map<Identity,JsonNode> destDocs=getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()));
+            destDocs=getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()));
+            Breakpoint.checkpoint("Migrator:destDocs");
             LOGGER.debug("There are {} destination docs",destDocs.size());
 
-            Set<Identity> insertDocs=new HashSet<>();
+            insertDocs=new HashSet<>();
             for(Identity id:sourceDocs.keySet())
                 if(!destDocs.containsKey(id))
                     insertDocs.add(id);
+            Breakpoint.checkpoint("Migrator:insertDocs");
             LOGGER.debug("There are {} docs to insert",insertDocs.size());
             
             LOGGER.debug("Comparing source and destination docs");
-            Set<Identity> docsToRewrite=new HashSet<>();
+            rewriteDocs=new HashSet<>();
             for(Map.Entry<Identity,JsonNode> sourceEntry:sourceDocs.entrySet()) {
                 JsonNode destDoc=destDocs.get(sourceEntry.getKey());
                 if(destDoc!=null) {
                     List<String> inconsistentFields=compareDocs(sourceEntry.getValue(),destDoc);
                     if(inconsistentFields!=null&&!inconsistentFields.isEmpty()) {
-                        docsToRewrite.add(sourceEntry.getKey());
+                        rewriteDocs.add(sourceEntry.getKey());
                         // log as key=value to make parsing easy
                         // fields to log: config name, job id, dest entity name & version, id field names & values,
                         //list of inconsistent paths
@@ -155,17 +185,19 @@ public abstract class Migrator extends Thread {
                     }
                 }
             }
-            LOGGER.debug("There are {} docs to rewrite",docsToRewrite.size());
+            Breakpoint.checkpoint("Migrator:rewriteDocs");
+            LOGGER.debug("There are {} docs to rewrite",rewriteDocs.size());
             
             List<JsonNode> saveDocsList=new ArrayList<>();
             for(Identity id:insertDocs)
                 saveDocsList.add(sourceDocs.get(id));
-            for(Identity id:docsToRewrite)
+            for(Identity id:rewriteDocs)
                 saveDocsList.add(sourceDocs.get(id));
             
             LOGGER.debug("There are {} docs to save",saveDocsList.size());
             save(saveDocsList);
             LOGGER.debug("Docs saved: {}",saveDocsList.size());
+            Breakpoint.checkpoint("Migrator:complete");
         } catch (Exception e) {
             LOGGER.error("Error during migration:{}",e);
             return e.toString();

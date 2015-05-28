@@ -74,6 +74,10 @@ public class MigratorController extends Thread {
         migratorThreads=new ThreadGroup("Migrators:"+migrationConfiguration.getConfigurationName());
     }
 
+    public ThreadGroup getMigratorThreads() {
+        return migratorThreads;
+    }
+
     public Controller getController() {
         return controller;
     }
@@ -210,12 +214,11 @@ public class MigratorController extends Thread {
 
     private void processMigrationJob(LockRecord lck)
         throws Exception {
-        Migrator migrator=(Migrator)migratorClass.newInstance();
+        Migrator migrator=(Migrator)migratorClass.getConstructor(ThreadGroup.class).newInstance(migratorThreads);
         migrator.setController(this);
         migrator.setMigrationJob(lck.mj);
         migrator.setActiveExecution(lck.ae);
-        Thread thread=new Thread(migratorThreads,migrator);
-        thread.start();
+        migrator.start();
     }
             
     @Override

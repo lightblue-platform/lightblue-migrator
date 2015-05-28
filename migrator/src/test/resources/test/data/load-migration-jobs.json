@@ -6,7 +6,7 @@
           "configurationName": "customers",
           "scheduledDate": "20060101T00:00:00.000+0000",
           "creationDate": "20150224T00:00:00.000+0000",
-            "query" : "",
+            "query" : "{\"field\":\"creationDate\",\"op\":\">\",\"rvalue\":\"20000101T01:00:00.000+0000\"}",
             "status":"available",
             "jobExecutions":[],
           "createdBy": "lingram",
