@@ -6,6 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Iterator;
 
 import java.io.IOException;
 
@@ -15,13 +17,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeType;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
+import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.request.SortCondition;
+import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.enums.SortDirection;
+import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.expression.query.Query;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
+import com.redhat.lightblue.client.projection.Projection;
+import com.redhat.lightblue.client.projection.FieldProjection;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 import static com.redhat.lightblue.client.projection.FieldProjection.excludeField;
 import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
@@ -33,248 +44,206 @@ public class DefaultMigrator extends Migrator {
 
     protected static final int BATCH_SIZE = 64;
 
-    @Override
-    public String migrate() {
-        // Read from source, write to dest
+    private LightblueClient sourceCli;
+    private LightblueClient destCli;
+
+
+    private LightblueClient getSourceCli() {
         try {
-            LightblueClient sourceCli=getLightblueClient(getMigrationConfiguration().getSourceConfigPath());
-            LightblueClient destCli=getLightblueClient(getMigrationConfiguration().getDestinationConfigPath());
-            Map<String, JsonNode> sourceDocuments = getSourceDocuments(sourceCli);
-            Map<String, JsonNode> destinationDocuments = getDestinationDocuments(destCli,sourceDocuments);
-
+            if(sourceCli==null)
+                sourceCli=getLightblueClient(getMigrationConfiguration().getSourceConfigPath());
+            return sourceCli;
         } catch (Exception e) {
-            return e.toString();
+            LOGGER.error("Cannot get source cli:{}",e);
+            throw new RuntimeException("Cannot get source client:"+e);
         }
-        return null;
     }
 
-    protected Map<String, JsonNode> getSourceDocuments(LightblueClient cli)
-        throws SQLException, IOException {
-        DataFindRequest sourceRequest = new DataFindRequest(getMigrationConfiguration().getSourceEntityName(),
-                                                            getMigrationConfiguration().getSourceEntityVersion());
-        sourceRequest.where(new Query() {
-                public String toJson() {
-                    return getMigrationJob().getQuery();
-                }
-            });
-        sourceRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
-        return getJsonNodeMap(cli.data(sourceRequest, JsonNode[].class),
-                              getMigrationConfiguration().getDestinationIdentityFields());
-    }
-
-    protected LinkedHashMap<String, JsonNode> getJsonNodeMap(JsonNode[] results, List<String> entityKeyFields) {
-        LinkedHashMap<String, JsonNode> resultsMap = new LinkedHashMap<>();
-        for (JsonNode result : results) {
-            StringBuilder resultKey = new StringBuilder();
-            for (String keyField : entityKeyFields) {
-                resultKey.append(result.findValue(keyField)).append("|||");
-            }
-            resultsMap.put(resultKey.toString(), result);
+    private LightblueClient getDestCli() {
+        try {
+            if(destCli==null)
+                destCli=getLightblueClient(getMigrationConfiguration().getDestinationConfigPath());
+            return destCli;
+        } catch (Exception e) {
+            LOGGER.error("Cannot get dest cli:{}",e);
+            throw new RuntimeException("Cannot get dest client:"+e);
         }
-        return resultsMap;
-    } 
+    }
     
-    protected Map<String, JsonNode> getDestinationDocuments(LightblueClient destCli,
-                                                            Map<String, JsonNode> sourceDocuments)
-        throws IOException {
-        Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
-        if (sourceDocuments == null || sourceDocuments.isEmpty()) {
-            LOGGER.debug("Unable to fetch any destination documents as there are no source documents");
+    public List<JsonNode> getSourceDocuments() {
+        LOGGER.debug("Retrieving source docs");
+        try {
+            DataFindRequest sourceRequest = new DataFindRequest(getMigrationConfiguration().getSourceEntityName(),
+                                                                getMigrationConfiguration().getSourceEntityVersion());
+            sourceRequest.where(new Query() {
+                    public String toJson() {
+                        return getMigrationJob().getQuery();
+                    }
+                });
+            sourceRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
+            LOGGER.debug("Source docs retrieval req: {}",sourceRequest.getBody());
+            JsonNode[] results=getSourceCli().data(sourceRequest,JsonNode[].class);
+            LOGGER.debug("There are {} source docs",results.length);
+            return Arrays.asList(results);
+        } catch (Exception e) {
+            LOGGER.error("Error while retrieving source documents:{}",e);
+            throw new RuntimeException("Cannot retrieve source documents:"+e);
+        }
+    }
+  
+    public List<JsonNode> getDestinationDocuments(Collection<Identity> ids) {
+        try {
+            List<JsonNode> destinationDocuments = new ArrayList<>();
+            if (ids == null || ids.isEmpty()) {
+                LOGGER.debug("Unable to fetch any destination documents as there are no source documents");
+                return destinationDocuments;
+            }
+            
+            List<Identity> batch=new ArrayList<>();
+            for(Identity id:ids) {
+                batch.add(id);
+                if(batch.size()>=BATCH_SIZE) {
+                    doDestinationDocumentFetch(batch,destinationDocuments);
+                    batch.clear();
+                }
+            }
+            
+            if(!batch.isEmpty()) {
+                doDestinationDocumentFetch(batch,destinationDocuments);
+            }
             return destinationDocuments;
+        } catch (Exception e) {
+            LOGGER.error("Error while retrieving destination documents:{}",e);
+            throw new RuntimeException("Cannot retrieve destination documents:"+e);
         }
-        
-        if (sourceDocuments.size() <= BATCH_SIZE) {
-            return doDestinationDocumentFetch(destCli,sourceDocuments);
-        }
-
-        List<String> keys = Arrays.asList(sourceDocuments.keySet().toArray(new String[0]));
-        int position = 0;
-        while (position < keys.size()) {
-            int limitedPosition = position + BATCH_SIZE;
-            if (limitedPosition > keys.size()) {
-                limitedPosition = keys.size();
-            }
-
-            List<String> subKeys = keys.subList(position, limitedPosition);
-            Map<String, JsonNode> batch = new HashMap<>();
-            for (String subKey : subKeys) {
-                batch.put(subKey, sourceDocuments.get(subKey));
-            }
-
-            Map<String, JsonNode> batchRestuls = doDestinationDocumentFetch(destCli,batch);
-            destinationDocuments.putAll(batchRestuls);
-            position = limitedPosition;
-        }
-        
-        return destinationDocuments;
     }
 
-    private Map<String, JsonNode> doDestinationDocumentFetch(LightblueClient destCli,
-                                                             Map<String, JsonNode> sourceDocuments)
-        throws IOException {
-        Map<String, JsonNode> destinationDocuments = new LinkedHashMap<>();
-        if (sourceDocuments == null || sourceDocuments.isEmpty()) {
-            return destinationDocuments;
-        }
-        
-        DataFindRequest destinationRequest = new DataFindRequest(getMigrationConfiguration().getDestinationEntityName(),
-                                                                 getMigrationConfiguration().getDestinationEntityVersion());
-        List<Query> requestConditions = new ArrayList<>();
-        for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
-            List<Query> docConditions = new ArrayList<>();
-            for (String keyField : getMigrationConfiguration().getDestinationIdentityFields()) {
-                ValueQuery docQuery = new ValueQuery(keyField + " = " + sourceDocument.getValue().
-                                                     findValue(keyField).asText());
-                docConditions.add(docQuery);
+    private void  doDestinationDocumentFetch(List<Identity> ids,List<JsonNode> dest)
+        throws Exception {
+        if(ids!=null&&!ids.isEmpty()) {
+            DataFindRequest destinationRequest = new DataFindRequest(getMigrationConfiguration().getDestinationEntityName(),
+                                                                     getMigrationConfiguration().getDestinationEntityVersion());
+            List<Query> requestConditions = new ArrayList<>();
+            for (Identity id:ids) {
+                List<Query> docConditions = new ArrayList<>();
+                int i=0;
+                for (String keyField : getMigrationConfiguration().getDestinationIdentityFields()) {
+                    Object v=id.get(i);
+                    ValueQuery docQuery = new ValueQuery(keyField,ExpressionOperation.EQ,v==null?null:v.toString());
+                    docConditions.add(docQuery);
+                    i++;
+                }
+                requestConditions.add(and(docConditions));
             }
-            requestConditions.add(and(docConditions));
+            destinationRequest.where(or(requestConditions));
+            destinationRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
+            LOGGER.debug("Fetching destination docs {}",destinationRequest.getBody());
+            JsonNode[] nodes=getDestCli().data(destinationRequest, JsonNode[].class);
+
+            if(nodes!=null) {
+                LOGGER.debug("There are {} destination docs",nodes.length);
+                for(JsonNode node:nodes)
+                    dest.add(node);
+            }
         }
-        destinationRequest.where(or(requestConditions));
-        destinationRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
-        destinationDocuments = getJsonNodeMap(destCli.data(destinationRequest, JsonNode[].class),
-                                              getMigrationConfiguration().getDestinationIdentityFields());
-        
-        return destinationDocuments;
     }
 
-    // protected List<LightblueResponse> overwriteLightblue(List<JsonNode> documentsToOverwrite) throws IOException {
-    //     List<LightblueResponse> responses = new ArrayList<>();
-    //     if (documentsToOverwrite.size() <= BATCH_SIZE) {
-    //         responses.add(doOverwriteLightblue(documentsToOverwrite));
-    //         return responses;
-    //     }
+    /**
+     *
+     * @param sourceDocument
+     * @param destinationDocument
+     * @return list of inconsistent paths
+     */
+    public List<String> compareDocs(JsonNode sourceDocument, JsonNode destinationDocument) {
+        List<String> inconsistentPaths = new ArrayList<>();
+        compareDocs(inconsistentPaths, sourceDocument, destinationDocument, null);
+        return inconsistentPaths;
+    }
 
-    //     int totalModified = 0;
-    //     int position = 0;
+    //Recursive method
+    private void compareDocs(List<String> inconsistentPaths,
+                             final JsonNode sourceDocument,
+                             final JsonNode destinationDocument,
+                             final String path) {
+        List<String> excludes = getMigrationConfiguration().getComparisonExclusionPaths();
+        if (excludes != null && excludes.contains(path)) {
+            return;
+        }
 
-    //     while (position < documentsToOverwrite.size()) {
-    //         int limitedPosition = position + BATCH_SIZE;
-    //         if (limitedPosition > documentsToOverwrite.size()) {
-    //             limitedPosition = documentsToOverwrite.size();
-    //         }
+        if (sourceDocument == null && destinationDocument == null) {
+            return;
+        } else if (sourceDocument == null || destinationDocument == null) {
+            inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+            return;
+        }
 
-    //         List<JsonNode> subList = documentsToOverwrite.subList(position, limitedPosition);
-    //         responses.add(doOverwriteLightblue(subList));
+        // for each field compare to destination
+        if (JsonNodeType.ARRAY.equals(sourceDocument.getNodeType())) {
+            if (!JsonNodeType.ARRAY.equals(destinationDocument.getNodeType())) {
+                inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+                return;
+            }
 
-    //         position = limitedPosition;
-    //     }
+            ArrayNode sourceArray = (ArrayNode) sourceDocument;
+            ArrayNode destinationArray = (ArrayNode) destinationDocument;
 
-    //     return responses;
-    // }
+            if (sourceArray.size() != destinationArray.size()) {
+                inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+                return;
+            }
 
-    // private LightblueResponse doOverwriteLightblue(List<JsonNode> documentsToOverwrite) throws IOException {
-    //     // LightblueClient - save & overwrite documents
-    //     DataSaveRequest saveRequest = new DataSaveRequest(getJobConfiguration().getDestinationEntityName(), getJobConfiguration().getDestinationEntityVersion());
-    //     saveRequest.create(documentsToOverwrite.toArray());
-    //     List<Projection> projections = new ArrayList<>();
-    //     projections.add(new FieldProjection("*", false, true));
-    //     saveRequest.returns(projections);
-    //     return callLightblue(saveRequest);
-    // }
+            // compare array contents
+            for (int x = 0; x < sourceArray.size(); x++) {
+                compareDocs(inconsistentPaths, sourceArray.get(x), destinationArray.get(x), path);
+            }
+        } else if (JsonNodeType.OBJECT.equals(sourceDocument.getNodeType())) {
+            if (!JsonNodeType.OBJECT.equals(destinationDocument.getNodeType())) {
+                inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+                return;
+            }
+
+            // compare object contents
+            Iterator<Map.Entry<String, JsonNode>> itr = sourceDocument.fields();
+
+            while (itr.hasNext()) {
+                Map.Entry<String, JsonNode> entry = itr.next();
+
+                compareDocs(inconsistentPaths, entry.getValue(), destinationDocument.get(entry.getKey()),
+                        StringUtils.isEmpty(path) ? entry.getKey() : path + "." + entry.getKey());
+            }
+
+        } else if (!sourceDocument.asText().equals(destinationDocument.asText())) {
+            inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
+        }
+    }
 
 
-
-    // protected List<JsonNode> getDocumentsToOverwrite(Map<String, JsonNode> sourceDocuments, Map<String, JsonNode> destinationDocuments) {
-    //     List<JsonNode> documentsToOverwrite = new ArrayList<>();
-    //     for (Map.Entry<String, JsonNode> sourceDocument : sourceDocuments.entrySet()) {
-    //         JsonNode destinationDocument = destinationDocuments.get(sourceDocument.getKey());
-    //         if (destinationDocument == null) {
-    //             // doc never existed in dest, don't log, just overwrite
-    //             documentsToOverwrite.add(sourceDocument.getValue());
-    //         } else {
-    //             List<String> inconsistentPaths = getInconsistentPaths(sourceDocument.getValue(), destinationDocument);
-    //             if (inconsistentPaths.size() > 0) {
-    //                 // log what was inconsistent and add to docs to overwrite
-    //                 List<String> idValues = new ArrayList<>();
-    //                 for (String idField : migrationConfiguration.getDestinationIdentityFields()) {
-    //                     //TODO this assumes keys at root, this might not always be true.  fix it..
-    //                     idValues.add(sourceDocument.getValue().get(idField).asText());
-    //                 }
-
-    //                 // log as key=value to make parsing easy
-    //                 // fields to log: config name, job id, dest entity name & version, id field names & values, list of inconsistent paths
-    //                 LOGGER.error("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\"",
-    //                         migrationConfiguration.getConfigurationName(),
-    //                         migrationConfiguration.getDestinationEntityName(),
-    //                         migrationConfiguration.getDestinationEntityVersion(),
-    //                         this._id,
-    //                         StringUtils.join(migrationConfiguration.getDestinationIdentityFields(), ","),
-    //                         StringUtils.join(idValues, ","),
-    //                         StringUtils.join(inconsistentPaths, ","));
-
-    //                 documentsToOverwrite.add(sourceDocument.getValue());
-    //             }
-    //         }
-    //     }
-    //     return documentsToOverwrite;
-    // }
-
-    // /**
-    //  *
-    //  * @param sourceDocument
-    //  * @param destinationDocument
-    //  * @return list of inconsistent paths
-    //  */
-    // protected List<String> getInconsistentPaths(JsonNode sourceDocument, JsonNode destinationDocument) {
-    //     List<String> inconsistentPaths = new ArrayList<>();
-    //     doInconsistentPaths(inconsistentPaths, sourceDocument, destinationDocument, null);
-    //     return inconsistentPaths;
-    // }
-
-    // //Recursive method
-    // private void doInconsistentPaths(List<String> inconsistentPaths, final JsonNode sourceDocument, final JsonNode destinationDocument, final String path) {
-    //     List<String> excludes = getJobConfiguration().getComparisonExclusionPaths();
-    //     if (excludes != null && excludes.contains(path)) {
-    //         return;
-    //     }
-
-    //     if (sourceDocument == null && destinationDocument == null) {
-    //         return;
-    //     } else if (sourceDocument == null || destinationDocument == null) {
-    //         inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
-    //         return;
-    //     }
-
-    //     // for each field compare to destination
-    //     if (JsonNodeType.ARRAY.equals(sourceDocument.getNodeType())) {
-    //         if (!JsonNodeType.ARRAY.equals(destinationDocument.getNodeType())) {
-    //             inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
-    //             return;
-    //         }
-
-    //         ArrayNode sourceArray = (ArrayNode) sourceDocument;
-    //         ArrayNode destinationArray = (ArrayNode) destinationDocument;
-
-    //         if (sourceArray.size() != destinationArray.size()) {
-    //             inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
-    //             return;
-    //         }
-
-    //         // compare array contents
-    //         for (int x = 0; x < sourceArray.size(); x++) {
-    //             doInconsistentPaths(inconsistentPaths, sourceArray.get(x), destinationArray.get(x), path);
-    //         }
-    //     } else if (JsonNodeType.OBJECT.equals(sourceDocument.getNodeType())) {
-    //         if (!JsonNodeType.OBJECT.equals(destinationDocument.getNodeType())) {
-    //             inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
-    //             return;
-    //         }
-
-    //         // compare object contents
-    //         Iterator<Entry<String, JsonNode>> itr = sourceDocument.fields();
-
-    //         while (itr.hasNext()) {
-    //             Entry<String, JsonNode> entry = itr.next();
-
-    //             doInconsistentPaths(inconsistentPaths, entry.getValue(), destinationDocument.get(entry.getKey()),
-    //                     StringUtils.isEmpty(path) ? entry.getKey() : path + "." + entry.getKey());
-    //         }
-
-    //     } else if (!sourceDocument.asText().equals(destinationDocument.asText())) {
-    //         inconsistentPaths.add(StringUtils.isEmpty(path) ? "*" : path);
-    //     }
-    // }
-
+    public List<LightblueResponse> save(List<JsonNode> docs) {
+        List<LightblueResponse> responses = new ArrayList<>();
+        List<JsonNode> batch=new ArrayList<>();
+        for(JsonNode doc:docs) {
+            batch.add(doc);
+            if(batch.size()>=BATCH_SIZE) {
+                responses.add(saveBatch(batch));
+                batch.clear();
+            }
+        }
+        if(!batch.isEmpty()) {
+            responses.add(saveBatch(batch));
+        }
+        return responses;
+    }
+                
+    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) {
+        // LightblueClient - save & overwrite documents
+        DataSaveRequest saveRequest = new DataSaveRequest(getMigrationConfiguration().getDestinationEntityName(),
+                                                          getMigrationConfiguration().getDestinationEntityVersion());
+        saveRequest.create(documentsToOverwrite.toArray());
+        List<Projection> projections = new ArrayList<>();
+        projections.add(new FieldProjection("*", false, true));
+        saveRequest.returns(projections);
+        return getDestCli().data(saveRequest);
+    }
 
 }
 

@@ -10,6 +10,14 @@ import java.util.HashMap;
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.apache.commons.lang.StringUtils;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
@@ -110,7 +118,90 @@ public abstract class Migrator extends Thread {
             throw new IllegalStateException();
     }
 
-    public abstract String migrate();
+    public String migrate() {
+        try {
+            LOGGER.debug("Retrieving source docs");
+            Map<Identity,JsonNode> sourceDocs=getDocumentIdMap(getSourceDocuments());
+            LOGGER.debug("There are {} source docs",sourceDocs.size());
+            LOGGER.debug("Retrieving destination docs");
+            Map<Identity,JsonNode> destDocs=getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()));
+            LOGGER.debug("There are {} destination docs",destDocs.size());
+
+            Set<Identity> insertDocs=new HashSet<>();
+            for(Identity id:sourceDocs.keySet())
+                if(!destDocs.containsKey(id))
+                    insertDocs.add(id);
+            LOGGER.debug("There are {} docs to insert",insertDocs.size());
+            
+            LOGGER.debug("Comparing source and destination docs");
+            Set<Identity> docsToRewrite=new HashSet<>();
+            for(Map.Entry<Identity,JsonNode> sourceEntry:sourceDocs.entrySet()) {
+                JsonNode destDoc=destDocs.get(sourceEntry.getKey());
+                if(destDoc!=null) {
+                    List<String> inconsistentFields=compareDocs(sourceEntry.getValue(),destDoc);
+                    if(inconsistentFields!=null&&!inconsistentFields.isEmpty()) {
+                        docsToRewrite.add(sourceEntry.getKey());
+                        // log as key=value to make parsing easy
+                        // fields to log: config name, job id, dest entity name & version, id field names & values,
+                        //list of inconsistent paths
+                        LOGGER.error("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\"",
+                                     getMigrationConfiguration().getConfigurationName(),
+                                     getMigrationConfiguration().getDestinationEntityName(),
+                                     getMigrationConfiguration().getDestinationEntityVersion(),
+                                     migrationJob.get_id(),
+                                     StringUtils.join(getMigrationConfiguration().getDestinationIdentityFields(), ","),
+                                     sourceEntry.getKey().toString(),
+                                     StringUtils.join(inconsistentFields, ","));
+                    }
+                }
+            }
+            LOGGER.debug("There are {} docs to rewrite",docsToRewrite.size());
+            
+            List<JsonNode> saveDocsList=new ArrayList<>();
+            for(Identity id:insertDocs)
+                saveDocsList.add(sourceDocs.get(id));
+            for(Identity id:docsToRewrite)
+                saveDocsList.add(sourceDocs.get(id));
+            
+            LOGGER.debug("There are {} docs to save",saveDocsList.size());
+            save(saveDocsList);
+            LOGGER.debug("Docs saved: {}",saveDocsList.size());
+        } catch (Exception e) {
+            LOGGER.error("Error during migration:{}",e);
+            return e.toString();
+        }
+        return null;
+    }
+
+    /**
+     * Should return a list of source documents
+     */
+    public abstract List<JsonNode> getSourceDocuments();
+
+    /**
+     * Should return a list of destination documents
+     */
+    public abstract List<JsonNode> getDestinationDocuments(Collection<Identity> docs);
+
+    /**
+     * Should compare two docs, and return mismatched fields
+     */
+    public abstract List<String> compareDocs(JsonNode source,JsonNode dest);
+
+    public abstract List<LightblueResponse> save(List<JsonNode> docs);
+
+    /**
+     * Build an id-doc map from a list of docs
+     */
+    public Map<Identity,JsonNode> getDocumentIdMap(List<JsonNode> list) {
+        Map<Identity,JsonNode> map=new HashMap<>();
+        if(list!=null)
+            for(JsonNode node:list) {
+                map.put(new Identity(node, getMigrationConfiguration().getDestinationIdentityFields()),node);
+            }
+        return map;
+    }
+    
     
     @Override
     public final void run() {
