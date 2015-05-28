@@ -22,7 +22,8 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
 /**
  * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
- * service/dao to use and verifying returned data. Verification uses equals method.
+ * service/dao to use and verifying returned data. Verification uses equals method - use {@link BeanConsistencyChecker} in your beans for sophisticated
+ * consistency check.
  *
  * @author mpatercz
  *
@@ -62,6 +63,10 @@ public class DAOFacadeBase<D> {
         this.entityIdStore = new EntityIdStoreImpl(entityClass);
 
         setEntityIdStore(entityIdStore);
+    }
+
+    private boolean checkConsistency(Object o1, Object o2) {
+        return Objects.equals(o1, o2);
     }
 
     private ListeningExecutorService createExecutor() {
@@ -160,7 +165,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (Objects.equals(legacyEntity, lightblueEntity)) {
+            if (checkConsistency(legacyEntity, lightblueEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -256,7 +261,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (Objects.equals(legacyEntity, lightblueEntity)) {
+            if (checkConsistency(legacyEntity, lightblueEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -339,7 +344,7 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (Objects.equals(lightblueEntity, legacyEntity)) {
+            if (checkConsistency(lightblueEntity, legacyEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
