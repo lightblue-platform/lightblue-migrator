@@ -37,6 +37,7 @@ public class Main implements Daemon {
 
     private DaemonContext context;
     private Thread consistencyCheckerThread = null;
+    private ConsistencyChecker consistencyChecker;
 
     public static void main(String[] args) throws Exception {
         processArguments(args);
@@ -93,7 +94,8 @@ public class Main implements Daemon {
         options.addOption(OptionBuilder.withArgName("jobversion").withLongOpt("jobversion").hasArg(true).withDescription("migrationJob Entity Version").isRequired().create('j'));
         options.addOption(OptionBuilder.withArgName("sourceconfig").withLongOpt("sourceconfig").hasArg(true).withDescription("Path to configuration file for source").isRequired().create('s'));
         options.addOption(OptionBuilder.withArgName("destinationconfig").withLongOpt("destinationconfig").hasArg(true).withDescription("Path to configuration file for destination").isRequired().create('d'));
-        
+
+
         String log4jConfig = System.getProperty("log4j.configuration");
         if (log4jConfig != null && !log4jConfig.isEmpty()) {
             // watch for log4j changes using default delay (60 seconds)
@@ -135,6 +137,7 @@ public class Main implements Daemon {
         LOGGER.info("Stopping " + getClass().getSimpleName());
         if(consistencyCheckerThread != null){
             consistencyCheckerThread.interrupt();
+            consistencyChecker.stop();
         }
     }
 
@@ -142,11 +145,13 @@ public class Main implements Daemon {
     public void destroy() {
         LOGGER.info("Destroying " + getClass().getSimpleName());
         consistencyCheckerThread = null;
+        consistencyChecker.destroy();
     }
 
     private Thread createConsistencyCheckerThread(){
         processArguments(context.getArguments());
-        return new Thread(buildConsistencyChecker(),"ConsistencyCheckerRunner");
+        consistencyChecker = buildConsistencyChecker();
+        return new Thread(consistencyChecker,"ConsistencyCheckerRunner");
     }
 
 }
