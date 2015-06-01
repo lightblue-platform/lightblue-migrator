@@ -22,7 +22,6 @@ public class DAOFacadeTest {
 
     @Mock CountryDAO legacyDAO;
     @Mock CountryDAOLightblue lightblueDAO;
-    @Mock EntityIdStore entityIdStore;
     CountryDAO facade;
 
     @Before

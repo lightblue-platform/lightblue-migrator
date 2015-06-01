@@ -56,13 +56,7 @@ public class DAOFacadeBase<D> {
         super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
-    }
-
-    public DAOFacadeBase(D legacyDAO, D lightblueDAO, Class entityClass) {
-        this(legacyDAO, lightblueDAO);
-        this.entityIdStore = new EntityIdStoreImpl(entityClass);
-
-        setEntityIdStore(entityIdStore);
+        setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
     }
 
     private boolean checkConsistency(Object o1, Object o2) {
