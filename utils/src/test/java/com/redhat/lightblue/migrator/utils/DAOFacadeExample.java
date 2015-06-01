@@ -1,6 +1,7 @@
 package com.redhat.lightblue.migrator.utils;
 
 
+
 public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements CountryDAO {
 
     public final EntityIdExtractor<Country> entityIdExtractor = new EntityIdExtractor<Country>() {

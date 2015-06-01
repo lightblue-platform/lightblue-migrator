@@ -37,6 +37,14 @@
       <artifactId>guava</artifactId>
     </dependency>
     <dependency>
+      <groupId>commons-beanutils</groupId>
+      <artifactId>commons-beanutils</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.redhat.lightblue.migrator</groupId>
       <artifactId>lightblue-migrator-core</artifactId>
       <version>${project.version}</version>
