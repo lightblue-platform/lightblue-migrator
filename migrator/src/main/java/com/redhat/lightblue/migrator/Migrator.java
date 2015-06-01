@@ -145,8 +145,9 @@ public abstract class Migrator extends Thread {
             throw new IllegalStateException();
     }
 
-    public String migrate() {
+    public void migrate(MigrationJobExecution execution) {
         try {
+            initMigrator();
             LOGGER.debug("Retrieving source docs");
             sourceDocs=getDocumentIdMap(getSourceDocuments());
             Breakpoint.checkpoint("Migrator:sourceDocs");
@@ -187,23 +188,40 @@ public abstract class Migrator extends Thread {
             }
             Breakpoint.checkpoint("Migrator:rewriteDocs");
             LOGGER.debug("There are {} docs to rewrite",rewriteDocs.size());
-            
+            execution.setInconsistentDocumentCount(rewriteDocs.size());
+            execution.setOverwrittenDocumentCount(rewriteDocs.size());
+            execution.setConsistentDocumentCount(sourceDocs.size()-rewriteDocs.size());
+
             List<JsonNode> saveDocsList=new ArrayList<>();
             for(Identity id:insertDocs)
                 saveDocsList.add(sourceDocs.get(id));
             for(Identity id:rewriteDocs)
                 saveDocsList.add(sourceDocs.get(id));
+
+            execution.setProcessedDocumentCount(sourceDocs.size());
             
             LOGGER.debug("There are {} docs to save",saveDocsList.size());
             save(saveDocsList);
             LOGGER.debug("Docs saved: {}",saveDocsList.size());
             Breakpoint.checkpoint("Migrator:complete");
+
         } catch (Exception e) {
             LOGGER.error("Error during migration:{}",e);
-            return e.toString();
+            execution.setErrorMsg(e.toString());
+        } finally {
+            cleanupMigrator();
         }
-        return null;
     }
+
+    /**
+     * Notifies the implementing class that processing has started
+     */
+    public void initMigrator() {}
+
+    /**
+     * Notifies the implementing class that processing has finished
+     */
+    public void cleanupMigrator() {}
 
     /**
      * Should return a list of source documents
@@ -245,18 +263,24 @@ public abstract class Migrator extends Thread {
         updateRequest.where(withValue("_id",ExpressionOperation.EQ, migrationJob.get_id()));
         updateRequest.returns(includeField("_id"));
 
+        MigrationJobExecution execution=new MigrationJobExecution();
+        execution.setOwnerName(getMigrationConfiguration().getConsistencyCheckerName());
+        execution.setHostName(getController().getController().getMainConfiguration().getName());
+        execution.setActiveExecutionId(activeExecution.get_id());
+        execution.setActualStartDate(activeExecution.getStartTime());
+        execution.setStatus(MigrationJob.STATE_ACTIVE);
         // State is active
         updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(MigrationJob.STATE_ACTIVE)))),
                               // Add a new execution element
                               new AppendUpdate("jobExecutions",new ObjectRValue(new HashMap())),
                               // Owner name
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName",new LiteralRValue(quote(getMigrationConfiguration().getConsistencyCheckerName())))),
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName",new LiteralRValue(quote(execution.getOwnerName())))),
                               // Host name
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.hostName",new LiteralRValue(quote(getController().getController().getMainConfiguration().getName())))),
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.hostName",new LiteralRValue(quote(execution.getHostName())))),
                               // Execution id
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.activeExecutionId",new LiteralRValue(quote(activeExecution.get_id())))),
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.activeExecutionId",new LiteralRValue(quote(execution.getActiveExecutionId())))),
                               // Start date
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.actualStartDate",new LiteralRValue(quote(ClientConstants.getDateFormat().format(activeExecution.getStartTime()))))),
+                              new SetUpdate(new PathValuePair("jobExecutions.-1.actualStartDate",new LiteralRValue(quote(ClientConstants.getDateFormat().format(execution.getActualStartDate()))))),
                               // Status
                               new SetUpdate(new PathValuePair("jobExecutions.-1.status",new LiteralRValue(quote(MigrationJob.STATE_ACTIVE)))));
         LOGGER.debug("Marking job {} as active",migrationJob.get_id());
@@ -267,19 +291,26 @@ public abstract class Migrator extends Thread {
             response = lbClient.data(updateRequest);
             if(!response.hasError()) {
                 // Do the migration
-                String error=migrate();
+                migrate(execution);
 
                 // If there is error, 'error' will contain a messages, otherwise it'll be null
                 // Update the state
                 updateRequest=new DataUpdateRequest("migrationJob",null);
                 updateRequest.where(withValue("_id = "+migrationJob.get_id()));
                 updateRequest.returns(includeField("_id"));
-                updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(error==null? MigrationJob.STATE_COMPLETED:MigrationJob.STATE_FAILED)))),
+                if(execution.getErrorMsg()!=null)
+                    execution.setStatus(MigrationJob.STATE_FAILED);
+                else
+                    execution.setStatus(MigrationJob.STATE_COMPLETED);
+                updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(execution.getStatus())))),
                                       new ForeachUpdate("jobExecutions",
                                                         withValue("activeExecutionId",ExpressionOperation.EQ,activeExecution.get_id()),
-                                                        new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(error==null?MigrationJob.STATE_COMPLETED:
-                                                                                                                         MigrationJob.STATE_FAILED))),
-                                                                      new PathValuePair("errorMsg",new LiteralRValue(quote(error==null?"":error))),
+                                                        new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(execution.getStatus()))),
+                                                                      new PathValuePair("errorMsg",new LiteralRValue(quote(execution.getErrorMsg()==null?"":execution.getErrorMsg()))),
+                                                                      new PathValuePair("processedDocumentCount",new LiteralRValue(Integer.toString(execution.getProcessedDocumentCount()))),
+                                                                      new PathValuePair("consistentDocumentCount",new LiteralRValue(Integer.toString(execution.getConsistentDocumentCount()))),
+                                                                      new PathValuePair("inconsistentDocumentCount",new LiteralRValue(Integer.toString(execution.getInconsistentDocumentCount()))),
+                                                                      new PathValuePair("overwrittenDocumentCount",new LiteralRValue(Integer.toString(execution.getOverwrittenDocumentCount()))),
                                                                       new PathValuePair("actualEndDate", new LiteralRValue(quote(ClientConstants.getDateFormat().format(new Date())))))));
 
                 response=lbClient.data(updateRequest);
