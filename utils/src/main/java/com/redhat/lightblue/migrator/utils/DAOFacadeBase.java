@@ -87,7 +87,7 @@ public class DAOFacadeBase<D> {
         Iterator<Object> it = Arrays.asList(values).iterator();
         while(it.hasNext()) {
             Object value = it.next();
-            str.append(value.toString());
+            str.append(value);
             if (it.hasNext()) {
                 str.append(", ");
             }
