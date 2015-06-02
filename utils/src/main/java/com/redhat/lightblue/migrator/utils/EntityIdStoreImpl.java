@@ -11,7 +11,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * EntityIdStore implementation using ehcache. Creates a cache object per entity and uses thread id as key to avoid conflicts.
+ * EntityIdStore implementation using ehcache. Creates a cache object per dao and uses thread id as key to avoid conflicts.
+ * There is an assumption that both legacy and destination daos create entities in the same order.
  *
  * TODO: ehcache.xml will need to be optimized to minimize overhead.
  *
@@ -26,10 +27,10 @@ public class EntityIdStoreImpl implements EntityIdStore {
     private CacheManager cacheManager = CacheManager.create();
     private Cache cache;
 
-    public EntityIdStoreImpl(Class<?> entityClass) {
-        log.debug("Initializing id cache for "+entityClass.getCanonicalName());
-        cacheManager.addCacheIfAbsent(entityClass.getCanonicalName());
-        cache = cacheManager.getCache(entityClass.getCanonicalName());
+    public EntityIdStoreImpl(Class<?> daoClass) {
+        log.debug("Initializing id cache for "+daoClass.getCanonicalName());
+        cacheManager.addCacheIfAbsent(daoClass.getCanonicalName());
+        cache = cacheManager.getCache(daoClass.getCanonicalName());
     }
 
     @Override

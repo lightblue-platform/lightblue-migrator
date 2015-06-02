@@ -2,9 +2,14 @@ package com.redhat.lightblue.migrator.utils;
 
 import java.util.Objects;
 
+import com.redhat.lightblue.migrator.utils.consistency.BeanConsistencyChecker;
+import com.redhat.lightblue.migrator.utils.consistency.ConsistencyCheck;
+
 public class Country {
 
-    private String name, iso2Code, iso3Code;
+    @ConsistencyCheck(ignore=true)
+    private String name;
+    private String iso2Code, iso3Code;
     private Long id;
 
     public long getId() {
@@ -51,9 +56,7 @@ public class Country {
 
     @Override
     public boolean equals(Object obj) {
-        Country c = (Country) obj;
-
-        return Objects.equals(c.iso2Code, iso2Code) && Objects.equals(c.id, id);
+        return BeanConsistencyChecker.getInstance().consistent(this, obj);
     }
 
 }

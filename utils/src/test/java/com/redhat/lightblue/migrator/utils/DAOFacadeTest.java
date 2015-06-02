@@ -22,7 +22,6 @@ public class DAOFacadeTest {
 
     @Mock CountryDAO legacyDAO;
     @Mock CountryDAOLightblue lightblueDAO;
-    @Mock EntityIdStore entityIdStore;
     CountryDAO facade;
 
     @Before
@@ -203,8 +202,7 @@ public class DAOFacadeTest {
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
         Assert.assertTrue(101l == (Long) ((DAOFacadeBase) facade).getEntityIdStore().pop());
 
-        // when there is a conflict, facade will return what legacy dao returned
-        Assert.assertEquals(createdByLegacy, createdCountry);
+        Assert.assertEquals(pl.getIso2Code(), "PL");
     }
 
     @Test
@@ -221,6 +219,125 @@ public class DAOFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).createCountry(pl);
+    }
+
+    /* insert tests when method also does a read */
+
+    @Test
+    public void initialPhaseCreateWithRead() {
+        LightblueMigrationPhase.initialPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        facade.createCountryIfNotExists(pl);
+
+        Mockito.verifyZeroInteractions(lightblueDAO);
+        Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
+    }
+
+    @Test
+    public void dualWritePhaseCreateWithReadTest() {
+        LightblueMigrationPhase.dualWritePhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountryIfNotExists(pl)).thenReturn(pl);
+
+        facade.createCountryIfNotExists(pl);
+
+        Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
+        // not calling lightblueDAO in dual write phase, because this is also a read method
+        Mockito.verifyZeroInteractions(lightblueDAO);
+    }
+
+    @Test
+    public void dualReadPhaseCreateWithReadTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+        Country createdByLegacy = new Country(101l, "PL"); // has id set
+
+        Mockito.when(legacyDAO.createCountryIfNotExists(pl)).thenReturn(createdByLegacy);
+
+        Country createdCountry = facade.createCountryIfNotExists(pl);
+        Assert.assertEquals(101l, createdCountry.getId());
+
+
+        Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
+        Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
+
+        // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
+        Assert.assertTrue(101l == (Long)((DAOFacadeBase)facade).getEntityIdStore().pop());
+    }
+
+    @Test
+    public void ligtblueProxyPhaseCreateWithReadTest() {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        // lightblue will handle ID generation in this phase
+        ((DAOFacadeBase) facade).setEntityIdStore(null);
+        Mockito.verify(lightblueDAO).setEntityIdStore(null);
+
+        Country pl = new Country("PL");
+
+        facade.createCountryIfNotExists(pl);
+
+        Mockito.verifyZeroInteractions(legacyDAO);
+        Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
+    }
+
+    /* lightblue failure tests */
+
+    @Test
+    public void ligtblueFailureDuringReadTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        Mockito.when(legacyDAO.getCountry("PL")).thenReturn(pl);
+        Mockito.when(lightblueDAO.getCountry(Mockito.anyString())).thenThrow(new RuntimeException("Lightblue failure!"));
+
+        Country returnedCountry = facade.getCountry("PL");
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void ligtblueFailureDuringUpdateTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+        Country ca = new Country("CA");
+
+        Mockito.when(legacyDAO.updateCountry(pl)).thenReturn(ca);
+        Mockito.when(lightblueDAO.updateCountry(Mockito.any(Country.class))).thenThrow(new RuntimeException("Lightblue failure!"));
+
+        Country returnedCountry = facade.updateCountry(pl);
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+        Mockito.verify(legacyDAO).updateCountry(pl);
+
+        Assert.assertEquals(ca, returnedCountry);
+    }
+
+    @Test
+    public void ligtblueFailureDuringCreateTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenThrow(new RuntimeException("Lightblue failure!"));
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+
+        Assert.assertEquals(pl, returnedCountry);
     }
 
 }

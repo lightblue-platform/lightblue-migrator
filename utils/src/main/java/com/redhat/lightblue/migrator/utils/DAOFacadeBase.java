@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import org.slf4j.Logger;
@@ -21,7 +22,8 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
 /**
  * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
- * service/dao to use and verifying returned data. Verification uses equals method.
+ * service/dao to use and verifying returned data. Verification uses equals method - use {@link BeanConsistencyChecker} in your beans for sophisticated
+ * consistency check.
  *
  * @author mpatercz
  *
@@ -54,16 +56,14 @@ public class DAOFacadeBase<D> {
         super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
+        setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
     }
 
-    public DAOFacadeBase(D legacyDAO, D lightblueDAO, Class entityClass) {
-        this(legacyDAO, lightblueDAO);
-        this.entityIdStore = new EntityIdStoreImpl(entityClass);
-
-        setEntityIdStore(entityIdStore);
+    private boolean checkConsistency(Object o1, Object o2) {
+        return Objects.equals(o1, o2);
     }
 
-    private ListeningExecutorService getExecutor() {
+    private ListeningExecutorService createExecutor() {
         return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
     }
 
@@ -81,7 +81,7 @@ public class DAOFacadeBase<D> {
         Iterator<Object> it = Arrays.asList(values).iterator();
         while(it.hasNext()) {
             Object value = it.next();
-            str.append(value.toString());
+            str.append(value);
             if (it.hasNext()) {
                 str.append(", ");
             }
@@ -90,8 +90,8 @@ public class DAOFacadeBase<D> {
         return str.toString();
     }
 
-    private void logInconsistency(String entityName, String methodName, Object[] values) {
-        log.error(entityName+" inconsistency in "+methodCallToString(methodName, values));
+    private void logInconsistency(String entityName, String methodName, Object[] values, Object legacyEntity, Object lightblueEntity) {
+        log.error(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
     /**
@@ -112,20 +112,25 @@ public class DAOFacadeBase<D> {
         ListenableFuture<T> listenableFuture = null;
 
         if (LightblueMigration.shouldReadDestinationEntity()) {
-            // fetch from lightblue using future (asynchronously)
-            log.debug("."+methodName+" reading from lightblue");
-            listenableFuture = getExecutor().submit(new Callable<T>(){
-                @Override
-                public T call() throws Exception {
-                    Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                    Timer dest = new Timer("destination."+methodName);
-                    try {
-                        return (T) method.invoke(lightblueDAO, values);
-                    } finally {
-                        dest.complete();
+            ListeningExecutorService executor = createExecutor();
+            try {
+                // fetch from lightblue using future (asynchronously)
+                log.debug("."+methodName+" reading from lightblue");
+                listenableFuture = executor.submit(new Callable<T>(){
+                    @Override
+                    public T call() throws Exception {
+                        Method method = lightblueDAO.getClass().getMethod(methodName, types);
+                        Timer dest = new Timer("destination."+methodName);
+                        try {
+                            return (T) method.invoke(lightblueDAO, values);
+                        } finally {
+                            dest.complete();
+                        }
                     }
-                }
-            });
+                });
+            } finally {
+                executor.shutdown();
+            }
         }
 
         if (LightblueMigration.shouldReadSourceEntity()) {
@@ -142,18 +147,24 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldReadDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
-            lightblueEntity = listenableFuture.get();
+            try {
+                lightblueEntity = listenableFuture.get();
+            } catch (Exception e) {
+                log.error("Error when calling lightblue DAO", e);
+                log.debug("Returing data from legacy due to lightblue error");
+                return legacyEntity;
+            }
         }
 
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (Objects.equals(legacyEntity, lightblueEntity)) {
+            if (checkConsistency(legacyEntity, lightblueEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values);
+                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -197,9 +208,11 @@ public class DAOFacadeBase<D> {
         ListenableFuture<T> listenableFuture = null;
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
+            ListeningExecutorService executor = createExecutor();
+            try {
             // fetch from lightblue using future (asynchronously)
             log.debug("."+methodName+" writing to lightblue");
-            listenableFuture = getExecutor().submit(new Callable<T>(){
+            listenableFuture = executor.submit(new Callable<T>(){
                 @Override
                 public T call() throws Exception {
                     Method method = lightblueDAO.getClass().getMethod(methodName, types);
@@ -211,6 +224,9 @@ public class DAOFacadeBase<D> {
                     }
                 }
             });
+            } finally {
+                executor.shutdown();
+            }
         }
 
         if (LightblueMigration.shouldWriteSourceEntity()) {
@@ -227,18 +243,24 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
-            lightblueEntity = listenableFuture.get();
+            try {
+                lightblueEntity = listenableFuture.get();
+            } catch (Exception e) {
+                log.error("Error when calling lightblue DAO", e);
+                log.debug("Returing data from legacy due to lightblue error");
+                return legacyEntity;
+            }
         }
 
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (Objects.equals(legacyEntity, lightblueEntity)) {
+            if (checkConsistency(legacyEntity, lightblueEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values);
+                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -262,6 +284,7 @@ public class DAOFacadeBase<D> {
     /**
      * Call dao method which creates a single entity. It will ensure that entities in both legacy and lightblue datastores are the same, including IDs.
      *
+     * @param pureWrite method does only write if true. Set it to false if does both read and write.
      * @param returnedType type of the returned object
      * @param methodName method name to call
      * @param types List of parameter types
@@ -269,7 +292,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
@@ -287,6 +310,12 @@ public class DAOFacadeBase<D> {
             }
         }
 
+        if (!pureWrite && LightblueMigration.shouldWriteSourceEntity() && !LightblueMigration.shouldReadDestinationEntity()) {
+            // dual write phase - use legacy dao, because does also a read
+            log.debug("Dual write phase, skipping lightblueDAO for ."+methodName+" because that method does also a read");
+            return legacyEntity;
+        }
+
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             log.debug("."+methodName+" creating in lightblue");
 
@@ -301,6 +330,10 @@ public class DAOFacadeBase<D> {
             // it's expected that this method in lightblueDAO will extract id from idStore
             try {
                 lightblueEntity = (T) method.invoke(lightblueDAO, values);
+            } catch (Exception e) {
+                log.error("Error when calling lightblue DAO", e);
+                log.debug("Returing data from legacy due to lightblue error");
+                return legacyEntity;
             } finally {
                 dest.complete();
             }
@@ -312,12 +345,12 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (Objects.equals(lightblueEntity, legacyEntity)) {
+            if (checkConsistency(lightblueEntity, legacyEntity)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values);
+                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -325,8 +358,8 @@ public class DAOFacadeBase<D> {
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
-    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
-        return callDAOCreateSingleMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
+    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+        return callDAOCreateSingleMethod(pureWrite, entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 
 }

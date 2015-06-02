@@ -34,7 +34,7 @@
   <modules>
     <module>core</module>
     <module>web</module>
-    <module>migrator</module>
+    <!--module>migrator</module-->
     <module>utils</module>
     <module>test</module>
   </modules>
@@ -141,6 +141,16 @@
             <groupId>commons-daemon</groupId>
             <artifactId>commons-daemon</artifactId>
             <version>1.0.15</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-beanutils</groupId>
+            <artifactId>commons-beanutils</artifactId>
+            <version>1.9.2</version>
+        </dependency>
+        <dependency>
+            <groupId>commons-lang</groupId>
+            <artifactId>commons-lang</artifactId>
+            <version>2.6</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.lightblue</groupId>
