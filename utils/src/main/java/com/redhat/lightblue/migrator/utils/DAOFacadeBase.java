@@ -56,13 +56,7 @@ public class DAOFacadeBase<D> {
         super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
-    }
-
-    public DAOFacadeBase(D legacyDAO, D lightblueDAO, Class entityClass) {
-        this(legacyDAO, lightblueDAO);
-        this.entityIdStore = new EntityIdStoreImpl(entityClass);
-
-        setEntityIdStore(entityIdStore);
+        setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
     }
 
     private boolean checkConsistency(Object o1, Object o2) {
@@ -87,7 +81,7 @@ public class DAOFacadeBase<D> {
         Iterator<Object> it = Arrays.asList(values).iterator();
         while(it.hasNext()) {
             Object value = it.next();
-            str.append(value.toString());
+            str.append(value);
             if (it.hasNext()) {
                 str.append(", ");
             }
@@ -290,6 +284,7 @@ public class DAOFacadeBase<D> {
     /**
      * Call dao method which creates a single entity. It will ensure that entities in both legacy and lightblue datastores are the same, including IDs.
      *
+     * @param pureWrite method does only write if true. Set it to false if does both read and write.
      * @param returnedType type of the returned object
      * @param methodName method name to call
      * @param types List of parameter types
@@ -297,7 +292,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
         log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
@@ -313,6 +308,12 @@ public class DAOFacadeBase<D> {
             } finally {
                 source.complete();
             }
+        }
+
+        if (!pureWrite && LightblueMigration.shouldWriteSourceEntity() && !LightblueMigration.shouldReadDestinationEntity()) {
+            // dual write phase - use legacy dao, because does also a read
+            log.debug("Dual write phase, skipping lightblueDAO for ."+methodName+" because that method does also a read");
+            return legacyEntity;
         }
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
@@ -357,8 +358,8 @@ public class DAOFacadeBase<D> {
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
-    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
-        return callDAOCreateSingleMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
+    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+        return callDAOCreateSingleMethod(pureWrite, entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 
 }
