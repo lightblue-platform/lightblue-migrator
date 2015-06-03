@@ -36,10 +36,14 @@ public class EntityIdStoreImpl implements EntityIdStore {
     @Override
     public void push(Long id) {
         long threadId = Thread.currentThread().getId();
-        log.debug("Storing id="+id+" for "+cache.getName()+", thread="+threadId);
+        if(log.isDebugEnabled())
+            log.debug("Storing id="+id+" for "+cache.getName()+", thread="+threadId);
         if (!cache.isKeyInCache(threadId)) {
             cache.put(new Element(threadId, new LinkedList<Long>()));
         }
+
+        if (log.isDebugEnabled())
+            log.debug("cache("+threadId+")="+cache.get(threadId));
 
         @SuppressWarnings("unchecked")
         LinkedList<Long> list = (LinkedList<Long>)cache.get(threadId).getObjectValue();
