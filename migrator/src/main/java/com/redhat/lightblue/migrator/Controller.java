@@ -107,6 +107,8 @@ public class Controller extends Thread {
                     MigrationConfiguration[] cfg=getMigrationConfigurations();
                     createControllers(cfg);
                     Breakpoint.checkpoint("Controller:createconfig");
+                } catch (InterruptedException ie) {
+                    interrupted=true;
                 } catch (Exception e) {
                     LOGGER.error("Error during configuration load:"+e);
                 }
@@ -114,7 +116,9 @@ public class Controller extends Thread {
             if(!interrupted) {
                 try {
                     Thread.sleep(30000);
-                } catch (Exception e) {}
+                } catch (InterruptedException e) {
+                    interrupted=true;
+                }
             }
         }
     }
