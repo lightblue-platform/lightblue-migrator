@@ -320,7 +320,7 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" creating in lightblue");
 
             try {
-                if (entityIdStore != null) {
+                if (entityIdStore != null && legacyEntity != null) {
                     Long id = entityIdExtractor.extractId(legacyEntity);
                     entityIdStore.push(id);
                 }

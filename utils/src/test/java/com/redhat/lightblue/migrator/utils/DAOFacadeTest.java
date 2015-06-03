@@ -274,10 +274,6 @@ public class DAOFacadeTest {
     public void ligtblueProxyPhaseCreateWithReadTest() {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
-        // lightblue will handle ID generation in this phase
-        ((DAOFacadeBase) facade).setEntityIdStore(null);
-        Mockito.verify(lightblueDAO).setEntityIdStore(null);
-
         Country pl = new Country("PL");
 
         facade.createCountryIfNotExists(pl);
