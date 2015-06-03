@@ -100,15 +100,13 @@ public class Controller extends Thread {
         boolean interrupted=false;
         Breakpoint.checkpoint("Controller:start");
         while(!interrupted) {
-            interrupted=Thread.isInterrupted();
+            interrupted=isInterrupted();
             if(!interrupted) {
                 try {
                     Breakpoint.checkpoint("Controller:loadconfig");
                     MigrationConfiguration[] cfg=getMigrationConfigurations();
                     createControllers(cfg);
                     Breakpoint.checkpoint("Controller:createconfig");
-                } catch (InterruptedException ie) {
-                    interrupted=true;
                 } catch (Exception e) {
                     LOGGER.error("Error during configuration load:"+e);
                 }

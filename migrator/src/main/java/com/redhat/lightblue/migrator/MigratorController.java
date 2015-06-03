@@ -145,10 +145,15 @@ public class MigratorController extends Thread {
         insRequest.returns(includeFieldRecursively("*"));
         LightblueResponse rsp;
         try {
+            LOGGER.debug("Attempting to lock {}",ae.getMigrationJobId());
             rsp=lbClient.data(insRequest);
-            if(rsp.hasError())
+            LOGGER.debug("response:{}",rsp);
+            if(rsp.hasError()) {
+                LOGGER.debug("Response has error");
                 return null;
+            }
         } catch (Exception e) {
+            LOGGER.debug("Error during insert:{}",e);
             return null;
         }
         if(rsp.parseModifiedCount()==1) {
@@ -228,7 +233,7 @@ public class MigratorController extends Thread {
         // This thread never stops
         Breakpoint.checkpoint("MigratorController:start");
         while(!interrupted) {
-            interrupted=Thread.isInterrupted();
+            interrupted=isInterrupted();
             if(!interrupted) {
                 // All active threads will notify on migratorThreads when they finish
                 synchronized(migratorThreads) {

@@ -34,7 +34,7 @@
   <modules>
     <module>core</module>
     <module>web</module>
-    <!--module>migrator</module-->
+    <module>migrator</module>
     <module>utils</module>
     <module>test</module>
   </modules>
