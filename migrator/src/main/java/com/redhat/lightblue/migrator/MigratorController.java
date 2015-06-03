@@ -228,7 +228,7 @@ public class MigratorController extends Thread {
         // This thread never stops
         Breakpoint.checkpoint("MigratorController:start");
         while(!interrupted) {
-            interrupted=Thread.interrupted();
+            interrupted=Thread.isInterrupted();
             if(!interrupted) {
                 // All active threads will notify on migratorThreads when they finish
                 synchronized(migratorThreads) {

@@ -6,20 +6,6 @@
             "datasource": "mongodata"
         },
         "defaultVersion" : "1.0.0",
-        "hooks": [
-            {
-                "actions": [
-                    "insert",
-                    "update",
-                    "delete"
-                ],
-                "configuration": {
-                    "entityName": "audit",
-                    "version": "1.0.0"
-                },
-                "name": "auditHook"
-            }
-        ],
         "indexes": [
             {
                 "fields": [
@@ -47,16 +33,16 @@
     "schema": {
         "access": {
             "delete": [
-                "lb-migrationconfig-delete"
+                "anyone"
             ],
             "find": [
-                "lb-migrationconfig-find"
+                "anyone"
             ],
             "insert": [
-                "lb-migrationconfig-insert"
+                "anyone"
             ],
             "update": [
-                "lb-migrationconfig-update"
+                "anyone"
             ]
         },
         "fields": {

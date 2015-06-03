@@ -100,7 +100,7 @@ public class Controller extends Thread {
         boolean interrupted=false;
         Breakpoint.checkpoint("Controller:start");
         while(!interrupted) {
-            interrupted=Thread.interrupted();
+            interrupted=Thread.isInterrupted();
             if(!interrupted) {
                 try {
                     Breakpoint.checkpoint("Controller:loadconfig");
