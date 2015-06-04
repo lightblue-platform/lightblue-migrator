@@ -319,9 +319,15 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             log.debug("."+methodName+" creating in lightblue");
 
-            if (entityIdStore != null) {
-                Long id = entityIdExtractor.extractId(legacyEntity);
-                entityIdStore.push(id);
+            try {
+                if (entityIdStore != null && legacyEntity != null) {
+                    Long id = entityIdExtractor.extractId(legacyEntity);
+                    entityIdStore.push(id);
+                }
+            } catch (Exception e) {
+                log.error("Error when handling id", e);
+                log.debug("Returing data from legacy");
+                return legacyEntity;
             }
 
             Method method = lightblueDAO.getClass().getMethod(methodName, types);
