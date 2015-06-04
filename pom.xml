@@ -35,7 +35,8 @@
     <module>core</module>
     <module>web</module>
     <!--module>migrator</module-->
-    <module>utils</module>
+    <module>facade</module>
+    <module>bean-consistency-checker</module>
     <module>test</module>
   </modules>
   <properties>
