@@ -125,11 +125,14 @@
                 "uniqueitems": true,
                 "description": "Optional paths to exclude comparisons of source and destination documents.  Fields including arrays will apply to all elements in the array even if specific indexes are included."
             },
+            "destinationConfigPath": {
+                "type":"string"
+            },
+            "sourceConfigPath": {
+                "type":"string"
+            },
             "destinationServiceURI": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "REST service URI for instance housing destination data."
             },
             "destinationEntityName": {
@@ -160,9 +163,6 @@
             },
             "sourceServiceURI": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "REST service URI for instance housing source data"
             },
             "sourceEntityName": {
@@ -181,30 +181,18 @@
             },
             "creationDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Creation date of the configuration"
             },
             "createdBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             },
             "lastUpdateDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Last updated date of the configuration"
             },
             "lastUpdatedBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             }
         },

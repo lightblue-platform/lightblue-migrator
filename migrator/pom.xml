@@ -21,6 +21,10 @@
     </dependency>
     <dependency>
       <groupId>com.redhat.lightblue.client</groupId>
+      <artifactId>lightblue-client-integration-test</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.redhat.lightblue.client</groupId>
       <artifactId>lightblue-client-hystrix</artifactId>
     </dependency>
     <dependency>
@@ -53,7 +57,7 @@
     </dependency>
     <dependency>
       <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-log4j12</artifactId>
+      <artifactId>slf4j-simple</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-daemon</groupId>

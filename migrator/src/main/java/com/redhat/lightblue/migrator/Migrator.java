@@ -2,6 +2,7 @@ package com.redhat.lightblue.migrator;
 
 import java.io.InputStream;
 import java.io.IOException;
+import java.io.FileInputStream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,11 +114,12 @@ public abstract class Migrator extends Thread {
 
     public LightblueClient getLightblueClient(String configPath)
         throws IOException {
+        LOGGER.debug("Getting client with config {}",configPath);
         LightblueClient cli;
         if (configPath == null) {
             cli = new LightblueHttpClient();
         } else {
-            try (InputStream is = controller.getContextClassLoader().getResourceAsStream(configPath)) {
+            try (InputStream is = new FileInputStream(configPath)) {
                 LightblueClientConfiguration config = PropertiesLightblueClientConfiguration.fromInputStream(is);
                 cli = new LightblueHttpClient(config);
             }
@@ -245,10 +247,15 @@ public abstract class Migrator extends Thread {
      */
     public Map<Identity,JsonNode> getDocumentIdMap(List<JsonNode> list) {
         Map<Identity,JsonNode> map=new HashMap<>();
-        if(list!=null)
+        if(list!=null) {
+            LOGGER.debug("Getting doc IDs for {} docs, fields={}",list.size(),
+                         getMigrationConfiguration().getDestinationIdentityFields());
             for(JsonNode node:list) {
-                map.put(new Identity(node, getMigrationConfiguration().getDestinationIdentityFields()),node);
+                Identity id=new Identity(node, getMigrationConfiguration().getDestinationIdentityFields());
+                LOGGER.debug("ID={}",id);
+                map.put(id,node);
             }
+        }
         return map;
     }
     
@@ -322,6 +329,7 @@ public abstract class Migrator extends Thread {
         } catch (Exception e) {
             LOGGER.error("Cannot update job {}, {} response:{}",migrationJob.get_id(),e,response.getJson());
         }
+        controller.unlock(activeExecution.get_id());
     }
 
     private String quote(String s) {

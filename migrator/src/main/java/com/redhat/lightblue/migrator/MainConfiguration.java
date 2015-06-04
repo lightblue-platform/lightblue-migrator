@@ -17,7 +17,6 @@ public class MainConfiguration {
     private String name;
     private String hostName;
     private String clientConfig;
-    private String log4jConfig;
 
     static {
         options = new Options();
@@ -43,13 +42,6 @@ public class MainConfiguration {
                           withDescription("Path to configuration file for migration").
                           isRequired().
                           create('c'));
-        options.addOption(OptionBuilder.
-                          withArgName("log4jconfig").
-                          withLongOpt("log4j").
-                          hasArg(true).
-                          withDescription("Log4j configuration file").
-                          isRequired().
-                          create('l'));
     }
 
 
@@ -77,14 +69,6 @@ public class MainConfiguration {
         clientConfig=s;
     }
 
-    public String getLog4jConfig() {
-        return log4jConfig;
-    }
-
-    public void setLog4jConfig(String s) {
-        log4jConfig=s;
-    }
-
     
     public static Properties processArguments(String[] args){
         Properties prop=new Properties();        
@@ -106,7 +90,6 @@ public class MainConfiguration {
         cfg.setName(p.getProperty("name"));
         cfg.setHostName(p.getProperty("hostname"));
         cfg.setClientConfig(p.getProperty("config"));
-        cfg.setLog4jConfig(p.getProperty("log4j"));
         return cfg;
     }
 }

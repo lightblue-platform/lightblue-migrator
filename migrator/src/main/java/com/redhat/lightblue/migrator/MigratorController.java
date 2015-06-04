@@ -162,7 +162,7 @@ public class MigratorController extends Thread {
             return null;
     }
 
-    private void unlock(String id) {
+    public void unlock(String id) {
         DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
         req.where(withValue("_id",ExpressionOperation.EQ,id));
         try {
@@ -269,9 +269,6 @@ public class MigratorController extends Thread {
                         LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
                         Breakpoint.checkpoint("MigratorController:process");
                         processMigrationJob(lockedJob);
-                        // Unlock
-                        unlock(lockedJob.ae.get_id());
-                        Breakpoint.checkpoint("MigratorController:unlock");
                     } else {
                         // No jobs are available, wait a bit (10sec-30sec), and retry
                         LOGGER.debug("Waiting");

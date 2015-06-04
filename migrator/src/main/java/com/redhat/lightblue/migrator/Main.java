@@ -10,8 +10,6 @@ import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.log4j.PropertyConfigurator;
-
 import org.apache.commons.cli.HelpFormatter;
 
 import org.apache.commons.daemon.Daemon;
@@ -40,7 +38,6 @@ public class Main implements Daemon {
             printHelpAndExit();
         }
         MainConfiguration cfg=MainConfiguration.getCfg(p);
-        setupLogging(cfg);
 
         Thread t=new Controller(cfg);
         t.start();
@@ -48,13 +45,6 @@ public class Main implements Daemon {
     }
 
 
-    private static void setupLogging(MainConfiguration c) {
-        if (c.getLog4jConfig() != null && !c.getLog4jConfig().isEmpty()) {
-            // watch for log4j changes using default delay (60 seconds)
-            PropertyConfigurator.configureAndWatch(c.getLog4jConfig());
-        }
-    }
-    
     private static void printHelpAndExit() {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(Main.class.getSimpleName(), MainConfiguration.options, true);
@@ -66,7 +56,6 @@ public class Main implements Daemon {
         LOGGER.info("Initializing " + getClass().getSimpleName());
         this.context = context;
         cfg=MainConfiguration.getCfg(System.getProperties());
-        setupLogging(cfg);
 
         mainController=new Controller(cfg);
         mainController.setDaemon(true);

@@ -173,30 +173,18 @@
             },
             "creationDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Creation date of the configuration"
             },
             "createdBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             },
             "lastUpdateDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Last updated date of the configuration"
             },
             "lastUpdatedBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             }
         },
