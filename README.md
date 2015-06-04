@@ -25,8 +25,11 @@ java -jar migrator-1.0.0-alldeps.jar
 --destinationconfig=destination-lightblue-client.properties
 ```
 
-##[utils](utils)
+###[facade](facade)
 Provides some aid with migration to Lightblue.
+
+###[entity-consistency-checker](entity-consistency-checker)
+A utility to compare POJOs field by field. Use it during migration to lightblue to ensure consistency between entities returned by legacy and lightblue DAOs.
 
 # License
 
