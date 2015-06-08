@@ -38,29 +38,35 @@ public class EntityIdStoreImpl implements EntityIdStore {
         long threadId = Thread.currentThread().getId();
         if(log.isDebugEnabled())
             log.debug("Storing id="+id+" for "+cache.getName()+", thread="+threadId);
-        if (!cache.isKeyInCache(threadId)) {
-            cache.put(new Element(threadId, new LinkedList<Long>()));
+
+        Element el = cache.get(threadId);
+        LinkedList<Long> list;
+
+        if (el == null) {
+            list = new LinkedList<Long>();
+        }
+        else {
+            list = (LinkedList<Long>)el.getObjectValue();
         }
 
-        if (log.isDebugEnabled())
-            log.debug("cache("+threadId+")="+cache.get(threadId));
-
-        @SuppressWarnings("unchecked")
-        LinkedList<Long> list = (LinkedList<Long>)cache.get(threadId).getObjectValue();
-
         list.add(id);
+
+        cache.put(new Element(threadId, list));
     }
 
     @Override
     public Long pop() {
         long threadId = Thread.currentThread().getId();
         log.debug("Restoring id for "+cache.getName()+" thread="+threadId);
-        if (!cache.isKeyInCache(threadId)) {
+
+        Element el = cache.get(threadId);
+
+        if (el == null) {
             throw new RuntimeException("No ids found for "+cache.getName()+" thread="+threadId+"!");
         }
 
         @SuppressWarnings("unchecked")
-        LinkedList<Long> list = (LinkedList<Long>)cache.get(threadId).getObjectValue();
+        LinkedList<Long> list = (LinkedList<Long>)el.getObjectValue();
 
         try {
             return list.removeFirst();
