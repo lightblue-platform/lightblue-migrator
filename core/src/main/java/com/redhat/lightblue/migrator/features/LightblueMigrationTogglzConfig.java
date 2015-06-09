@@ -1,6 +1,8 @@
 package com.redhat.lightblue.migrator.features;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
@@ -11,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import org.togglz.core.Feature;
 import org.togglz.core.manager.TogglzConfig;
 import org.togglz.core.repository.StateRepository;
+import org.togglz.core.repository.util.DefaultMapSerializer;
 import org.togglz.core.user.UserProvider;
 
 /**
@@ -54,6 +57,19 @@ public class LightblueMigrationTogglzConfig implements TogglzConfig {
     @Override
     public UserProvider getUserProvider() {
         return new TogglzRandomUserProvider();
+    }
+
+    public static void main(String[] args) {
+        DefaultMapSerializer s = DefaultMapSerializer.singleline();
+
+        Map<String,String> params = new HashMap<String,String>();
+        params.put("param", "value");
+
+        String str = s.serialize(params);
+
+        System.out.println(str);
+
+        System.out.println(s.deserialize(str).get("param"));
     }
 
 }
