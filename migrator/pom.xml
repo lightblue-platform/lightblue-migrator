@@ -8,6 +8,7 @@
   </parent>
   <artifactId>lightblue-migrator</artifactId>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
+  <version>1.0.0-SNAPSHOT</version>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <apache.commons-io.version>2.4</apache.commons-io.version>
