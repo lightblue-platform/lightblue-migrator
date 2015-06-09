@@ -45,7 +45,7 @@ mvn release:prepare -P release \
                     -Dtag=V${RELEASE_VERSION} || exit
 
 # push prepared changes (doing separate just to have control)
-git push origin 1.x --tags
+git push origin $BRANCH --tags
 
 # perform release
 mvn release:perform -P release || exit
