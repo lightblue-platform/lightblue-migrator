@@ -72,7 +72,7 @@ public class Identity {
         JsonNode trc=doc;
         while(tkz.hasMoreTokens()&&trc!=null) {
             String tok=tkz.nextToken();
-            trc=doc.get(tok);
+            trc=trc.get(tok);
         }
         return trc;
     }

@@ -5,7 +5,7 @@
             "collection": "activeExecution",
             "datasource": "mongodata"
         },
-        "defaultVersion" : "1.0.0",
+        "defaultVersion" : "2.0.0",
         "enums": [],
         "indexes": [
             {
@@ -101,7 +101,7 @@
         },
         "version": {
             "changelog": "Initial release",
-            "value": "1.0.0"
+            "value": "2.0.0"
         }
     }
 }

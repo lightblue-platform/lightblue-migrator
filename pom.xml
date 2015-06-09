@@ -33,7 +33,6 @@
   </distributionManagement>
   <modules>
     <module>core</module>
-    <module>web</module>
     <module>migrator</module>
     <module>facade</module>
     <module>bean-consistency-checker</module>

@@ -131,7 +131,7 @@ public class MigratorTest extends AbstractMigratorController {
     public void migrateTest() throws Exception {
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
-        loadData("sourceCustomer", versionMigrationJob, "./test/data/load-source-customers.json");
+        loadData("sourceCustomer", versionSourceCustomer, "./test/data/load-source-customers.json");
        
         MainConfiguration cfg=new MainConfiguration();
         cfg.setName("continuum");
