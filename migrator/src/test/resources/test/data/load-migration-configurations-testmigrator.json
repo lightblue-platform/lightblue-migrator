@@ -25,7 +25,7 @@
             "sourceEntityName": "sourceCustomer", 
             "sourceEntityVersion": "1.0.0", 
             "sourceServiceURI": "https://localhost/rest/data", 
-            "migratorClass": "com.redhat.lightblue.migrator.DefaultMigrator", 
+            "migratorClass": "com.redhat.lightblue.migrator.TestMigrator", 
             "threadCount": 1
         }
     ]

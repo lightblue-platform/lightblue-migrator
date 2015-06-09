@@ -8,7 +8,7 @@
   </parent>
   <groupId>com.redhat.lightblue.migrator</groupId>
   <artifactId>lightblue-migrator-pom</artifactId>
-  <version>1.2-SNAPSHOT</version>
+  <version>2.0.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <licenses>
@@ -32,8 +32,7 @@
   </distributionManagement>
   <modules>
     <module>core</module>
-    <module>web</module>
-    <!--module>migrator</module-->
+    <module>migrator</module>
     <module>facade</module>
     <module>bean-consistency-checker</module>
     <module>test</module>
@@ -151,17 +150,23 @@
         <dependency>
             <groupId>com.redhat.lightblue</groupId>
             <artifactId>lightblue-core-util</artifactId>
-            <version>1.5.0-SNAPSHOT</version>
+            <version>1.6.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.lightblue.client</groupId>
             <artifactId>lightblue-client-http</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.lightblue.client</groupId>
             <artifactId>lightblue-client-hystrix</artifactId>
-            <version>1.4.0-SNAPSHOT</version>
+            <version>1.5.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.redhat.lightblue.client</groupId>
+            <artifactId>lightblue-client-integration-test</artifactId>
+            <version>1.5.0-SNAPSHOT</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
   </dependencyManagement>

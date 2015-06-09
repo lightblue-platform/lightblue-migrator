@@ -1,0 +1,107 @@
+{
+    "entityInfo": {
+        "datastore": {
+            "backend": "mongo",
+            "collection": "activeExecution",
+            "datasource": "mongodata"
+        },
+        "defaultVersion" : "2.0.0",
+        "enums": [],
+        "indexes": [
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "_id"
+                    }
+                ],
+                "unique": true
+            },
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "migrationJobId"
+                    }
+                ],
+                "name": "uJobId",
+                "unique": true
+            }
+        ],
+        "name": "activeExecution"
+    },
+    "schema": {
+        "access": {
+            "delete": [
+                "anyone"
+            ],
+            "find": [
+                "anyone"
+            ],
+            "insert": [
+                "anyone"
+            ],
+            "update": [
+                "anyone"
+            ]
+        },
+        "fields": {
+            "_id": {
+                "type": "uid",
+                "constraints": {
+                    "identity": true
+                },
+                "description": "The identifier of the activeExecution."
+            },
+            "objectType": {
+                "access": {
+                    "find": [
+                        "anyone"
+                    ],
+                    "update": [
+                        "noone"
+                    ]
+                },
+                "constraints": {
+                    "minLength": 1,
+                    "required": true
+                },
+                "type": "string"
+            },
+            "migrationJobId" : {
+                "type":"string",
+                "constraints" : {
+                    "required":true
+                },
+                "description":"The identifier of the migration job"
+            },
+            "startTime":{
+                "type":"date",
+                "constraints":{
+                    "required":true
+                },
+                "description":"The time job started executing"
+            },
+            "numDocsToProcess":{
+                "type":"integer",
+                "description":"Number of docs to process"
+            },
+            "numDocsProcessed":{
+                "type":"integer",
+                "description":"Number of docs processed so far"
+            },
+            "ping":{
+                "type":"date",
+                "description":"Last ping from the thread"
+            }
+        },
+        "name": "activeExecution",
+        "status": {
+            "value": "active"
+        },
+        "version": {
+            "changelog": "Initial release",
+            "value": "2.0.0"
+        }
+    }
+}

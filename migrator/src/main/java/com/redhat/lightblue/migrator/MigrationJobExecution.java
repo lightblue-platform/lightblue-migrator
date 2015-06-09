@@ -6,15 +6,15 @@ public class MigrationJobExecution {
 
     private String ownerName;
     private String hostName;
-    private String pid;
-
+    
+    private String activeExecutionId;
     // actual run times for job
     private Date actualStartDate;
     private Date actualEndDate;
     
-    public String sourceQuery;
+    private String status;
 
-    private JobStatus jobStatus = JobStatus.STARTING;
+    private String errorMsg;
 
     // summary info on what the job did
     private int processedDocumentCount = 0;
@@ -22,30 +22,38 @@ public class MigrationJobExecution {
     private int inconsistentDocumentCount = 0;
     private int overwrittenDocumentCount = 0;
 
+    public String getActiveExecutionId() {
+        return activeExecutionId;
+    }
+
+    public void setActiveExecutionId(String s) {
+        activeExecutionId=s;
+    }
+
     public String getOwnerName() {
         return ownerName;
     }
 
-    public void setOwnerName(String ownerName) {
-        this.ownerName = ownerName;
+    public void setOwnerName(String s) {
+        ownerName=s;
     }
 
     public String getHostName() {
         return hostName;
     }
 
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
+    public void setHostName(String s) {
+        hostName=s;
     }
 
-    public String getPid() {
-        return pid;
+    public String getErrorMsg() {
+        return errorMsg;
     }
 
-    public void setPid(String pid) {
-        this.pid = pid;
+    public void setErrorMsg(String s) {
+        errorMsg=s;
     }
-
+    
     public Date getActualStartDate() {
         return actualStartDate;
     }
@@ -62,14 +70,6 @@ public class MigrationJobExecution {
         this.actualEndDate = actualEndDate;
     }
     
-    public String getSourceQuery() {
-        return sourceQuery;
-    }
-    
-    public void setSourceQuery(String sourceQuery) {
-        this.sourceQuery = sourceQuery;
-    }
-
     public int getProcessedDocumentCount() {
         return processedDocumentCount;
     }
@@ -102,11 +102,11 @@ public class MigrationJobExecution {
         this.overwrittenDocumentCount = overwrittenDocumentCount;
     }
 
-    public JobStatus getJobStatus() {
-        return jobStatus;
+    public String getStatus() {
+        return status;
     }
 
-    public void setJobStatus(JobStatus jobStatus) {
-        this.jobStatus = jobStatus;
+    public void setStatus(String jobStatus) {
+        this.status = jobStatus;
     }
 }

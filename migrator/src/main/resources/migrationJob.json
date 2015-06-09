@@ -5,26 +5,8 @@
             "collection": "migrationJob",
             "datasource": "mongodata"
         },
-        "enums": [
-            {
-                "name": "jobStatusType",
-                "values": [
-                    "STARTING",
-                    "RUNNING",
-                    "RUNNING_ASYNC",
-                    "COMPLETED_SUCCESS",
-                    "COMPLETED_PARTIAL",
-                    "COMPLETED_DEAD",
-                    "COMPLETED_IGNORED",
-                    "COMPLETED_FAILED",
-                    "ABORTED_DUPLICATE",
-                    "ABORTED_TIMEOUT",
-                    "ABORTED_AUTH",
-                    "ABORTED_UNKNOWN",
-                    "UNKNOWN"
-                ]
-            }
-        ],
+        "defaultVersion" : "2.0.0",
+        "enums": [],
         "indexes": [
             {
                 "fields": [
@@ -33,18 +15,17 @@
                         "field": "_id"
                     }
                 ],
-                "name": null,
                 "unique": true
             },
             {
                 "fields": [
                     {
                         "dir": "$asc",
-                        "field": "whenAvailableDate"
+                        "field": "status"
                     },
                     {
                         "dir": "$asc",
-                        "field": "jobExecutions.jobStatus"
+                        "field": "scheduledDate"
                     },
                     {
                         "dir": "$asc",
@@ -60,16 +41,16 @@
     "schema": {
         "access": {
             "delete": [
-                "lb-migrationjob-delete"
+                "anyone"
             ],
             "find": [
-                "lb-migrationjob-find"
+                "anyone"
             ],
             "insert": [
-                "lb-migrationjob-insert"
+                "anyone"
             ],
             "update": [
-                "lb-migrationjob-update"
+                "anyone"
             ]
         },
         "fields": {
@@ -102,37 +83,34 @@
                 },
                 "description": "Name of the configuration that corresponds to this job"
             },
-            "startDate": {
-                "type": "date",
+            "query": {
+                "type": "string",
                 "constraints": {
                     "required": true
                 },
-                "description": "Document start date for of this migration job"
+                "description": "The query to retrieve documents for this job"
             },
-            "endDate": {
-                "type": "date",
-                "constraints": {
-                    "required": true
-                },
-                "description": "Document end date for this migration job"
-            },
-            "whenAvailableDate": {
+            "scheduledDate": {
                 "type": "date",
                 "constraints": {
                     "required": true
                 },
                 "description": "First available time for execution of this job"
             },
-            "expectedExecutionMilliseconds": {
-                "type": "integer",
-                "constraints": {
-                    "required": true
+            "status" : {
+                "type" : "string",
+                "constraints" : {
+                    "required":true
                 },
-                "description": "Expected duration of this job in ms"
+                "description":"Status of the job, available, active, completed, failed"
             },
             "jobExecutions": {
                 "items": {
                     "fields": {
+                        "activeExecutionId" : {
+                            "type" :"string",
+                            "description":"ID of the active execution, if exists"
+                        },
                         "ownerName": {
                             "type": "string",
                             "constraints": {
@@ -146,13 +124,6 @@
                                 "required": true
                             },
                             "description": "Host running this migration job"
-                        },
-                        "pid": {
-                            "type": "string",
-                            "constraints": {
-                                "required": true
-                            },
-                            "description": "Process id of the consistency checker instance on the host running this migration job"
                         },
                         "actualStartDate": {
                             "type": "date",
@@ -168,48 +139,32 @@
                             },
                             "description": "Actual end date for this migration job"
                         },
-                        "jobStatus": {
+                        "status": {
                             "type": "string",
-                            "constraints": {
-                                "required": true,
-                                "enum": "jobStatusType"
-                            },
-                            "description": "Indicates the status of the execution of this job"
-                        },
-                        "processedDocumentCount": {
-                            "type": "integer",
                             "constraints": {
                                 "required": true
                             },
+                            "description": "Indicates the status of the execution of this job"
+                        },
+                        "errorMsg" :{
+                            "type":"string",
+                            "description":"Processing error message"
+                        },
+                        "processedDocumentCount": {
+                            "type": "integer",
                             "description": "Number of documents processed by this job"
                         },
                         "consistentDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents that mathed for this job"
                         },
                         "inconsistentDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents that did not match for this job"
                         },
                         "overwrittenDocumentCount": {
                             "type": "integer",
-                            "constraints": {
-                                "required": true
-                            },
                             "description": "Number of documents that were overwritten in destination"
-                        },
-                        "sourceQuery": {
-                            "type": "string",
-                            "constraints": {
-                                "required": false
-                            },
-                            "description": "The query used to load data from source"
                         }
                     },
                     "type": "object"
@@ -218,30 +173,18 @@
             },
             "creationDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Creation date of the configuration"
             },
             "createdBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             },
             "lastUpdateDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Last updated date of the configuration"
             },
             "lastUpdatedBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             }
         },
@@ -251,7 +194,7 @@
         },
         "version": {
             "changelog": "Initial release",
-            "value": "1.0.0"
+            "value": "2.0.0"
         }
     }
 }

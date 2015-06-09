@@ -2,24 +2,10 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migrationConfiguration",
+            "collection": "migrationConfig",
             "datasource": "mongodata"
         },
-        "enums": [],
-        "hooks": [
-            {
-                "actions": [
-                    "insert",
-                    "update",
-                    "delete"
-                ],
-                "configuration": {
-                    "entityName": "audit",
-                    "version": "1.0.0"
-                },
-                "name": "auditHook"
-            }
-        ],
+        "defaultVersion" : "2.0.0",
         "indexes": [
             {
                 "fields": [
@@ -47,16 +33,16 @@
     "schema": {
         "access": {
             "delete": [
-                "lb-migrationconfig-delete"
+                "anyone"
             ],
             "find": [
-                "lb-migrationconfig-find"
+                "anyone"
             ],
             "insert": [
-                "lb-migrationconfig-insert"
+                "anyone"
             ],
             "update": [
-                "lb-migrationconfig-update"
+                "anyone"
             ]
         },
         "fields": {
@@ -115,6 +101,14 @@
                 },
                 "description": "Number of threads that should be devoted to migrator jobs"
             },
+            "migratorClass" : {
+                "type":"string",
+                "description": "Class name of the migrator. If null, DefaultMigrator is used"
+            },
+            "consistencyCheckerClass" : {
+                "type" : "string",
+                "description": "Class name of the consistency checker. If null, DefaultConsistencyChecker is used"
+            },
             "overwriteDestinationDocuments": {
                 "type": "boolean",
                 "constraints": {
@@ -131,11 +125,14 @@
                 "uniqueitems": true,
                 "description": "Optional paths to exclude comparisons of source and destination documents.  Fields including arrays will apply to all elements in the array even if specific indexes are included."
             },
+            "destinationConfigPath": {
+                "type":"string"
+            },
+            "sourceConfigPath": {
+                "type":"string"
+            },
             "destinationServiceURI": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "REST service URI for instance housing destination data."
             },
             "destinationEntityName": {
@@ -166,9 +163,6 @@
             },
             "sourceServiceURI": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "REST service URI for instance housing source data"
             },
             "sourceEntityName": {
@@ -185,39 +179,20 @@
                 },
                 "description": "source Entity Version for data being migrated"
             },
-            "sourceTimestampPath" : {
-                "type": "string",
-                "constraints": {
-                    "required": true
-                },
-                "description": "source Entity timestamp field name"
-            },
             "creationDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Creation date of the configuration"
             },
             "createdBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             },
             "lastUpdateDate": {
                 "type": "date",
-                "constraints": {
-                    "required": true
-                },
                 "description": "Last updated date of the configuration"
             },
             "lastUpdatedBy": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "User id of the configuration creator"
             }
         },
@@ -227,7 +202,7 @@
         },
         "version": {
             "changelog": "Initial release",
-            "value": "1.0.0"
+            "value": "2.0.0"
         }
     }
 }
