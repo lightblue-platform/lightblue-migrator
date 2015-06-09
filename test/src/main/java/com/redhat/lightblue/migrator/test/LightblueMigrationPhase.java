@@ -12,6 +12,17 @@ import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
  */
 public abstract class LightblueMigrationPhase {
 
+    public static void enableConsistencyChecks(boolean enable, TogglzRule togglzRule) {
+        if (enable) {
+            togglzRule.enable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
+            togglzRule.enable(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY);
+        }
+        else {
+            togglzRule.disable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
+            togglzRule.disable(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY);
+        }
+    }
+
     /**
      *
      * @param togglzRule with all features disabled
@@ -19,6 +30,7 @@ public abstract class LightblueMigrationPhase {
     public static void initialPhase(TogglzRule togglzRule) {
         togglzRule.enable(LightblueMigrationFeatures.READ_SOURCE_ENTITY);
         togglzRule.enable(LightblueMigrationFeatures.WRITE_SOURCE_ENTITY);
+        enableConsistencyChecks(true, togglzRule);
     }
 
     /**
@@ -29,7 +41,7 @@ public abstract class LightblueMigrationPhase {
         togglzRule.enable(LightblueMigrationFeatures.READ_SOURCE_ENTITY);
         togglzRule.enable(LightblueMigrationFeatures.WRITE_SOURCE_ENTITY);
         togglzRule.enable(LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY);
-        togglzRule.enable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
+        enableConsistencyChecks(true, togglzRule);
     }
 
     /**
@@ -41,8 +53,7 @@ public abstract class LightblueMigrationPhase {
         togglzRule.enable(LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY);
         togglzRule.enable(LightblueMigrationFeatures.READ_SOURCE_ENTITY);
         togglzRule.enable(LightblueMigrationFeatures.READ_DESTINATION_ENTITY);
-        togglzRule.enable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
-        togglzRule.enable(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY);
+        enableConsistencyChecks(true, togglzRule);
     }
 
     /**
@@ -52,5 +63,6 @@ public abstract class LightblueMigrationPhase {
     public static void lightblueProxyPhase(TogglzRule togglzRule) {
         togglzRule.enable(LightblueMigrationFeatures.READ_DESTINATION_ENTITY);
         togglzRule.enable(LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY);
+        enableConsistencyChecks(true, togglzRule);
     }
 }

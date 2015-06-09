@@ -59,7 +59,7 @@ public class DAOFacadeBase<D> {
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
     }
 
-    private boolean checkConsistency(Object o1, Object o2) {
+    public boolean checkConsistency(Object o1, Object o2) {
         return Objects.equals(o1, o2);
     }
 
@@ -156,7 +156,7 @@ public class DAOFacadeBase<D> {
             }
         }
 
-        if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity()) {
+        if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
             if (checkConsistency(legacyEntity, lightblueEntity)) {
@@ -252,7 +252,7 @@ public class DAOFacadeBase<D> {
             }
         }
 
-        if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
+        if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
             if (checkConsistency(legacyEntity, lightblueEntity)) {
@@ -346,7 +346,7 @@ public class DAOFacadeBase<D> {
 
         }
 
-        if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity()) {
+        if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
 
