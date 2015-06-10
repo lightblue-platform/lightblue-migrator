@@ -37,8 +37,9 @@ public class Main implements Daemon {
         if(p==null) {
             printHelpAndExit();
         }
-        MainConfiguration cfg=MainConfiguration.getCfg(p);
-
+        MainConfiguration cfg=MainConfiguration.getCfg(System.getProperties());
+        cfg.applyProperties(p);
+        LOGGER.debug("Config:{}",cfg);
         Thread t=new Controller(cfg);
         t.start();
         t.join();
@@ -56,6 +57,9 @@ public class Main implements Daemon {
         LOGGER.info("Initializing " + getClass().getSimpleName());
         this.context = context;
         cfg=MainConfiguration.getCfg(System.getProperties());
+        Properties p=MainConfiguration.processArguments(context.getArguments());
+        if(p!=null)
+            cfg.applyProperties(p);
 
         mainController=new Controller(cfg);
         mainController.setDaemon(true);

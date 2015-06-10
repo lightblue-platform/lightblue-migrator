@@ -69,6 +69,10 @@ public class MainConfiguration {
         clientConfig=s;
     }
 
+
+    public String toString() {
+        return "name="+name+" hostName="+hostName+" config="+clientConfig;
+    }
     
     public static Properties processArguments(String[] args){
         Properties prop=new Properties();        
@@ -87,9 +91,19 @@ public class MainConfiguration {
 
     public static MainConfiguration getCfg(Properties p) {
         MainConfiguration cfg=new MainConfiguration();
-        cfg.setName(p.getProperty("name"));
-        cfg.setHostName(p.getProperty("hostname"));
-        cfg.setClientConfig(p.getProperty("config"));
+        cfg.applyProperties(p);
         return cfg;
+    }
+
+    public void applyProperties(Properties p) {
+        String s=p.getProperty("name");
+        if(s!=null)
+            setName(s);
+        s=p.getProperty("hostname");
+        if(s!=null)
+            setHostName(s);
+        s=p.getProperty("config");
+        if(s!=null)
+            setClientConfig(s);
     }
 }
