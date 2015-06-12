@@ -3,6 +3,8 @@ package com.redhat.lightblue.migrator;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileInputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -153,11 +155,11 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("Retrieving source docs");
             sourceDocs=getDocumentIdMap(getSourceDocuments());
             Breakpoint.checkpoint("Migrator:sourceDocs");
-            LOGGER.debug("There are {} source docs",sourceDocs.size());
+            LOGGER.info("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
             LOGGER.debug("Retrieving destination docs");
             destDocs=getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()));
             Breakpoint.checkpoint("Migrator:destDocs");
-            LOGGER.debug("There are {} destination docs",destDocs.size());
+            LOGGER.info("There are {} destination docs:{}",destDocs.size(),migrationJob.getConfigurationName());
 
             insertDocs=new HashSet<>();
             for(Identity id:sourceDocs.keySet())
@@ -189,7 +191,7 @@ public abstract class Migrator extends Thread {
                 }
             }
             Breakpoint.checkpoint("Migrator:rewriteDocs");
-            LOGGER.debug("There are {} docs to rewrite",rewriteDocs.size());
+            LOGGER.debug("There are {} docs to rewrite: {}",rewriteDocs.size(),migrationJob.getConfigurationName());
             execution.setInconsistentDocumentCount(rewriteDocs.size());
             execution.setOverwrittenDocumentCount(rewriteDocs.size());
             execution.setConsistentDocumentCount(sourceDocs.size()-rewriteDocs.size());
@@ -202,14 +204,16 @@ public abstract class Migrator extends Thread {
 
             execution.setProcessedDocumentCount(sourceDocs.size());
             
-            LOGGER.debug("There are {} docs to save",saveDocsList.size());
+            LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
             save(saveDocsList);
-            LOGGER.debug("Docs saved: {}",saveDocsList.size());
+            LOGGER.info("Docs saved: {} {}",saveDocsList.size(),migrationJob.getConfigurationName());
             Breakpoint.checkpoint("Migrator:complete");
 
         } catch (Exception e) {
-            LOGGER.error("Error during migration:{}",e);
-            execution.setErrorMsg(e.toString());
+            LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),e);
+            StringWriter strw=new StringWriter();
+            e.printStackTrace(new PrintWriter(strw));
+            execution.setErrorMsg(strw.toString());
         } finally {
             cleanupMigrator();
         }
