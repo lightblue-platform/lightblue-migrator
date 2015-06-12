@@ -317,7 +317,7 @@ public abstract class Migrator extends Thread {
                                       new ForeachUpdate("jobExecutions",
                                                         withValue("activeExecutionId",ExpressionOperation.EQ,activeExecution.get_id()),
                                                         new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(execution.getStatus()))),
-                                                                      new PathValuePair("errorMsg",new LiteralRValue(quote(execution.getErrorMsg()==null?"":execution.getErrorMsg()))),
+                                                                      new PathValuePair("errorMsg",new LiteralRValue(quote(escape(execution.getErrorMsg()==null?"":execution.getErrorMsg())))),
                                                                       new PathValuePair("processedDocumentCount",new LiteralRValue(Integer.toString(execution.getProcessedDocumentCount()))),
                                                                       new PathValuePair("consistentDocumentCount",new LiteralRValue(Integer.toString(execution.getConsistentDocumentCount()))),
                                                                       new PathValuePair("inconsistentDocumentCount",new LiteralRValue(Integer.toString(execution.getInconsistentDocumentCount()))),
@@ -338,6 +338,20 @@ public abstract class Migrator extends Thread {
 
     private String quote(String s) {
         return s==null?null:"\""+s+"\"";
+    }
+
+    private String escape(String s) {
+        StringBuilder bld=new StringBuilder();
+        int n=s.length();
+        for(int i=0;i<n;i++) {
+            char c=s.charAt(i);
+            if(Character.isISOControl(c)||
+               c=='\"' ||
+               c=='\\')
+                bld.append('\\');
+            bld.append(c);
+        }
+        return bld.toString();
     }
 
 }
