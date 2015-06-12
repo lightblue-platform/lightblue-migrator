@@ -85,9 +85,6 @@
             },
             "query": {
                 "type": "string",
-                "constraints": {
-                    "required": true
-                },
                 "description": "The query to retrieve documents for this job"
             },
             "scheduledDate": {
