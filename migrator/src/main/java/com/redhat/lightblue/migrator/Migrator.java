@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -317,7 +318,7 @@ public abstract class Migrator extends Thread {
                                       new ForeachUpdate("jobExecutions",
                                                         withValue("activeExecutionId",ExpressionOperation.EQ,activeExecution.get_id()),
                                                         new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(execution.getStatus()))),
-                                                                      new PathValuePair("errorMsg",new LiteralRValue(quote(escape(execution.getErrorMsg()==null?"":execution.getErrorMsg())))),
+                                                                      new PathValuePair("errorMsg",new LiteralRValue(escape(execution.getErrorMsg()==null?"":execution.getErrorMsg()))),
                                                                       new PathValuePair("processedDocumentCount",new LiteralRValue(Integer.toString(execution.getProcessedDocumentCount()))),
                                                                       new PathValuePair("consistentDocumentCount",new LiteralRValue(Integer.toString(execution.getConsistentDocumentCount()))),
                                                                       new PathValuePair("inconsistentDocumentCount",new LiteralRValue(Integer.toString(execution.getInconsistentDocumentCount()))),
@@ -341,17 +342,7 @@ public abstract class Migrator extends Thread {
     }
 
     private String escape(String s) {
-        StringBuilder bld=new StringBuilder();
-        int n=s.length();
-        for(int i=0;i<n;i++) {
-            char c=s.charAt(i);
-            if(Character.isISOControl(c)||
-               c=='\"' ||
-               c=='\\')
-                bld.append('\\');
-            bld.append(c);
-        }
-        return bld.toString();
+        return JsonNodeFactory.instance.textNode(s).toString();
     }
 
 }
