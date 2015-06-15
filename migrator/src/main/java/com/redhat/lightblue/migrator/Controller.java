@@ -64,6 +64,7 @@ public class Controller extends Thread {
     
     public LightblueClient getLightblueClient() {
         LightblueHttpClient httpClient;
+        LOGGER.debug("Getting client, config={}",cfg.getClientConfig());
         if (cfg.getClientConfig() != null) {
             httpClient = new LightblueHttpClient(cfg.getClientConfig());
         } else {
@@ -118,6 +119,9 @@ public class Controller extends Thread {
                     interrupted=true;
                 }
             }
+        }
+        for(MigrationProcess p:migrationMap.values()) {
+            p.mig.interrupt();
         }
     }
 }

@@ -170,6 +170,7 @@ public class MigratorController extends Thread {
         } catch(Exception e) {
             LOGGER.error("Cannot delete lock {}",id);
         }
+        Breakpoint.checkpoint("MigratorController:unlock");
     }
     
     private LockRecord findAndLockMigrationJob()
@@ -281,6 +282,7 @@ public class MigratorController extends Thread {
                 }
             }
         }
+        migratorThreads.interrupt();
         Breakpoint.checkpoint("MigratorController:end");
         LOGGER.debug("Ending controller thread");
     }

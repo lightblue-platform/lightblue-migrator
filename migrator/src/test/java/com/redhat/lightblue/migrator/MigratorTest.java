@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import com.redhat.lightblue.client.*;
 import com.redhat.lightblue.client.request.*;
+import com.redhat.lightblue.client.response.*;
 import com.redhat.lightblue.client.http.*;
 import com.redhat.lightblue.client.request.data.*;
 import com.redhat.lightblue.client.expression.query.*;
@@ -21,6 +22,8 @@ import com.redhat.lightblue.client.projection.*;
 
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 
+import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
+import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class MigratorTest extends AbstractMigratorController {
 
@@ -53,7 +56,6 @@ public class MigratorTest extends AbstractMigratorController {
         };
     }
 
-    @After
     public void clearData() throws Exception {
         LightblueClient cli = new LightblueHttpClient();
         DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
@@ -67,8 +69,9 @@ public class MigratorTest extends AbstractMigratorController {
         cli.data(req);
     }
 
-    // @Test
+    @Test
     public void controllerTest() throws Exception {
+        clearData();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-testmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
         
@@ -121,14 +124,55 @@ public class MigratorTest extends AbstractMigratorController {
         Breakpoint.resume("MigratorController:process");
 
         Breakpoint.waitUntil("MigratorController:unlock");
-        // At this point, there must be on TestMigrator instance running
+        // At this point, there must be one TestMigrator instance running
         Assert.assertEquals(1,TestMigrator.count);
+        Breakpoint.resume("MigratorController:unlock");
 
         controller.interrupt();
     }
 
     @Test
+    public void failTest() throws Exception {
+        clearData();
+        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-failmigrator.json");
+        loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
+        
+        MainConfiguration cfg=new MainConfiguration();
+        cfg.setName("continuum");
+        cfg.setHostName("hostname");
+        Controller controller=new Controller(cfg);
+
+        Breakpoint.stop("MigratorController::unlock");
+
+        System.out.println("failTest: Start controller");
+        controller.start();
+        System.out.println("failTest: controller started");
+
+        Map<String,Controller.MigrationProcess> prc=controller.getMigrationProcesses();
+
+        System.out.println("failTest: wait until unlock");
+        Breakpoint.waitUntil("MigratorController:unlock");
+        System.out.println("failTest: done");
+        // Here, it should have failed already
+        LightblueClient cli=new LightblueHttpClient();
+        DataFindRequest req=new DataFindRequest("migrationJob",null);
+        req.where(withValue("objectType = migrationJob"));
+        req.select(includeFieldRecursively("jobExecutions.0.errorMsg"));
+        LightblueResponse resp=cli.data(req);
+        JsonNode node=resp.getJson();
+        System.out.println("Response:"+node);
+        JsonNode x=node.get("processed");
+        Assert.assertEquals(1,x.size());
+        x=x.get(0).get("jobExecutions").get(0).get("errorMsg");
+        Assert.assertNotNull(x.asText());
+        System.out.println("Error:"+x.asText());
+        Breakpoint.resume("MigratorController:unlock");
+        controller.interrupt();
+    }
+
+    @Test
     public void migrateTest() throws Exception {
+        clearData();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
         loadData("sourceCustomer", versionSourceCustomer, "./test/data/load-source-customers.json");
