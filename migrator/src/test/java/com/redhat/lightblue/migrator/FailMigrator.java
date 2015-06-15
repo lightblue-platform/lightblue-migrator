@@ -7,20 +7,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public class TestMigrator extends Migrator {
+public class FailMigrator extends  Migrator {
 
-    public static int count;
-
-    public TestMigrator(ThreadGroup g) {
+    public FailMigrator(ThreadGroup g) {
         super(g);
     }
     
-    public void migrate(MigrationJobExecution execution) {
-        System.out.println("Testmigrator ran");
-        count++;
-    }
-
     public List<JsonNode> getSourceDocuments() {
+        // Throw exception here
+        String x=null;
+        x.charAt(0);
         return null;
     }
 
