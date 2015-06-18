@@ -3,7 +3,10 @@ package com.redhat.lightblue.migrator.consistency;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.AbstractCollection;
+import java.util.Date;
 import java.util.Objects;
 
 import org.apache.commons.beanutils.PropertyUtils;
@@ -76,10 +79,19 @@ public class BeanConsistencyChecker {
                 }
 
                 // compare values
-                if (!Objects.equals(o1Value, o2Value)) {
-                    if (logger.isDebugEnabled())
-                        logger.debug("Object 1 and Object 2 have "+field.getName()+" inconsistent");
-                    return false;
+                if (o1Value instanceof Timestamp && o2Value instanceof Date || o1Value instanceof Date && o2Value instanceof Time) {
+                    if (!Objects.equals(((Date)o1Value).getTime(), ((Date)o2Value).getTime())) {
+                        if (logger.isDebugEnabled())
+                            logger.debug("Object 1 and Object 2 have "+field.getName()+" inconsistent (checked java.sql.Timestamp against java.util.Date, ignoring nanoseconds)");
+                        return false;
+                    }
+                }
+                else {
+                    if (!Objects.equals(o1Value, o2Value)) {
+                        if (logger.isDebugEnabled())
+                            logger.debug("Object 1 and Object 2 have "+field.getName()+" inconsistent");
+                        return false;
+                    }
                 }
 
             }
