@@ -88,7 +88,7 @@ public class BeanConsistencyChecker {
                 }
 
                 // compare values
-                if (o1Value instanceof Timestamp && o2Value instanceof Date || o1Value instanceof Date && o2Value instanceof Time) {
+                if (o1Value instanceof Date && o2Value instanceof Date) {
                     if (!Objects.equals(((Date)o1Value).getTime(), ((Date)o2Value).getTime())) {
                         logInconsistency(o1.getClass().getSimpleName()+" objects have "+field.getName()+" field inconsistent (checked java.sql.Timestamp against java.util.Date, ignoring nanoseconds)");
                         return false;
