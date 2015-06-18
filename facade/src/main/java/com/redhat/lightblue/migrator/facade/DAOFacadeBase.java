@@ -8,8 +8,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +39,8 @@ public class DAOFacadeBase<D> {
     protected final D legacyDAO, lightblueDAO;
 
     private EntityIdStore entityIdStore = null;
+
+    private int timeoutSeconds = 0;
 
     public EntityIdStore getEntityIdStore() {
         return entityIdStore;
@@ -94,6 +99,14 @@ public class DAOFacadeBase<D> {
         log.error(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture) throws InterruptedException, ExecutionException, TimeoutException {
+        if (timeoutSeconds <= 0) {
+            return listenableFuture.get();
+        } else {
+            return listenableFuture.get(timeoutSeconds, TimeUnit.SECONDS);
+        }
+    }
+
     /**
      * Call dao method which reads data.
      *
@@ -148,10 +161,12 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldReadDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
             try {
-                lightblueEntity = listenableFuture.get();
+                lightblueEntity = getWithTimeout(listenableFuture);
+            } catch (TimeoutException te) {
+                log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                return legacyEntity;
             } catch (Exception e) {
-                log.error("Error when calling lightblue DAO", e);
-                log.debug("Returing data from legacy due to lightblue error");
+                log.warn("Error when calling lightblue DAO. Returning data from legacy.", e);
                 return legacyEntity;
             }
         }
@@ -244,10 +259,12 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
             try {
-                lightblueEntity = listenableFuture.get();
+                lightblueEntity = getWithTimeout(listenableFuture);
+            } catch (TimeoutException te) {
+                log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                return legacyEntity;
             } catch (Exception e) {
-                log.error("Error when calling lightblue DAO", e);
-                log.debug("Returing data from legacy due to lightblue error");
+                log.warn("Error when calling lightblue DAO. Returning data from legacy.", e);
                 return legacyEntity;
             }
         }
@@ -330,18 +347,36 @@ public class DAOFacadeBase<D> {
                 return legacyEntity;
             }
 
-            Method method = lightblueDAO.getClass().getMethod(methodName, types);
+            ListenableFuture<T> listenableFuture;
+            ListeningExecutorService executor = createExecutor();
+            try {
+            // fetch from lightblue using future (asynchronously)
+            log.debug("."+methodName+" writing to lightblue");
+            listenableFuture = executor.submit(new Callable<T>(){
+                @Override
+                public T call() throws Exception {
+                    Method method = lightblueDAO.getClass().getMethod(methodName, types);
+                    Timer dest = new Timer("destination."+methodName);
+                    try {
+                        return (T) method.invoke(lightblueDAO, values);
+                    } finally {
+                        dest.complete();
+                    }
+                }
+            });
+            } finally {
+                executor.shutdown();
+            }
 
-            Timer dest = new Timer("destination."+methodName);
             // it's expected that this method in lightblueDAO will extract id from idStore
             try {
-                lightblueEntity = (T) method.invoke(lightblueDAO, values);
-            } catch (Exception e) {
-                log.error("Error when calling lightblue DAO", e);
-                log.debug("Returing data from legacy due to lightblue error");
+                lightblueEntity = getWithTimeout(listenableFuture);
+            } catch (TimeoutException te) {
+                log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                 return legacyEntity;
-            } finally {
-                dest.complete();
+            } catch (Exception e) {
+                log.warn("Error when calling lightblue DAO. Returning data from legacy.", e);
+                return legacyEntity;
             }
 
         }
@@ -366,6 +401,14 @@ public class DAOFacadeBase<D> {
 
     public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
         return callDAOCreateSingleMethod(pureWrite, entityIdExtractor, returnedType, methodName, toClasses(values), values);
+    }
+
+    public int getTimeoutSeconds() {
+        return timeoutSeconds;
+    }
+
+    public void setTimeoutSeconds(int timeoutSeconds) {
+        this.timeoutSeconds = timeoutSeconds;
     }
 
 }
