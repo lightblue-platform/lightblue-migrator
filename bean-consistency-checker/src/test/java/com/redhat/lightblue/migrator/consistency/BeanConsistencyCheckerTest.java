@@ -1,6 +1,8 @@
 package com.redhat.lightblue.migrator.consistency;
 
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Date;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -99,6 +101,33 @@ public class BeanConsistencyCheckerTest {
         Assert.assertFalse(beanConsistencyChecker.consistent(pl1, pl2));
 
         Assert.assertTrue(beanConsistencyChecker.consistent(pl1, new CountryInCountry(1l, "PL", new Country(2l, "CA"))));
+    }
+
+    @Test
+    public void testSqlTimestamp() {
+        Date date = new Date(1434638750978l);
+        Timestamp timestamp = new Timestamp(date.getTime());
+
+        CountryWithDate pl1 = new CountryWithDate(date);
+        CountryWithDate pl2 = new CountryWithDate(timestamp);
+
+        Assert.assertTrue(beanConsistencyChecker.consistent(pl1, pl2));
+        Assert.assertTrue(beanConsistencyChecker.consistent(pl2, pl1));
+    }
+
+    @Test
+    public void testSqlTimestampWithNanos() {
+        Date date = new Date(1434638750978l);
+        Timestamp timestamp = new Timestamp(date.getTime());
+        timestamp.setNanos(timestamp.getNanos()+125300); // higher precision, difference in nano
+
+        Assert.assertEquals(date.getTime(), timestamp.getTime());
+
+        CountryWithDate pl1 = new CountryWithDate(date);
+        CountryWithDate pl2 = new CountryWithDate(timestamp);
+
+        Assert.assertTrue(beanConsistencyChecker.consistent(pl1, pl2));
+        Assert.assertTrue(beanConsistencyChecker.consistent(pl2, pl1));
     }
 
 }
