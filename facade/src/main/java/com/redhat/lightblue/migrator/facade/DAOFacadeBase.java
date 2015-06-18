@@ -99,6 +99,27 @@ public class DAOFacadeBase<D> {
         log.error(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
+    private <T> ListenableFuture<T> callLightblueDAO(final Method method, final Object[] values) {
+        ListeningExecutorService executor = createExecutor();
+        try {
+        // fetch from lightblue using future (asynchronously)
+        log.debug("."+method.getName()+" writing to lightblue");
+        return executor.submit(new Callable<T>(){
+            @Override
+            public T call() throws Exception {
+                Timer dest = new Timer("destination."+method.getName());
+                try {
+                    return (T) method.invoke(lightblueDAO, values);
+                } finally {
+                    dest.complete();
+                }
+            }
+        });
+        } finally {
+            executor.shutdown();
+        }
+    }
+
     private <T> T getWithTimeout(ListenableFuture<T> listenableFuture) throws InterruptedException, ExecutionException, TimeoutException {
         if (timeoutSeconds <= 0) {
             return listenableFuture.get();
@@ -125,25 +146,8 @@ public class DAOFacadeBase<D> {
         ListenableFuture<T> listenableFuture = null;
 
         if (LightblueMigration.shouldReadDestinationEntity()) {
-            ListeningExecutorService executor = createExecutor();
-            try {
-                // fetch from lightblue using future (asynchronously)
-                log.debug("."+methodName+" reading from lightblue");
-                listenableFuture = executor.submit(new Callable<T>(){
-                    @Override
-                    public T call() throws Exception {
-                        Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                        Timer dest = new Timer("destination."+methodName);
-                        try {
-                            return (T) method.invoke(lightblueDAO, values);
-                        } finally {
-                            dest.complete();
-                        }
-                    }
-                });
-            } finally {
-                executor.shutdown();
-            }
+            Method method = lightblueDAO.getClass().getMethod(methodName, types);
+            listenableFuture = callLightblueDAO(method, values);
         }
 
         if (LightblueMigration.shouldReadSourceEntity()) {
@@ -223,25 +227,8 @@ public class DAOFacadeBase<D> {
         ListenableFuture<T> listenableFuture = null;
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
-            ListeningExecutorService executor = createExecutor();
-            try {
-            // fetch from lightblue using future (asynchronously)
-            log.debug("."+methodName+" writing to lightblue");
-            listenableFuture = executor.submit(new Callable<T>(){
-                @Override
-                public T call() throws Exception {
-                    Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                    Timer dest = new Timer("destination."+methodName);
-                    try {
-                        return (T) method.invoke(lightblueDAO, values);
-                    } finally {
-                        dest.complete();
-                    }
-                }
-            });
-            } finally {
-                executor.shutdown();
-            }
+            Method method = lightblueDAO.getClass().getMethod(methodName, types);
+            listenableFuture = callLightblueDAO(method, values);
         }
 
         if (LightblueMigration.shouldWriteSourceEntity()) {
@@ -347,28 +334,10 @@ public class DAOFacadeBase<D> {
                 return legacyEntity;
             }
 
-            ListenableFuture<T> listenableFuture;
-            ListeningExecutorService executor = createExecutor();
-            try {
-            // fetch from lightblue using future (asynchronously)
-            log.debug("."+methodName+" writing to lightblue");
-            listenableFuture = executor.submit(new Callable<T>(){
-                @Override
-                public T call() throws Exception {
-                    Method method = lightblueDAO.getClass().getMethod(methodName, types);
-                    Timer dest = new Timer("destination."+methodName);
-                    try {
-                        return (T) method.invoke(lightblueDAO, values);
-                    } finally {
-                        dest.complete();
-                    }
-                }
-            });
-            } finally {
-                executor.shutdown();
-            }
-
             // it's expected that this method in lightblueDAO will extract id from idStore
+            Method method = lightblueDAO.getClass().getMethod(methodName, types);
+            ListenableFuture<T> listenableFuture = callLightblueDAO(method, values);
+
             try {
                 lightblueEntity = getWithTimeout(listenableFuture);
             } catch (TimeoutException te) {
