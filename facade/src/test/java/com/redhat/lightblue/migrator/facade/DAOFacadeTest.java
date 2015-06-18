@@ -8,10 +8,11 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 import org.togglz.junit.TogglzRule;
 
-import com.redhat.lightblue.migrator.facade.DAOFacadeBase;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 import com.redhat.lightblue.migrator.test.LightblueMigrationPhase;
 
@@ -351,6 +352,143 @@ public class DAOFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    /* timeout tests */
+
+    @Test
+    public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() {
+        daoFacadeExample.setTimeoutSeconds(0);
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnCreate_Success() {
+        daoFacadeExample.setTimeoutSeconds(1);
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnCreate_Timeout() {
+        daoFacadeExample.setTimeoutSeconds(1);
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnRead_Timeout() {
+        daoFacadeExample.setTimeoutSeconds(1);
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.getCountry("PL")).thenReturn(pl);
+        Mockito.when(lightblueDAO.getCountry("PL")).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.getCountry("PL");
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnUpdate_Timeout() {
+        daoFacadeExample.setTimeoutSeconds(1);
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.updateCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.updateCountry(pl)).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.updateCountry(pl);
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+        Mockito.verify(legacyDAO).updateCountry(pl);
+        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
 
         Assert.assertEquals(pl, returnedCountry);
     }
