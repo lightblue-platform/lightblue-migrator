@@ -91,7 +91,7 @@ public class DAOFacadeBase<D> {
     }
 
     private void logInconsistency(String entityName, String methodName, Object[] values, Object legacyEntity, Object lightblueEntity) {
-        log.error(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
+        log.warn(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
     /**

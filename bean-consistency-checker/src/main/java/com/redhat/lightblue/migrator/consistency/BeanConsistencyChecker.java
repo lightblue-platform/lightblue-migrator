@@ -31,6 +31,15 @@ public class BeanConsistencyChecker {
 
     private static final Logger logger = LoggerFactory.getLogger(BeanConsistencyChecker.class);
 
+    private boolean logInconsistenciesAsWarnings = true;
+
+    public BeanConsistencyChecker() {}
+
+    public BeanConsistencyChecker(boolean logWarnings) {
+        super();
+        this.logInconsistenciesAsWarnings = logWarnings;
+    }
+
     public boolean consistent(final Object o1, final Object o2) {
         if (logger.isDebugEnabled())
             logger.debug("Checking object1="+o1+" against object2="+o2);
@@ -81,15 +90,13 @@ public class BeanConsistencyChecker {
                 // compare values
                 if (o1Value instanceof Timestamp && o2Value instanceof Date || o1Value instanceof Date && o2Value instanceof Time) {
                     if (!Objects.equals(((Date)o1Value).getTime(), ((Date)o2Value).getTime())) {
-                        if (logger.isDebugEnabled())
-                            logger.debug("Object 1 and Object 2 have "+field.getName()+" inconsistent (checked java.sql.Timestamp against java.util.Date, ignoring nanoseconds)");
+                        logInconsistency(o1.getClass().getSimpleName()+" objects have "+field.getName()+" field inconsistent (checked java.sql.Timestamp against java.util.Date, ignoring nanoseconds)");
                         return false;
                     }
                 }
                 else {
                     if (!Objects.equals(o1Value, o2Value)) {
-                        if (logger.isDebugEnabled())
-                            logger.debug("Object 1 and Object 2 have "+field.getName()+" inconsistent");
+                        logInconsistency(o1.getClass().getSimpleName()+" objects have "+field.getName()+" field inconsistent");
                         return false;
                     }
                 }
@@ -123,6 +130,15 @@ public class BeanConsistencyChecker {
         }
 
         return true;
+    }
+
+    private void logInconsistency(String message) {
+        if (logInconsistenciesAsWarnings) {
+            logger.warn(message);
+        }
+        else {
+            logger.debug(message);
+        }
     }
 
     private static BeanConsistencyChecker beanConsistencyChecker = new BeanConsistencyChecker();
