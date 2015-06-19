@@ -25,14 +25,14 @@ import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
 import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
-public class MigratorTest extends AbstractMigratorController {
+public class FailTest extends AbstractMigratorController {
 
     private String versionMigrationJob;
     private String versionMigrationConfiguration;
     private String versionSourceCustomer;
     private String versionDestinationCustomer;
 
-    public MigratorTest() throws Exception {}
+    public FailTest() throws Exception {}
         
     @Override
     protected JsonNode[] getMetadataJsonNodes() throws Exception {
@@ -69,66 +69,43 @@ public class MigratorTest extends AbstractMigratorController {
         cli.data(req);
     }
 
-
     @Test
-    public void migrateTest() throws Exception {
+    public void failTest() throws Exception {
         clearData();
-        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations.json");
+        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-failmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
-        loadData("sourceCustomer", versionSourceCustomer, "./test/data/load-source-customers.json");
-       
+        
         MainConfiguration cfg=new MainConfiguration();
         cfg.setName("continuum");
         cfg.setHostName("hostname");
         Controller controller=new Controller(cfg);
 
-        // Stop when we retrieve source docs
-        Breakpoint.stop("Migrator:sourceDocs");
+        Breakpoint.stop("MigratorController::unlock");
+
+        System.out.println("failTest: Start controller");
         controller.start();
+        System.out.println("failTest: controller started");
 
-        Breakpoint.waitUntil("Migrator:sourceDocs");
-        // We got source docs, peek
-        Thread[] threads=new Thread[1];
-        Assert.assertEquals(1,controller.
-                            getMigrationProcesses().
-                            get("customerMigration_0").mig.getMigratorThreads().enumerate(threads));
-        
-        Migrator m=(Migrator)threads[0];
-        Assert.assertEquals(5,m.getSourceDocs().size());
+        Map<String,Controller.MigrationProcess> prc=controller.getMigrationProcesses();
 
-        Breakpoint.stop("Migrator:destDocs");
-        Breakpoint.resume("Migrator:sourceDocs");
-
-        Breakpoint.waitUntil("Migrator:destDocs");
-        Assert.assertEquals(0,m.getDestDocs().size());
-                
-        Breakpoint.stop("Migrator:insertDocs");
-        Breakpoint.resume("Migrator:destDocs");
-
-        Breakpoint.waitUntil("Migrator:insertDocs");
-        Assert.assertEquals(5,m.getInsertDocs().size());
-
-        Breakpoint.stop("Migrator:rewriteDocs");
-        Breakpoint.resume("Migrator:insertDocs");
-
-        Breakpoint.waitUntil("Migrator:rewriteDocs");
-        Assert.assertEquals(0,m.getRewriteDocs().size());
-
-        Breakpoint.stop("Migrator:complete");
-        Breakpoint.resume("Migrator:rewriteDocs");
-
-        Breakpoint.waitUntil("Migrator:complete");
-
-        LightblueClient cli = new LightblueHttpClient();
-        DataFindRequest req=new DataFindRequest("destCustomer","1.0.0");
-        req.select(new FieldProjection("*",true,true));
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"destCustomer"));
-        req.sort(new SortCondition("_id",SortDirection.ASC));
-        JsonNode[] ret=cli.data(req,JsonNode[].class);
-        
-        Breakpoint.resume("Migrator:complete");
-
-        Assert.assertEquals(5,ret.length);
+        System.out.println("failTest: wait until unlock");
+        Breakpoint.waitUntil("MigratorController:unlock");
+        System.out.println("failTest: done");
+        // Here, it should have failed already
+        LightblueClient cli=new LightblueHttpClient();
+        DataFindRequest req=new DataFindRequest("migrationJob",null);
+        req.where(withValue("objectType = migrationJob"));
+        req.select(includeFieldRecursively("jobExecutions.0.errorMsg"));
+        LightblueResponse resp=cli.data(req);
+        JsonNode node=resp.getJson();
+        System.out.println("Response:"+node);
+        JsonNode x=node.get("processed");
+        Assert.assertEquals(1,x.size());
+        x=x.get(0).get("jobExecutions").get(0).get("errorMsg");
+        Assert.assertNotNull(x.asText());
+        System.out.println("Error:"+x.asText());
+        Breakpoint.resume("MigratorController:unlock");
+        controller.interrupt();
     }
          
 }
