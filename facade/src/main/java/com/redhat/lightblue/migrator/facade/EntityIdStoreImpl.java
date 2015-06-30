@@ -86,4 +86,22 @@ public class EntityIdStoreImpl implements EntityIdStore {
         }
     }
 
+    @Override
+    public void copyFromThread(long sourceThreadId) {
+        long threadId = Thread.currentThread().getId();
+        log.debug("Copying key value pairs from thread="+sourceThreadId+" to thread="+threadId);
+
+        Element sourceEl = cache.get(sourceThreadId);
+
+        if (sourceEl == null) {
+            throw new RuntimeException("No ids found for "+cache.getName()+" thread="+sourceThreadId+"!");
+        }
+
+        @SuppressWarnings("unchecked")
+        LinkedList<Long> list = (LinkedList<Long>)sourceEl.getObjectValue();
+
+        // copy by reference
+        cache.put(new Element(threadId, list));
+    }
+
 }

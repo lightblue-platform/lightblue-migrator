@@ -59,6 +59,51 @@ public class EntityIdStoreImplTest {
         store.pop();
     }
 
+    @Test
+    public void testCopy() {
+        EntityIdStoreImpl store = new EntityIdStoreImpl(EntityIdStoreImplTest.class);
+
+        store.push(101l);
+        store.push(102l);
+        store.push(103l);
+
+        TestThread t = new TestThread(store, Thread.currentThread().getId());
+
+        t.start();
+        try {
+            t.join();
+            Assert.assertTrue(t.isChecksPassed());
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            Assert.fail();
+        }
+
+    }
+
+    class TestThread extends Thread {
+
+        private EntityIdStore store;
+        private Long parentThreadId;
+        private boolean checksPassed = false;
+
+        public TestThread(EntityIdStore store, Long parentThreadId) {
+            super();
+            this.store = store;
+            this.parentThreadId = parentThreadId;
+        }
+
+        @Override
+        public void run() {
+            store.copyFromThread(parentThreadId);
+
+            checksPassed = 101l == store.pop() && 102l == store.pop() && 103l == store.pop();
+        }
+
+        public boolean isChecksPassed() {
+            return checksPassed;
+        }
+    }
+
     @After
     public void clearAll() {
         CacheManager.create().clearAll();
