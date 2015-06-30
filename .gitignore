@@ -6,7 +6,6 @@ www/www-app/*/src/main/webapp/gwt
 www/*/src/main/webapp/gwt
 *cache.htm
 *cache.html
-*cache.xml
 *.swp
 .classpath
 .settings
