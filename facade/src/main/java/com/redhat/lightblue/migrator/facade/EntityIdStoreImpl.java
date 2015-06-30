@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.facade;
 
+import java.net.URL;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
 
@@ -24,11 +25,21 @@ public class EntityIdStoreImpl implements EntityIdStore {
     private static final Logger log = LoggerFactory.getLogger(EntityIdStoreImpl.class);
 
     // singleton
-    private CacheManager cacheManager = CacheManager.create();
+    private CacheManager cacheManager;
     private Cache cache;
 
     public EntityIdStoreImpl(Class<?> daoClass) {
+        this(daoClass, null);
+    }
+
+    public EntityIdStoreImpl(Class<?> daoClass, URL ehcacheConfigFile) {
         log.debug("Initializing id cache for "+daoClass.getCanonicalName());
+
+        if (ehcacheConfigFile == null)
+            cacheManager = CacheManager.create(EntityIdStoreImpl.class.getResourceAsStream("/ehcache.xml"));
+        else
+            cacheManager = CacheManager.create(ehcacheConfigFile);
+
         cacheManager.addCacheIfAbsent(daoClass.getCanonicalName());
         cache = cacheManager.getCache(daoClass.getCanonicalName());
     }
