@@ -13,4 +13,10 @@ public interface EntityIdStore {
 
     public Long pop();
 
+    /**
+     * Copy all key-value pairs from one thread to the other.
+     *
+     */
+    public void copyFromThread(long sourceThreadId);
+
 }
