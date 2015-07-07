@@ -345,6 +345,16 @@ public class DAOFacadeBase<D> {
 
             try {
                 lightblueEntity = getWithTimeout(listenableFuture);
+            } catch (ExecutionException ee) {
+                EntityIdStoreException se = extractEntityIdStoreExceptionIfExists(ee);
+                if (se != null && !passIds) {
+                    log.warn("Possible data inconsistency in a create-if-not-exists scenario (entity exists in legacy, but does not in lightblue). Method called: "
+                            + methodCallToString(methodName, values), se);
+                    return legacyEntity;
+                }
+
+                log.warn("Error when calling lightblue DAO. Returning data from legacy.", ee);
+                return legacyEntity;
             } catch (TimeoutException te) {
                 log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                 return legacyEntity;
@@ -371,6 +381,18 @@ public class DAOFacadeBase<D> {
         }
 
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
+    }
+
+    private EntityIdStoreException extractEntityIdStoreExceptionIfExists(ExecutionException ee) {
+        try {
+            if (ee.getCause().getCause() instanceof EntityIdStoreException) {
+                return (EntityIdStoreException)ee.getCause().getCause();
+            } else {
+                return null;
+            }
+        } catch (NullPointerException e) {
+            return null;
+        }
     }
 
     public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
