@@ -99,7 +99,7 @@ public class DAOFacadeBase<D> {
         log.warn(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
-    private <T> ListenableFuture<T> callLightblueDAO(final boolean prepareIds, final Method method, final Object[] values) {
+    private <T> ListenableFuture<T> callLightblueDAO(final boolean passIds, final Method method, final Object[] values) {
         ListeningExecutorService executor = createExecutor();
         try {
         // fetch from lightblue using future (asynchronously)
@@ -109,7 +109,7 @@ public class DAOFacadeBase<D> {
             @Override
             public T call() throws Exception {
                 Timer dest = new Timer("destination."+method.getName());
-                if (prepareIds && entityIdStore != null)
+                if (passIds)
                     entityIdStore.copyFromThread(parentThreadId);
                 try {
                     return (T) method.invoke(lightblueDAO, values);
@@ -326,20 +326,22 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             log.debug("."+methodName+" creating in lightblue");
 
+            // don't attempt to pass ids when entity returned from legacy is null
+            boolean passIds = entityIdStore != null && legacyEntity != null;
+
             try {
-                if (entityIdStore != null && legacyEntity != null) {
+                if (passIds) {
                     Long id = entityIdExtractor.extractId(legacyEntity);
                     entityIdStore.push(id);
                 }
             } catch (Exception e) {
-                log.error("Error when handling id", e);
-                log.debug("Returing data from legacy");
+                log.warn("Error when calling lightblue DAO. Returning data from legacy.", e);
                 return legacyEntity;
             }
 
             // it's expected that this method in lightblueDAO will extract id from idStore
             Method method = lightblueDAO.getClass().getMethod(methodName, types);
-            ListenableFuture<T> listenableFuture = callLightblueDAO(true, method, values);
+            ListenableFuture<T> listenableFuture = callLightblueDAO(passIds, method, values);
 
             try {
                 lightblueEntity = getWithTimeout(listenableFuture);

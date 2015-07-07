@@ -356,6 +356,23 @@ public class DAOFacadeTest {
         Assert.assertEquals(pl, returnedCountry);
     }
 
+    @Test
+    public void ligtblueNullReturnedAfterCreateTest() {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(null);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenReturn(null);
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+
+        Assert.assertEquals(null, returnedCountry);
+    }
+
     /* timeout tests */
 
     @Test
