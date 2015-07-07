@@ -73,7 +73,7 @@ public class EntityIdStoreImpl implements EntityIdStore {
         Element el = cache.get(threadId);
 
         if (el == null) {
-            throw new RuntimeException("No ids found for "+cache.getName()+" thread="+threadId+"!");
+            throw new EntityIdStoreException(cache.getName(), threadId);
         }
 
         @SuppressWarnings("unchecked")
@@ -82,7 +82,7 @@ public class EntityIdStoreImpl implements EntityIdStore {
         try {
             return list.removeFirst();
         } catch (NoSuchElementException e) {
-            throw new RuntimeException("No ids found for "+cache.getName()+" thread="+threadId+"!", e);
+            throw new EntityIdStoreException(cache.getName(), threadId);
         }
     }
 
@@ -94,7 +94,7 @@ public class EntityIdStoreImpl implements EntityIdStore {
         Element sourceEl = cache.get(sourceThreadId);
 
         if (sourceEl == null) {
-            throw new RuntimeException("No ids found for "+cache.getName()+" thread="+sourceThreadId+"!");
+            throw new EntityIdStoreException(cache.getName(), sourceThreadId);
         }
 
         @SuppressWarnings("unchecked")
