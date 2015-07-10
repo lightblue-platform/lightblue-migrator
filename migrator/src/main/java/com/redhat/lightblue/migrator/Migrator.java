@@ -31,6 +31,7 @@ import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
@@ -133,7 +134,8 @@ public abstract class Migrator extends Thread {
     /**
      * Updates active execution numDocsProcessed and numDocsToPRocess values, and ping time
      */
-    public void updateActiveExecution(Integer numDocsProcessed, Integer numDocsToProcess) {
+    public void updateActiveExecution(Integer numDocsProcessed, Integer numDocsToProcess)
+        throws LightblueException {
         if(lbClient!=null) {
             DataUpdateRequest req=new DataUpdateRequest("activeExecution",null);
             req.where(withValue("_id",ExpressionOperation.EQ,activeExecution.get_id()));
