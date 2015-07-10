@@ -3,6 +3,7 @@ package com.redhat.lightblue.migrator;
 import java.util.Random;
 import java.util.Date;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -188,33 +189,40 @@ public class MigratorController extends Thread {
         // fail, and they all will try the next entity in line.
         int startIndex=0;
         boolean more;
-        do {
-            more=true;
-            MigrationJob[] jobs=retrieveJobs(JOB_FETCH_BATCH_SIZE,startIndex);
-            if(jobs!=null&&jobs.length>0) {
-                if(jobs.length<JOB_FETCH_BATCH_SIZE)
+        try {
+            do {
+                more=true;
+                MigrationJob[] jobs=retrieveJobs(JOB_FETCH_BATCH_SIZE,startIndex);
+                if(jobs!=null&&jobs.length>0) {
+                    if(jobs.length<JOB_FETCH_BATCH_SIZE)
+                        more=false;
+                    
+                    List<MigrationJob> jobList=new LinkedList<>();
+                    for(MigrationJob x:jobs)
+                        jobList.add(x);
+                    
+                    do {
+                        // Pick a job at random
+                        int jobIndex=rnd.nextInt(jobList.size());
+                        MigrationJob job=jobList.get(jobIndex);
+                        // Try to lock it
+                        LockRecord lck;
+                        if((lck=lock(job))!=null) {
+                            // Locked. Return it
+                            return lck;
+                        } else {
+                            // Can't lock it. Remove from job list
+                            jobList.remove(jobIndex);
+                        }
+                    } while(!jobList.isEmpty());
+                    
+                } else
                     more=false;
-
-                List<MigrationJob> jobList=(List<MigrationJob>)Arrays.asList(jobs);
-
-                do {
-                    // Pick a job at random
-                    int jobIndex=rnd.nextInt(jobList.size());
-                    MigrationJob job=jobList.get(jobIndex);
-                    // Try to lock it
-                    LockRecord lck;
-                    if((lck=lock(job))!=null) {
-                        // Locked. Return it
-                        return lck;
-                    } else {
-                        // Can't lock it. Remove from job list
-                        jobList.remove(jobIndex);
-                    }
-                } while(!jobList.isEmpty());
-                
-            } else
-                more=false;
-        } while(more);
+            } while(more);
+        } catch (Exception e) {
+            LOGGER.error("Exception in findAndLockMigrationJob:"+e,e);
+            throw e;
+        }
         // No jobs to process
         return null;
     }
@@ -279,7 +287,7 @@ public class MigratorController extends Thread {
                 } catch (InterruptedException ie) {
                     interrupted=true;
                 } catch (Exception e) {
-                    LOGGER.error("Cannot lock migration job:"+e);
+                    LOGGER.error("Cannot lock migration job:"+e,e);
                 }
             }
         }
