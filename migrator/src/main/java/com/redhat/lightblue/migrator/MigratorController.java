@@ -15,6 +15,7 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
@@ -104,7 +105,7 @@ public class MigratorController extends Thread {
      * Retrieves jobs that are available, and their scheduled time has passed. Returns at most batchSize jobs starting at startIndex
      */
     public MigrationJob[] retrieveJobs(int batchSize,int startIndex)
-        throws IOException {
+        throws IOException, LightblueException {
         LOGGER.debug("Retrieving jobs: batchSize={}, startIndex={}",batchSize,startIndex);
         
         DataFindRequest findRequest = new DataFindRequest("migrationJob",null);

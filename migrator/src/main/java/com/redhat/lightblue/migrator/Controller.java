@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
+import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.expression.query.ValueQuery;
@@ -54,7 +55,7 @@ public class Controller extends Thread {
      * Read configurations from the database whose name matches this instance name
      */
     public MigrationConfiguration[] getMigrationConfigurations()
-        throws IOException {
+        throws IOException, LightblueException {
         DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
         findRequest.where(withValue("consistencyCheckerName = " + cfg.getName()));
         findRequest.select(includeFieldRecursively("*"));

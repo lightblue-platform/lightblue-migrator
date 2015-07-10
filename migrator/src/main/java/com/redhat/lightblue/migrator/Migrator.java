@@ -31,6 +31,7 @@ import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
@@ -133,7 +134,8 @@ public abstract class Migrator extends Thread {
     /**
      * Updates active execution numDocsProcessed and numDocsToPRocess values, and ping time
      */
-    public void updateActiveExecution(Integer numDocsProcessed, Integer numDocsToProcess) {
+    public void updateActiveExecution(Integer numDocsProcessed, Integer numDocsToProcess)
+        throws LightblueException {
         if(lbClient!=null) {
             DataUpdateRequest req=new DataUpdateRequest("activeExecution",null);
             req.where(withValue("_id",ExpressionOperation.EQ,activeExecution.get_id()));
@@ -206,8 +208,18 @@ public abstract class Migrator extends Thread {
             execution.setProcessedDocumentCount(sourceDocs.size());
             
             LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
-            save(saveDocsList);
-            LOGGER.info("Docs saved: {} {}",saveDocsList.size(),migrationJob.getConfigurationName());
+            List<LightblueResponse> responses=save(saveDocsList);
+            StringBuffer errorMsg=new StringBuffer();
+            for(LightblueResponse response:responses) {
+                if(response.hasError()||response.hasDataErrors())
+                    errorMsg.append(response.getText());
+            }
+            if(errorMsg.length()>0) {
+                LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),errorMsg);
+                execution.setErrorMsg(errorMsg.toString());
+            } else {
+                LOGGER.info("Docs saved: {} {}",saveDocsList.size(),migrationJob.getConfigurationName());
+            }
             Breakpoint.checkpoint("Migrator:complete");
 
         } catch (Exception e) {

@@ -27,6 +27,7 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.expression.query.Query;
@@ -237,7 +238,7 @@ public class DefaultMigrator extends Migrator {
         return responses;
     }
                 
-    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) {
+    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) {        
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getMigrationConfiguration().getDestinationEntityName(),
                                                           getMigrationConfiguration().getDestinationEntityVersion());
@@ -245,7 +246,13 @@ public class DefaultMigrator extends Migrator {
         List<Projection> projections = new ArrayList<>();
         projections.add(new FieldProjection("*", false, true));
         saveRequest.returns(projections);
-        return getDestCli().data(saveRequest);
+        LightblueResponse response;
+        try {
+            response=getDestCli().data(saveRequest);
+        } catch (LightblueException e) {
+            response=e.getLightblueResponse();
+        }
+        return response;
     }
 
 }
