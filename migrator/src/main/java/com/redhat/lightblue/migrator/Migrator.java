@@ -20,6 +20,7 @@ import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -200,11 +201,19 @@ public abstract class Migrator extends Thread {
             execution.setConsistentDocumentCount(sourceDocs.size()-rewriteDocs.size());
 
             List<JsonNode> saveDocsList=new ArrayList<>();
-            for(Identity id:insertDocs)
+            for(Identity id:insertDocs) {
                 saveDocsList.add(sourceDocs.get(id));
-            for(Identity id:rewriteDocs)
-                saveDocsList.add(sourceDocs.get(id));
-
+            }
+            // Bug workaround: lightblue save API uses _id to find the old doc, but at this point, saveDocsList have documents with no _id
+            // So, we find the docs in destDocs using their unique identifier, get _id from them, and add it to the docs
+            for(Identity id:rewriteDocs) {
+                JsonNode sourceDoc=sourceDocs.get(id);
+                JsonNode destDoc=destDocs.get(id);
+                if(destDoc!=null)
+                    ((ObjectNode)sourceDoc).set("_id",((ObjectNode)destDoc).get("_id"));
+                saveDocsList.add(sourceDoc);
+            }
+            
             execution.setProcessedDocumentCount(sourceDocs.size());
             
             LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
