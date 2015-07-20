@@ -119,17 +119,7 @@ public abstract class Migrator extends Thread {
 
     public LightblueClient getLightblueClient(String configPath)
         throws IOException {
-        LOGGER.debug("Getting client with config {}",configPath);
-        LightblueClient cli;
-        if (configPath == null) {
-            cli = new LightblueHttpClient();
-        } else {
-            try (InputStream is = new FileInputStream(configPath)) {
-                LightblueClientConfiguration config = PropertiesLightblueClientConfiguration.fromInputStream(is);
-                cli = new LightblueHttpClient(config);
-            }
-        }       
-        return new LightblueHystrixClient(cli, "migrator", "cli");
+        return Utils.getLightblueClient(configPath);
     }
     
     /**
@@ -157,11 +147,11 @@ public abstract class Migrator extends Thread {
         try {
             initMigrator();
             LOGGER.debug("Retrieving source docs");
-            sourceDocs=getDocumentIdMap(getSourceDocuments());
+            sourceDocs=Utils.getDocumentIdMap(getSourceDocuments(),getMigrationConfiguration().getDestinationIdentityFields());
             Breakpoint.checkpoint("Migrator:sourceDocs");
             LOGGER.info("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
             LOGGER.debug("Retrieving destination docs");
-            destDocs=getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()));
+            destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getMigrationConfiguration().getDestinationIdentityFields());
             Breakpoint.checkpoint("Migrator:destDocs");
             LOGGER.info("There are {} destination docs:{}",destDocs.size(),migrationJob.getConfigurationName());
 
@@ -177,7 +167,7 @@ public abstract class Migrator extends Thread {
             for(Map.Entry<Identity,JsonNode> sourceEntry:sourceDocs.entrySet()) {
                 JsonNode destDoc=destDocs.get(sourceEntry.getKey());
                 if(destDoc!=null) {
-                    List<String> inconsistentFields=compareDocs(sourceEntry.getValue(),destDoc);
+                    List<String> inconsistentFields=Utils.compareDocs(sourceEntry.getValue(),destDoc,getMigrationConfiguration().getComparisonExclusionPaths());
                     if(inconsistentFields!=null&&!inconsistentFields.isEmpty()) {
                         rewriteDocs.add(sourceEntry.getKey());
                         // log as key=value to make parsing easy
@@ -261,29 +251,7 @@ public abstract class Migrator extends Thread {
      */
     public abstract List<JsonNode> getDestinationDocuments(Collection<Identity> docs);
 
-    /**
-     * Should compare two docs, and return mismatched fields
-     */
-    public abstract List<String> compareDocs(JsonNode source,JsonNode dest);
-
     public abstract List<LightblueResponse> save(List<JsonNode> docs);
-
-    /**
-     * Build an id-doc map from a list of docs
-     */
-    public Map<Identity,JsonNode> getDocumentIdMap(List<JsonNode> list) {
-        Map<Identity,JsonNode> map=new HashMap<>();
-        if(list!=null) {
-            LOGGER.debug("Getting doc IDs for {} docs, fields={}",list.size(),
-                         getMigrationConfiguration().getDestinationIdentityFields());
-            for(JsonNode node:list) {
-                Identity id=new Identity(node, getMigrationConfiguration().getDestinationIdentityFields());
-                LOGGER.debug("ID={}",id);
-                map.put(id,node);
-            }
-        }
-        return map;
-    }
     
     
     @Override
