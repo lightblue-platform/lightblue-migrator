@@ -1,5 +1,7 @@
 package com.redhat.lightblue.migrator.facade;
 
+import com.redhat.lightblue.migrator.facade.model.Country;
+
 public interface CountryDAO {
 
     public abstract Country createCountry(Country country);

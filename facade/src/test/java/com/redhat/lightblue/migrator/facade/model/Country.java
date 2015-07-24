@@ -1,17 +1,13 @@
-package com.redhat.lightblue.migrator.facade;
-
-import com.redhat.lightblue.migrator.consistency.BeanConsistencyChecker;
-import com.redhat.lightblue.migrator.consistency.ConsistencyCheck;
+package com.redhat.lightblue.migrator.facade.model;
 
 
 public class Country {
-    
-    @ConsistencyCheck(ignore=true)
+
     private String name;
     private String iso2Code, iso3Code;
     private Long id;
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -51,11 +47,6 @@ public class Country {
 
     public void setIso3Code(String iso3code) {
         this.iso3Code = iso3code;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return BeanConsistencyChecker.getInstance().consistent(this, obj);
     }
 
 }

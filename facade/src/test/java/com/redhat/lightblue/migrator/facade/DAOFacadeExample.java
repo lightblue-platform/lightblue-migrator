@@ -2,6 +2,7 @@ package com.redhat.lightblue.migrator.facade;
 
 import com.redhat.lightblue.migrator.facade.DAOFacadeBase;
 import com.redhat.lightblue.migrator.facade.EntityIdExtractor;
+import com.redhat.lightblue.migrator.facade.model.Country;
 
 
 
