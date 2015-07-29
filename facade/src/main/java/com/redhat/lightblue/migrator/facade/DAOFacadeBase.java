@@ -4,19 +4,26 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.reflections.Reflections;
+import org.skyscreamer.jsonassert.JSONCompare;
+import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.skyscreamer.jsonassert.JSONCompareResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -39,6 +46,8 @@ public class DAOFacadeBase<D> {
     protected final D legacyDAO, lightblueDAO;
 
     private EntityIdStore entityIdStore = null;
+
+    private ObjectWriter writer;
 
     private int timeoutSeconds = 0;
 
@@ -64,8 +73,45 @@ public class DAOFacadeBase<D> {
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
     }
 
+    private Map<Class<?>,Class<?>> getMixInMappingsFromClasspath() {
+        Map<Class<?>,Class<?>> mixInMapping = new HashMap<>();
+        Reflections reflections = new Reflections("");
+        Set<Class<?>> classes = reflections.getTypesAnnotatedWith(ModelMixIn.class);
+
+        for (Class clazz : classes) {
+            ModelMixIn annotation = (ModelMixIn)clazz.getAnnotation(ModelMixIn.class);
+            mixInMapping.put(annotation.clazz(), clazz);
+        }
+        return mixInMapping;
+    }
+
+    private ObjectWriter getObjectWriter() {
+        if (writer==null) {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setMixInAnnotations(getMixInMappingsFromClasspath());
+            writer = mapper.writer().withDefaultPrettyPrinter();
+        }
+        return writer;
+    }
+
     public boolean checkConsistency(Object o1, Object o2) {
-        return Objects.equals(o1, o2);
+        if (o1==null&o2==null) {
+            return true;
+        }
+        try {
+            String legacyJson = getObjectWriter().writeValueAsString(o1);
+            String lightblueJson = getObjectWriter().writeValueAsString(o2);
+
+            JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
+            log.info("Consistency Check Passed: "+ result.passed());
+            if (log.isDebugEnabled() && !result.passed()) {
+                log.debug("Consistency Results:\n"+ result.getMessage());
+            }
+            return result.passed();
+        } catch (Exception e) {
+            log.error("Consistency check failed! Invalid JSON. " + e.getMessage());
+        }
+        return false;
     }
 
     private ListeningExecutorService createExecutor() {

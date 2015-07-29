@@ -7,6 +7,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.redhat.lightblue.migrator.facade.EntityIdStoreImpl;
+import com.redhat.lightblue.migrator.facade.model.Country;
 
 public class EntityIdStoreImplTest {
 

@@ -13,6 +13,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.togglz.junit.TogglzRule;
 
+import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 import com.redhat.lightblue.migrator.test.LightblueMigrationPhase;
 
@@ -186,7 +187,7 @@ public class DAOFacadeTest {
         Mockito.when(legacyDAO.createCountry(pl)).thenReturn(createdByLegacy);
 
         Country createdCountry = facade.createCountry(pl);
-        Assert.assertEquals(101l, createdCountry.getId());
+        Assert.assertEquals(new Long(101), createdCountry.getId());
 
 
         Mockito.verify(legacyDAO).createCountry(pl);
@@ -278,7 +279,7 @@ public class DAOFacadeTest {
         Mockito.when(legacyDAO.createCountryIfNotExists(pl)).thenReturn(createdByLegacy);
 
         Country createdCountry = facade.createCountryIfNotExists(pl);
-        Assert.assertEquals(101l, createdCountry.getId());
+        Assert.assertEquals(new Long(101), createdCountry.getId());
 
 
         Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
