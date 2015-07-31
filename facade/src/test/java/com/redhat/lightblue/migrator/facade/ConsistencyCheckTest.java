@@ -17,6 +17,7 @@ import org.togglz.junit.TogglzRule;
 import com.redhat.lightblue.migrator.facade.model.CountryWithDate;
 import com.redhat.lightblue.migrator.facade.model.CountryInCountry;
 import com.redhat.lightblue.migrator.facade.model.CountryWithBigDecimal;
+import com.redhat.lightblue.migrator.facade.model.Person;
 import com.redhat.lightblue.migrator.facade.model.VeryExtendedCountry;
 import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.facade.model.ExtendedCountry;
@@ -192,5 +193,18 @@ public class ConsistencyCheckTest {
 
         Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
         Assert.assertTrue(daoFacadeExample.checkConsistency(pl2, pl1));
+    }
+
+    @Test
+    public void testWithMethodInclusion() {
+        Person p1 = new Person("John", "Doe", 35, "British");
+        Person p2 = new Person("John", "Doe", 35, "German");
+        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson"));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson2"));
+
+        p1 = new Person("John", "Doe", 35, "British");
+        p2 = new Person("John", "Doe", 30, "British");
+        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson"));
+        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson2"));
     }
 }
