@@ -47,7 +47,7 @@ public class DAOFacadeBase<D> {
 
     private EntityIdStore entityIdStore = null;
 
-    private ObjectWriter writer;
+    private Map<Class<?>,ModelMixIn> modelMixIns;
 
     private int timeoutSeconds = 0;
 
@@ -73,36 +73,45 @@ public class DAOFacadeBase<D> {
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
     }
 
-    private Map<Class<?>,Class<?>> getMixInMappingsFromClasspath() {
-        Map<Class<?>,Class<?>> mixInMapping = new HashMap<>();
-        Reflections reflections = new Reflections("");
-        Set<Class<?>> classes = reflections.getTypesAnnotatedWith(ModelMixIn.class);
-
-        for (Class clazz : classes) {
-            ModelMixIn annotation = (ModelMixIn)clazz.getAnnotation(ModelMixIn.class);
-            mixInMapping.put(annotation.clazz(), clazz);
+    private Map<Class<?>,ModelMixIn> findModelMixInMappings() {
+        if  (modelMixIns==null) {
+            Reflections reflections = new Reflections("");
+            Set<Class<?>> classes = reflections.getTypesAnnotatedWith(ModelMixIn.class);
+            modelMixIns = new HashMap<>();
+            for (Class<?> clazz : classes) {
+                modelMixIns.put(clazz, clazz.getAnnotation(ModelMixIn.class));
+            }
         }
-        return mixInMapping;
+        return modelMixIns;
     }
 
-    private ObjectWriter getObjectWriter() {
-        if (writer==null) {
-            ObjectMapper mapper = new ObjectMapper();
-            mapper.setMixInAnnotations(getMixInMappingsFromClasspath());
-            writer = mapper.writer().withDefaultPrettyPrinter();
+    private ObjectWriter getObjectWriter(String methodName) {
+        ObjectMapper mapper = new ObjectMapper();
+        for (Map.Entry<Class<?>, ModelMixIn> entry : findModelMixInMappings().entrySet()) {
+            if (methodName==null || entry.getValue().includeMethods().length==0 || Arrays.asList(entry.getValue().includeMethods()).contains(methodName)) {
+                mapper.addMixInAnnotations(entry.getValue().clazz(), entry.getKey());
+            }
         }
-        return writer;
+        return mapper.writer().withDefaultPrettyPrinter();
     }
 
     public boolean checkConsistency(Object o1, Object o2) {
+        return checkConsistency(o1,o2,null);
+    }
+
+    public boolean checkConsistency(Object o1, Object o2, String methodName) {
         if (o1==null&o2==null) {
             return true;
         }
         try {
-            String legacyJson = getObjectWriter().writeValueAsString(o1);
-            String lightblueJson = getObjectWriter().writeValueAsString(o2);
+            String legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
+            String lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
 
+            long t1 = System.currentTimeMillis();
             JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
+            long t2 = System.currentTimeMillis();
+
+            log.debug("Consistency check took: " + (t2-t1)+" ms");
             log.info("Consistency Check Passed: "+ result.passed());
             if (log.isDebugEnabled() && !result.passed()) {
                 log.debug("Consistency Results:\n"+ result.getMessage());
@@ -227,7 +236,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity)) {
+            if (checkConsistency(legacyEntity, lightblueEntity, methodName)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -308,7 +317,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity)) {
+            if (checkConsistency(legacyEntity, lightblueEntity, methodName)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -416,7 +425,7 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (checkConsistency(lightblueEntity, legacyEntity)) {
+            if (checkConsistency(lightblueEntity, legacyEntity, methodName)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {

@@ -6,14 +6,24 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Use <code>ModelMixIn(clazz=Model.class)</code> to map a model object to the jackson Mix-In interface
- * for overriding jackson annotations during bean serialization.
+ * Use <code>ModelMixIn(clazz=Model.class, includeMethods={"apiMethod1","apiMethod2"})</code>
+ * to exclude certain fields from the serialized json before consistency checking.
+ *
  *
  * @author ykoer
- *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface ModelMixIn {
+    /**
+     * The MixIn interface/class for a model object.
+     * @return
+     */
     Class clazz();
+
+    /**
+     * Optional attribute allows us to restrict an override to the given method names only.
+     * Otherwise it will be applied to all methods.
+     */
+    String[] includeMethods() default {};
 }
