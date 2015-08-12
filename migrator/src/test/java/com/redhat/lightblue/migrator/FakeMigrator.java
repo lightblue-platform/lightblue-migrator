@@ -7,11 +7,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public class TestMigrator extends Migrator {
+public class FakeMigrator extends Migrator {
 
     public static int count;
 
-    public TestMigrator(ThreadGroup g) {
+    public FakeMigrator(ThreadGroup g) {
         super(g);
     }
     

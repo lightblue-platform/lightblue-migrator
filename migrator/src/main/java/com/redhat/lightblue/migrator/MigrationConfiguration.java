@@ -1,6 +1,7 @@
 package com.redhat.lightblue.migrator;
 
 import java.util.List;
+import java.util.Date;
 
 public class MigrationConfiguration {
 
@@ -22,6 +23,21 @@ public class MigrationConfiguration {
     private String sourceServiceURI;
     private String sourceEntityName;
     private String sourceEntityVersion;
+
+    private String timestampFieldName;
+    private Date timestampInitialValue;
+    /**
+     * The period is one of:
+     <pre>
+     millis
+     millis "ms"
+     seconds "s"
+     minutes "m"
+     hours "h"
+     days "d"
+     </pre>
+    */
+    private String period;
 
 
     /**
@@ -68,7 +84,7 @@ public class MigrationConfiguration {
     public final String getConsistencyCheckerName() {
         return this.consistencyCheckerName;
     }
-
+    
     /**
      * Sets the value of consistencyCheckerName
      *
@@ -77,7 +93,8 @@ public class MigrationConfiguration {
     public final void setConsistencyCheckerName(final String argConsistencyCheckerName) {
         this.consistencyCheckerName = argConsistencyCheckerName;
     }
-
+    
+ 
     /**
      * Gets the value of threadCount
      *
@@ -310,6 +327,60 @@ public class MigrationConfiguration {
         this.sourceConfigPath = argSourceConfigPath;
     }
     
+
+    /**
+     * Gets the value of timestampFieldName
+     *
+     * @return the value of timestampFieldName
+     */
+    public final String getTimestampFieldName() {
+        return this.timestampFieldName;
+    }
+
+    /**
+     * Sets the value of timestampFieldName
+     *
+     * @param argTimestampFieldName Value to assign to this.timestampFieldName
+     */
+    public final void setTimestampFieldName(final String argTimestampFieldName) {
+        this.timestampFieldName = argTimestampFieldName;
+    }
+
+    /**
+     * Gets the value of timestampInitialValue
+     *
+     * @return the value of timestampInitialValue
+     */
+    public final Date getTimestampInitialValue() {
+        return this.timestampInitialValue;
+    }
+
+    /**
+     * Sets the value of timestampInitialValue
+     *
+     * @param argTimestampInitialValue Value to assign to this.timestampInitialValue
+     */
+    public final void setTimestampInitialValue(final Date argTimestampInitialValue) {
+        this.timestampInitialValue = argTimestampInitialValue;
+    }
+
+    /**
+     * Gets the value of period
+     *
+     * @return the value of period
+     */
+    public final String getPeriod() {
+        return this.period;
+    }
+
+    /**
+     * Sets the value of period
+     *
+     * @param argPeriod Value to assign to this.period
+     */
+    public final void setPeriod(final String argPeriod) {
+        this.period = argPeriod;
+    }
     @Override
     public String toString() {
         final int sbSize = 1000;

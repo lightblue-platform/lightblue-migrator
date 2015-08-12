@@ -5,7 +5,7 @@
             "collection": "migrationConfig",
             "datasource": "mongodata"
         },
-        "defaultVersion" : "2.0.0",
+        "defaultVersion" : "2.0.1",
         "indexes": [
             {
                 "fields": [
@@ -82,7 +82,7 @@
                 },
                 "description": "Name of the consistency checker responsible for this configuration"
             },
-            "authorizedHostnames": { 
+             "authorizedHostnames": { 
                 "type": "array",
                 "items": {
                     "type": "string"
@@ -178,22 +178,6 @@
                     "required": true
                 },
                 "description": "source Entity Version for data being migrated"
-            },
-            "creationDate": {
-                "type": "date",
-                "description": "Creation date of the configuration"
-            },
-            "createdBy": {
-                "type": "string",
-                "description": "User id of the configuration creator"
-            },
-            "lastUpdateDate": {
-                "type": "date",
-                "description": "Last updated date of the configuration"
-            },
-            "lastUpdatedBy": {
-                "type": "string",
-                "description": "User id of the configuration creator"
             }
         },
         "name": "migrationConfiguration",
@@ -201,8 +185,8 @@
             "value": "active"
         },
         "version": {
-            "changelog": "Initial release",
-            "value": "2.0.0"
+            "changelog": "Consistency checker changes",
+            "value": "2.0.1"
         }
     }
 }

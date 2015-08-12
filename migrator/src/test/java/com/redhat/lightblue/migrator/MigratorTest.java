@@ -119,6 +119,7 @@ public class MigratorTest extends AbstractMigratorController {
 
         Breakpoint.waitUntil("Migrator:complete");
 
+
         LightblueClient cli = new LightblueHttpClient();
         DataFindRequest req=new DataFindRequest("destCustomer","1.0.0");
         req.select(new FieldProjection("*",true,true));
@@ -126,9 +127,21 @@ public class MigratorTest extends AbstractMigratorController {
         req.sort(new SortCondition("_id",SortDirection.ASC));
         JsonNode[] ret=cli.data(req,JsonNode[].class);
         
+        System.out.println("Complete");
         Breakpoint.resume("Migrator:complete");
 
         Assert.assertEquals(5,ret.length);
+        Breakpoint.stop("MigratorController::end");
+        System.out.println("Interrupt controller");
+        System.out.println("Interrupting "+controller.getMigrationProcesses().get("customerMigration_0").mig.getName());
+        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
+        controller.interrupt();
+        System.out.println("Waiting migratorController:end");
+        Breakpoint.waitUntil("MigratorController:end");
+        System.out.println("resuming migratorController:end");
+        Breakpoint.resume("MigratorController:end");
+        System.out.println("Test ends");
+        Thread.sleep(100);
     }
          
 }

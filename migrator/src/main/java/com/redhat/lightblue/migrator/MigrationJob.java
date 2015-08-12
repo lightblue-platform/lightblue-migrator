@@ -60,4 +60,12 @@ public class MigrationJob {
         query=s;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String s) {
+        status=s;
+    }
+
 }

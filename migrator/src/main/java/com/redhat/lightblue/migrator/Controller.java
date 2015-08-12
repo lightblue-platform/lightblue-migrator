@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
+import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
@@ -30,11 +31,14 @@ public class Controller extends Thread {
     public static class MigrationProcess {
         public final MigrationConfiguration cfg;
         public final MigratorController mig;
+        public final ConsistencyCheckerController ccc;
 
         public MigrationProcess(MigrationConfiguration cfg,
-                                MigratorController mig) {
+                                MigratorController mig,
+                                ConsistencyCheckerController ccc) {
             this.cfg=cfg;
             this.mig=mig;
+            this.ccc=ccc;
         }
     }
     
@@ -61,6 +65,18 @@ public class Controller extends Thread {
         findRequest.select(includeFieldRecursively("*"));
         LOGGER.debug("Loading configuration:{}",findRequest.getBody());
         return lightblueClient.data(findRequest, MigrationConfiguration[].class);
+    }
+
+    /**
+     * Load migration configuration based on its id
+     */
+    public MigrationConfiguration loadMigrationConfiguration(String migrationConfigurationId) 
+        throws IOException, LightblueException {
+        DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
+        findRequest.where(withValue("_id",ExpressionOperation.EQ,migrationConfigurationId));
+        findRequest.select(includeFieldRecursively("*"));
+        LOGGER.debug("Loading configuration");
+        return lightblueClient.data(findRequest, MigrationConfiguration.class);
     }
     
     public LightblueClient getLightblueClient() {
@@ -90,8 +106,16 @@ public class Controller extends Thread {
             if(!migrationMap.containsKey(cfg.get_id())) {
                 LOGGER.debug("Creating a controller thread for configuration {}: {}",cfg.get_id(),cfg.getConfigurationName());
                 MigratorController c=new MigratorController(this,cfg);
-                migrationMap.put(cfg.get_id(),new MigrationProcess(cfg,c));
+                ConsistencyCheckerController ccc;
+                if(cfg.getTimestampFieldName()!=null&&
+                   cfg.getTimestampFieldName().length()>0)
+                    ccc=new ConsistencyCheckerController(this,cfg);
+                else
+                    ccc=null;
+                migrationMap.put(cfg.get_id(),new MigrationProcess(cfg,c,ccc));
                 c.start();
+                if(ccc!=null)
+                    ccc.start();
             }
         }
     }
@@ -123,6 +147,8 @@ public class Controller extends Thread {
         }
         for(MigrationProcess p:migrationMap.values()) {
             p.mig.interrupt();
+            if(p.ccc!=null)
+                p.ccc.interrupt();
         }
     }
 }
