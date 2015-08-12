@@ -15,8 +15,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import jdk.nashorn.internal.runtime.Context.ThrowErrorManager;
-
 import org.reflections.Reflections;
 import org.skyscreamer.jsonassert.JSONCompare;
 import org.skyscreamer.jsonassert.JSONCompareMode;
