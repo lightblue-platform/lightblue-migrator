@@ -15,6 +15,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import jdk.nashorn.internal.runtime.Context.ThrowErrorManager;
+
 import org.reflections.Reflections;
 import org.skyscreamer.jsonassert.JSONCompare;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -196,7 +198,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
@@ -215,6 +217,8 @@ public class DAOFacadeBase<D> {
             Timer source = new Timer("source."+methodName);
             try {
                 legacyEntity = (T) method.invoke(legacyDAO, values);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
             } finally {
                 source.complete();
             }
@@ -249,7 +253,7 @@ public class DAOFacadeBase<D> {
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
-    public <T> List<T> callDAOReadMethodReturnList(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> List<T> callDAOReadMethodReturnList(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         return (List<T>)callDAOReadMethod(returnedType, methodName, types, values);
     }
 
@@ -262,13 +266,13 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
         return callDAOReadMethod(returnedType, methodName, toClasses(values), values);
     }
 
     /**
      * Call dao method which updates data. Updating makes sense only for entities with known ID. If ID is not specified, it will be generated
-     * by both legacy and lightblue datastores independently, creating a data incosistency. If you don't know the ID, use callDAOUpdateMethod method.
+     * by both legacy and lightblue datastores independently, creating a data inconsistency. If you don't know the ID, use on of the callDAOCreate methods.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -277,7 +281,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
@@ -296,6 +300,8 @@ public class DAOFacadeBase<D> {
             Timer source = new Timer("source."+methodName);
             try {
                 legacyEntity = (T) method.invoke(legacyDAO, values);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
             } finally {
                 source.complete();
             }
@@ -339,7 +345,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
         return callDAOUpdateMethod(returnedType, methodName, toClasses(values), values);
     }
 
@@ -354,7 +360,7 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Exception {
+    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
@@ -367,6 +373,8 @@ public class DAOFacadeBase<D> {
             Timer source = new Timer("source."+methodName);
             try {
                 legacyEntity = (T) method.invoke(legacyDAO, values);
+            } catch (InvocationTargetException e) {
+                throw e.getCause();
             } finally {
                 source.complete();
             }
@@ -450,7 +458,7 @@ public class DAOFacadeBase<D> {
         }
     }
 
-    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Exception {
+    public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
         return callDAOCreateSingleMethod(pureWrite, entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 

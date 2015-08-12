@@ -44,7 +44,7 @@ public class DAOFacadeTest {
     /* Read tests */
 
     @Test
-    public void initialPhaseRead() {
+    public void initialPhaseRead() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         facade.getCountry("PL");
@@ -55,7 +55,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualReadPhaseReadConsistentTest() {
+    public void dualReadPhaseReadConsistentTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country country = new Country();
@@ -71,7 +71,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualReadPhaseReadInconsistentTest() {
+    public void dualReadPhaseReadInconsistentTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -91,7 +91,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void lightblueProxyTest() {
+    public void lightblueProxyTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         facade.getCountry("PL");
@@ -104,7 +104,7 @@ public class DAOFacadeTest {
     /* update tests */
 
     @Test
-    public void initialPhaseUpdate() {
+    public void initialPhaseUpdate() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -117,7 +117,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualWritePhaseUpdateConsistentTest() {
+    public void dualWritePhaseUpdateConsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -130,7 +130,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualWritePhaseUpdateInconsistentTest() {
+    public void dualWritePhaseUpdateInconsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -150,7 +150,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueProxyPhaseUpdateTest() {
+    public void ligtblueProxyPhaseUpdateTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -165,7 +165,7 @@ public class DAOFacadeTest {
     /* insert tests */
 
     @Test
-    public void initialPhaseCreate() {
+    public void initialPhaseCreate() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -178,7 +178,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualWritePhaseCreateConsistentTest() {
+    public void dualWritePhaseCreateConsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -199,7 +199,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualWritePhaseCreateInconsistentTest() {
+    public void dualWritePhaseCreateInconsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -221,7 +221,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueProxyPhaseCreateTest() {
+    public void ligtblueProxyPhaseCreateTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         // lightblue will handle ID generation in this phase
@@ -240,7 +240,7 @@ public class DAOFacadeTest {
     /* insert tests when method also does a read */
 
     @Test
-    public void initialPhaseCreateWithRead() {
+    public void initialPhaseCreateWithRead() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -253,7 +253,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualWritePhaseCreateWithReadTest() {
+    public void dualWritePhaseCreateWithReadTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country(101l, "PL");
@@ -270,7 +270,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualReadPhaseCreateWithReadTest() {
+    public void dualReadPhaseCreateWithReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -291,7 +291,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueProxyPhaseCreateWithReadTest() {
+    public void ligtblueProxyPhaseCreateWithReadTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -306,7 +306,7 @@ public class DAOFacadeTest {
     /* lightblue failure tests */
 
     @Test
-    public void ligtblueFailureDuringReadTest() {
+    public void ligtblueFailureDuringReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -323,7 +323,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueFailureDuringUpdateTest() {
+    public void lightblueFailureDuringUpdateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -341,7 +341,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueFailureDuringCreateTest() {
+    public void lightblueFailureDuringCreateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country(101l, "PL");
@@ -358,7 +358,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueNullReturnedAfterCreateTest() {
+    public void lightblueNullReturnedAfterCreateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country(101l, "PL");
@@ -374,10 +374,10 @@ public class DAOFacadeTest {
         Assert.assertEquals(null, returnedCountry);
     }
 
-    /* timeout tests */
+    /* lightblue timeout tests */
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() {
+    public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() throws CountryException {
         daoFacadeExample.setTimeoutSeconds(0);
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
@@ -404,7 +404,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_Success() {
+    public void lightblueTakesLongToRespondOnCreate_Success() throws CountryException {
         daoFacadeExample.setTimeoutSeconds(1);
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
@@ -431,7 +431,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_Timeout() {
+    public void lightblueTakesLongToRespondOnCreate_Timeout() throws CountryException {
         daoFacadeExample.setTimeoutSeconds(1);
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
@@ -458,7 +458,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnRead_Timeout() {
+    public void lightblueTakesLongToRespondOnRead_Timeout() throws CountryException {
         daoFacadeExample.setTimeoutSeconds(1);
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
@@ -485,7 +485,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnUpdate_Timeout() {
+    public void lightblueTakesLongToRespondOnUpdate_Timeout() throws CountryException {
         daoFacadeExample.setTimeoutSeconds(1);
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
@@ -509,5 +509,67 @@ public class DAOFacadeTest {
         Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
+    }
+
+    /* legacy failure tests */
+
+    @Test
+    public void legacyFailureDuringReadTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Mockito.doThrow(new CountryException()).when(legacyDAO).getCountry("PL");
+
+        try {
+            facade.getCountry("PL");
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+    }
+
+    @Test
+    public void legacyFailureDuringUpdateTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        Mockito.doThrow(new CountryException()).when(legacyDAO).updateCountry(pl);
+
+        try {
+            facade.updateCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+        Mockito.verify(legacyDAO).updateCountry(pl);
+    }
+
+    @Test
+    public void legacyFailureDuringCreateTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        Mockito.doThrow(new CountryException()).when(legacyDAO).createCountry(pl);
+
+        try {
+            facade.createCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(legacyDAO).createCountry(pl);
     }
 }
