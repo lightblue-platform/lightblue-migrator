@@ -2,9 +2,6 @@
     "data":[
         {
             "_id": "customerMigration_0", 
-            "authorizedHostnames": [
-                "localhost"
-            ], 
             "comparisonExclusionPaths": [
                 "creationDate"
             ], 

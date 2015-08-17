@@ -8,10 +8,9 @@ public class MigrationConfiguration {
     private String _id;
     private String configurationName;
     private String consistencyCheckerName;
-    private List<String> authorizedHostnames;
     private int threadCount;
     private String migratorClass;
-    private String consistencyCheckerClass;
+    private String consistencyCheckerControllerClass;
     private boolean overwriteDestinationDocuments = false;
     private List<String> comparisonExclusionPaths;
     private String destinationConfigPath;
@@ -131,23 +130,6 @@ public class MigrationConfiguration {
         this.migratorClass = argMigratorClass;
     }
 
-    /**
-     * Gets the value of consistencyCheckerClass
-     *
-     * @return the value of consistencyCheckerClass
-     */
-    public final String getConsistencyCheckerClass() {
-        return this.consistencyCheckerClass;
-    }
-
-    /**
-     * Sets the value of consistencyCheckerClass
-     *
-     * @param argConsistencyCheckerClass Value to assign to this.consistencyCheckerClass
-     */
-    public final void setConsistencyCheckerClass(final String argConsistencyCheckerClass) {
-        this.consistencyCheckerClass = argConsistencyCheckerClass;
-    }
 
     public final List<String> getComparisonExclusionPaths() {
         return comparisonExclusionPaths;
@@ -381,6 +363,27 @@ public class MigrationConfiguration {
     public final void setPeriod(final String argPeriod) {
         this.period = argPeriod;
     }
+
+
+    /**
+     * Gets the value of consistencyCheckerControllerClass
+     *
+     * @return the value of consistencyCheckerControllerClass
+     */
+    public final String getConsistencyCheckerControllerClass() {
+        return this.consistencyCheckerControllerClass;
+    }
+
+    /**
+     * Sets the value of consistencyCheckerControllerClass
+     *
+     * @param argConsistencyCheckerControllerClass Value to assign to this.consistencyCheckerControllerClass
+     */
+    public final void setConsistencyCheckerControllerClass(final String argConsistencyCheckerControllerClass) {
+        this.consistencyCheckerControllerClass = argConsistencyCheckerControllerClass;
+    }
+
+
     @Override
     public String toString() {
         final int sbSize = 1000;
@@ -397,7 +400,7 @@ public class MigrationConfiguration {
         sb.append(variableSeparator);
         sb.append("migratorClass=").append(migratorClass);
         sb.append(variableSeparator);
-        sb.append("consistencyCheckerClass=").append(consistencyCheckerClass);
+        sb.append("consistencyCheckerControllerClass=").append(consistencyCheckerControllerClass);
         sb.append(variableSeparator);
         sb.append("overwriteDestinationDocuments=").append(overwriteDestinationDocuments);
         sb.append(variableSeparator);

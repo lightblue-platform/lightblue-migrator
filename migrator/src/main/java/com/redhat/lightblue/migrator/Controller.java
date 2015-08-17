@@ -31,11 +31,11 @@ public class Controller extends Thread {
     public static class MigrationProcess {
         public final MigrationConfiguration cfg;
         public final MigratorController mig;
-        public final ConsistencyCheckerController ccc;
+        public final AbstractController ccc;
 
         public MigrationProcess(MigrationConfiguration cfg,
                                 MigratorController mig,
-                                ConsistencyCheckerController ccc) {
+                                AbstractController ccc) {
             this.cfg=cfg;
             this.mig=mig;
             this.ccc=ccc;
@@ -101,16 +101,21 @@ public class Controller extends Thread {
      * corresponding configuration is removed, thread terminates, or
      * it is modified, thread behaves accordingly.
      */
-    public void createControllers(MigrationConfiguration[] configurations) throws IOException {
+    public void createControllers(MigrationConfiguration[] configurations) throws Exception {
         for(MigrationConfiguration cfg:configurations) {
             if(!migrationMap.containsKey(cfg.get_id())) {
                 LOGGER.debug("Creating a controller thread for configuration {}: {}",cfg.get_id(),cfg.getConfigurationName());
                 MigratorController c=new MigratorController(this,cfg);
-                ConsistencyCheckerController ccc;
+                AbstractController ccc;
                 if(cfg.getTimestampFieldName()!=null&&
-                   cfg.getTimestampFieldName().length()>0)
-                    ccc=new ConsistencyCheckerController(this,cfg);
-                else
+                   cfg.getTimestampFieldName().length()>0) {
+                    if(cfg.getConsistencyCheckerControllerClass()!=null&&
+                       cfg.getConsistencyCheckerControllerClass().length()>0)
+                        ccc=(AbstractController)Class.forName(cfg.getConsistencyCheckerControllerClass()).
+                            getConstructor(Controller.class,MigrationConfiguration.class).newInstance(this,cfg);
+                    else
+                        ccc=new ConsistencyCheckerController(this,cfg);
+                } else
                     ccc=null;
                 migrationMap.put(cfg.get_id(),new MigrationProcess(cfg,c,ccc));
                 c.start();
@@ -150,5 +155,6 @@ public class Controller extends Thread {
             if(p.ccc!=null)
                 p.ccc.interrupt();
         }
+        Breakpoint.checkpoint("Controller:end");
     }
 }

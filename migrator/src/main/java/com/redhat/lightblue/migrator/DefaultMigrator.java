@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.StringTokenizer;
+import java.util.Date;
 
 import java.io.IOException;
 
@@ -19,25 +21,18 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ContainerNode;
 
 import org.apache.commons.lang.StringUtils;
 
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.Projection;
+import com.redhat.lightblue.client.util.JSON;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
-import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueException;
-import com.redhat.lightblue.client.enums.SortDirection;
-import com.redhat.lightblue.client.enums.ExpressionOperation;
-import com.redhat.lightblue.client.expression.query.Query;
-import com.redhat.lightblue.client.expression.query.ValueQuery;
-import com.redhat.lightblue.client.projection.Projection;
-import com.redhat.lightblue.client.projection.FieldProjection;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
-import static com.redhat.lightblue.client.projection.FieldProjection.excludeField;
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.or;
 
 public class DefaultMigrator extends Migrator {
 
@@ -79,12 +74,8 @@ public class DefaultMigrator extends Migrator {
         try {
             DataFindRequest sourceRequest = new DataFindRequest(getMigrationConfiguration().getSourceEntityName(),
                                                                 getMigrationConfiguration().getSourceEntityVersion());
-            sourceRequest.where(new Query() {
-                    public String toJson() {
-                        return getMigrationJob().getQuery();
-                    }
-                });
-            sourceRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
+            sourceRequest.where(Query.query((ContainerNode)JSON.toJsonNode(getMigrationJob().getQuery())));
+            sourceRequest.select(Projection.includeFieldRecursively("*"), Projection.excludeField("objectType"));
             LOGGER.debug("Source docs retrieval req: {}",sourceRequest.getBody());
             JsonNode[] results=getSourceCli().data(sourceRequest,JsonNode[].class);
             LOGGER.debug("There are {} source docs",results.length);
@@ -133,17 +124,17 @@ public class DefaultMigrator extends Migrator {
                 int i=0;
                 for (String keyField : getMigrationConfiguration().getDestinationIdentityFields()) {
                     Object v=id.get(i);
-                    ValueQuery docQuery = new ValueQuery(keyField,ExpressionOperation.EQ,v==null?null:v.toString());
+                    Query docQuery = Query.withValue(keyField,Query.eq,v==null?null:v.toString());
                     docConditions.add(docQuery);
                     i++;
                 }
-                requestConditions.add(and(docConditions));
+                requestConditions.add(Query.and(docConditions));
             }
-            destinationRequest.where(or(requestConditions));
-            destinationRequest.select(includeFieldRecursively("*"), excludeField("objectType"));
+            destinationRequest.where(Query.or(requestConditions));
+            destinationRequest.select(Projection.includeFieldRecursively("*"), Projection.excludeField("objectType"));
             LOGGER.debug("Fetching destination docs {}",destinationRequest.getBody());
             JsonNode[] nodes=getDestCli().data(destinationRequest, JsonNode[].class);
-
+            
             if(nodes!=null) {
                 LOGGER.debug("There are {} destination docs",nodes.length);
                 for(JsonNode node:nodes)
@@ -168,14 +159,26 @@ public class DefaultMigrator extends Migrator {
         return responses;
     }
                 
+    public String createRangeQuery(Date startDate,Date endDate) {
+        StringTokenizer tkz=new StringTokenizer(getMigrationConfiguration().getTimestampFieldName(),", ");
+        List<Query> ql=new ArrayList<>();
+        while(tkz.hasMoreTokens()) {
+            String tok=tkz.nextToken();
+            ql.add(Query.and(Query.withValue(tok,Query.gte,startDate),
+                             Query.withValue(tok,Query.lt,endDate)));
+        }
+        if(ql.size()==1)
+            return ql.get(0).toString();
+        else
+            return Query.or(ql).toString();
+    }
+    
     private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) {        
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getMigrationConfiguration().getDestinationEntityName(),
                                                           getMigrationConfiguration().getDestinationEntityVersion());
         saveRequest.create(documentsToOverwrite.toArray());
-        List<Projection> projections = new ArrayList<>();
-        projections.add(new FieldProjection("*", false, true));
-        saveRequest.returns(projections);
+        saveRequest.returns(Projection.includeField("*"));
         LightblueResponse response;
         try {
             response=getDestCli().data(saveRequest);

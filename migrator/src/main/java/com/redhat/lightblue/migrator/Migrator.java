@@ -122,15 +122,6 @@ public abstract class Migrator extends Thread {
         return Utils.getLightblueClient(configPath);
     }
 
-    public String createRangeQuery(Date startDate,Date endDate) {
-        return Query.and(Query.withValue(getMigrationConfiguration().getTimestampFieldName(),
-                                         Query.gte,
-                                         startDate),
-                         Query.withValue(getMigrationConfiguration().getTimestampFieldName(),
-                                         Query.lt,
-                                         endDate)).toString();
-    }
-    
     /**
      * Updates active execution numDocsProcessed and numDocsToPRocess values, and ping time
      */
@@ -261,6 +252,8 @@ public abstract class Migrator extends Thread {
     public abstract List<JsonNode> getDestinationDocuments(Collection<Identity> docs);
 
     public abstract List<LightblueResponse> save(List<JsonNode> docs);
+    
+    public abstract String createRangeQuery(Date startDate,Date endDate);
     
     
     @Override

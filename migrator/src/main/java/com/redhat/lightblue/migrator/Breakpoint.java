@@ -13,8 +13,6 @@ import org.slf4j.LoggerFactory;
  */
 public class Breakpoint {
 
-    private static final Logger LOGGER=LoggerFactory.getLogger(Breakpoint.class);
-
     private volatile boolean stopped=false;
     private volatile boolean ran=false;
     private boolean waiting=false;
@@ -66,18 +64,10 @@ public class Breakpoint {
         if(stopped) {
             synchronized(this) {
                 if(stopped) {
-                    if(name!=null)
-                        LOGGER.debug("Waiting: {}",name);
-                    else
-                        LOGGER.debug("Waiting...");
                     ran=true;
                     notify();
                     try {
                         wait();
-                        if(name!=null)
-                            LOGGER.debug("Resumed: {}",name);
-                        else
-                            LOGGER.debug("Resumed");
                     } catch (Exception e) {}
                 } 
             }
