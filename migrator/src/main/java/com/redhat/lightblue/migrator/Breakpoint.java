@@ -13,8 +13,19 @@ import org.slf4j.LoggerFactory;
  */
 public class Breakpoint {
 
+    /**
+     * true is the breakpoint will stop execution
+     */
     private volatile boolean stopped=false;
+
+    /**
+     * This is set to true at checkpoint()
+     */
     private volatile boolean ran=false;
+
+    /**
+     * true if waitUntil() is called
+     */
     private boolean waiting=false;
     private final String name;
 
@@ -34,6 +45,7 @@ public class Breakpoint {
     
     public void stop() {
         stopped=true;
+        ran=false;
     }
 
     public void resume() {

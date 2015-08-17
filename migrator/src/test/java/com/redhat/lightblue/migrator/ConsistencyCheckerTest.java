@@ -130,6 +130,26 @@ public class ConsistencyCheckerTest extends AbstractMigratorController {
             System.out.println(j.getQuery());
         Assert.assertEquals(58,jobs.length);
 
+        CCC.setNow(date("00:01:01"));
+
+        // Wait until CCC wakes up
+        Breakpoint.resume("CCC:afterCreateJobs");
+        System.out.println("Waiting until CCC locks");
+        Breakpoint.waitUntil("CCC:locked");
+        System.out.println("CCC Locked");
+        Breakpoint.resume("CCC:locked");
+        
+        Breakpoint.stop("CCC:afterCreateJobs");
+        Breakpoint.waitUntil("CCC:afterCreateJobs");
+        // There should be one more now
+        find=new DataFindRequest("migrationJob",null);
+        find.where(Query.withValue("objectType",Query.eq,"migrationJob"));
+        find.select(Projection.includeFieldRecursively("*"));
+        jobs=cli.data(find,MigrationJob[].class);
+        for(MigrationJob j:jobs)
+            System.out.println(j.getQuery());
+        Assert.assertEquals(59,jobs.length);
+
 
         // Stop everything
         Breakpoint.stop("Controller:end");

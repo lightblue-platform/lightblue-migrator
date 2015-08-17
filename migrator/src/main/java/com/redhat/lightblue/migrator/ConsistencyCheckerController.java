@@ -221,13 +221,15 @@ public class ConsistencyCheckerController extends AbstractController {
                                             LOGGER.error("Cannot create jobs:{}",e,e);
                                         }
                                     }
+                                    LOGGER.debug("Created all the jobs");
                                     Breakpoint.checkpoint("CCC:afterCreateJobs");
                                 }
-                            }else
+                            } else
                                 LOGGER.error("Invalid timestamp initial value for {}, skipping this run",migrationConfiguration.getConfigurationName());
                         } catch(Exception e) {
                             LOGGER.error("Error during job creation:{}",e,e);
                         } finally {
+                            LOGGER.debug("Unlocking consistency checker {}",migrationConfiguration.getConfigurationName());
                             unlock(lockId);
                         }
                     }

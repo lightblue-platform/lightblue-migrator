@@ -94,8 +94,9 @@ public abstract class AbstractController extends Thread {
     }
 
     public void unlock(String id) {
+        LOGGER.debug("Unlocking {}",id);
         DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
-        req.where(Query.withValue("_id",Query.eq,id));
+        req.where(Query.withValue("migrationJobId",Query.eq,id));
         try {
             LightblueResponse rsp=lbClient.data(req);
         } catch(Exception e) {
