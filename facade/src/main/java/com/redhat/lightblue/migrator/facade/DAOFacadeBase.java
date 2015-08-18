@@ -144,7 +144,10 @@ public class DAOFacadeBase<D> {
         Iterator<Object> it = Arrays.asList(values).iterator();
         while(it.hasNext()) {
             Object value = it.next();
-            str.append(value);
+            if (value != null && value.getClass().isArray())
+                str.append(Arrays.deepToString((Object[])value));
+            else
+                str.append(value);
             if (it.hasNext()) {
                 str.append(", ");
             }
@@ -196,7 +199,8 @@ public class DAOFacadeBase<D> {
      * @throws Exception
      */
     public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled())
+            log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -278,7 +282,8 @@ public class DAOFacadeBase<D> {
      * @throws Exception
      */
     public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled())
+            log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -356,7 +361,8 @@ public class DAOFacadeBase<D> {
      * @throws Exception
      */
     public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled())
+            log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
