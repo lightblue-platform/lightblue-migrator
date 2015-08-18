@@ -109,6 +109,10 @@ public class Breakpoint {
         get(bp).checkpoint();
     }
 
+    public static void clearAll() {
+        bps.clear();
+    }
+
     private static Breakpoint get(String bp) {
         Breakpoint x=bps.get(bp);
         if(x==null)

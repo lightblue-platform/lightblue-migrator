@@ -79,6 +79,7 @@ public class ConsistencyCheckerTest extends AbstractMigratorController {
     @Test
     public void consistencyCheckerTest() throws Exception {
         clearData();
+        Breakpoint.clearAll();
         LightblueClient cli = new LightblueHttpClient();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-cctest.json");
 

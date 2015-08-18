@@ -72,6 +72,7 @@ public class ControllerTest extends AbstractMigratorController {
     @Test
     public void controllerTest() throws Exception {
         clearData();
+        Breakpoint.clearAll();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-testmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
         
