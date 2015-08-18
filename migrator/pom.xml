@@ -135,6 +135,8 @@
         <version>2.4.2</version>
         <configuration>
           <skipTests>false</skipTests>
+          <forkCount>1</forkCount>
+          <reuseForks>false</reuseForks>
         </configuration>
       </plugin>
     </plugins>
