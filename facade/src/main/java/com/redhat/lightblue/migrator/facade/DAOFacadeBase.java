@@ -92,29 +92,32 @@ public class DAOFacadeBase<D> {
                 mapper.addMixInAnnotations(entry.getValue().clazz(), entry.getKey());
             }
         }
-        return mapper.writer().withDefaultPrettyPrinter();
+        return mapper.writer();
     }
 
+    // user for unit testing
     public boolean checkConsistency(Object o1, Object o2) {
-        return checkConsistency(o1,o2,null);
+        return checkConsistency(o1, o2, null, null);
     }
 
-    public boolean checkConsistency(Object o1, Object o2, String methodName) {
+    public boolean checkConsistency(Object o1, Object o2, String methodName, String callToLogInCaseOfInconsistency) {
         if (o1==null&o2==null) {
             return true;
         }
         try {
+            long t1 = System.currentTimeMillis();
             String legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
             String lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
 
-            long t1 = System.currentTimeMillis();
             JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
             long t2 = System.currentTimeMillis();
 
-            log.debug("Consistency check took: " + (t2-t1)+" ms");
-            log.info("Consistency Check Passed: "+ result.passed());
-            if (log.isDebugEnabled() && !result.passed()) {
-                log.debug("Consistency Results:\n"+ result.getMessage());
+            if (log.isDebugEnabled()) {
+                log.debug("Consistency check took: " + (t2-t1)+" ms");
+                log.debug("Consistency check passed: "+ result.passed());
+            }
+            if (!result.passed()) {
+                log.warn(String.format("Inconsistency found in %s:%s legacyJson: %s, lightblueJson: %s", callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
             }
             return result.passed();
         } catch (Exception e) {
@@ -141,17 +144,16 @@ public class DAOFacadeBase<D> {
         Iterator<Object> it = Arrays.asList(values).iterator();
         while(it.hasNext()) {
             Object value = it.next();
-            str.append(value);
+            if (value != null && value.getClass().isArray())
+                str.append(Arrays.deepToString((Object[])value));
+            else
+                str.append(value);
             if (it.hasNext()) {
                 str.append(", ");
             }
         }
         str.append(")");
         return str.toString();
-    }
-
-    private void logInconsistency(String entityName, String methodName, Object[] values, Object legacyEntity, Object lightblueEntity) {
-        log.warn(entityName+" inconsistency in "+methodCallToString(methodName, values)+". Lightblue entity="+lightblueEntity+", returning legacy entity="+legacyEntity);
     }
 
     private <T> ListenableFuture<T> callLightblueDAO(final boolean passIds, final Method method, final Object[] values) {
@@ -197,7 +199,8 @@ public class DAOFacadeBase<D> {
      * @throws Exception
      */
     public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled())
+            log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -238,12 +241,11 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity, methodName)) {
+            if (checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -280,7 +282,8 @@ public class DAOFacadeBase<D> {
      * @throws Exception
      */
     public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled())
+            log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -321,12 +324,11 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity, methodName)) {
+            if (checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
@@ -359,7 +361,8 @@ public class DAOFacadeBase<D> {
      * @throws Exception
      */
     public <T> T callDAOCreateSingleMethod(final boolean pureWrite, final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled())
+            log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -431,12 +434,11 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (checkConsistency(lightblueEntity, legacyEntity, methodName)) {
+            if (checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
                 // return oracle data if they aren't and log data inconsistency
-                logInconsistency(returnedType.getName(), methodName, values, legacyEntity, lightblueEntity);
                 return legacyEntity;
             }
         }
