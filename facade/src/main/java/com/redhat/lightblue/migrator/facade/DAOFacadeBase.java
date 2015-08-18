@@ -92,7 +92,7 @@ public class DAOFacadeBase<D> {
                 mapper.addMixInAnnotations(entry.getValue().clazz(), entry.getKey());
             }
         }
-        return mapper.writer().withDefaultPrettyPrinter();
+        return mapper.writer();
     }
 
     // user for unit testing
@@ -117,7 +117,7 @@ public class DAOFacadeBase<D> {
                 log.debug("Consistency check passed: "+ result.passed());
             }
             if (!result.passed()) {
-                log.warn(String.format("Inconsistency found in %s:\n%s\nlegacyJson=%s\nlightblueJson=%s", callToLogInCaseOfInconsistency, result.getMessage(), legacyJson, lightblueJson));
+                log.warn(String.format("Inconsistency found in %s:%s legacyJson: %s, lightblueJson: %s", callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
             }
             return result.passed();
         } catch (Exception e) {
