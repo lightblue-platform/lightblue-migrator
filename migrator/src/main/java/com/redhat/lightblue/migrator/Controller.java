@@ -107,8 +107,8 @@ public class Controller extends Thread {
                 LOGGER.debug("Creating a controller thread for configuration {}: {}",cfg.get_id(),cfg.getConfigurationName());
                 MigratorController c=new MigratorController(this,cfg);
                 AbstractController ccc;
-                if(cfg.getTimestampFieldName()!=null&&
-                   cfg.getTimestampFieldName().length()>0) {
+                if(cfg.getPeriod()!=null&&
+                   cfg.getPeriod().length()>0) {
                     if(cfg.getConsistencyCheckerControllerClass()!=null&&
                        cfg.getConsistencyCheckerControllerClass().length()>0)
                         ccc=(AbstractController)Class.forName(cfg.getConsistencyCheckerControllerClass()).
