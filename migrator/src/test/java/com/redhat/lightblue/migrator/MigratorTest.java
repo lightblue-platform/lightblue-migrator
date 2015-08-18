@@ -91,29 +91,11 @@ public class MigratorTest extends AbstractMigratorController {
         Migrator m=(Migrator)threads[0];
         Assert.assertEquals(5,m.getSourceDocs().size());
 
-        Breakpoint.stop("Migrator:destDocs");
+        Breakpoint.stop("Migrator:complete");
         Breakpoint.resume("Migrator:sourceDocs");
 
-        Breakpoint.waitUntil("Migrator:destDocs");
-        Assert.assertEquals(0,m.getDestDocs().size());
-                
-        Breakpoint.stop("Migrator:insertDocs");
-        Breakpoint.resume("Migrator:destDocs");
-
-        Breakpoint.waitUntil("Migrator:insertDocs");
-        Assert.assertEquals(5,m.getInsertDocs().size());
-
-        Breakpoint.stop("Migrator:rewriteDocs");
-        Breakpoint.resume("Migrator:insertDocs");
-
-        Breakpoint.waitUntil("Migrator:rewriteDocs");
-        Assert.assertEquals(0,m.getRewriteDocs().size());
-
-        Breakpoint.stop("Migrator:complete");
-        Breakpoint.resume("Migrator:rewriteDocs");
-
+        System.out.println("Waiting for completion");
         Breakpoint.waitUntil("Migrator:complete");
-
 
         LightblueClient cli = new LightblueHttpClient();
         DataFindRequest req=new DataFindRequest("destCustomer","1.0.0");
