@@ -72,6 +72,7 @@ public class ControllerTest extends AbstractMigratorController {
     @Test
     public void controllerTest() throws Exception {
         clearData();
+        Breakpoint.clearAll();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-testmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
         
@@ -120,15 +121,17 @@ public class ControllerTest extends AbstractMigratorController {
 
         Breakpoint.waitUntil("MigratorController:process");
         System.out.println("Processing");
-        TestMigrator.count=0;
+        FakeMigrator.count=0;
         Breakpoint.resume("MigratorController:process");
 
         Breakpoint.waitUntil("MigratorController:unlock");
         // At this point, there must be one TestMigrator instance running
-        Assert.assertEquals(1,TestMigrator.count);
+        Assert.assertEquals(1,FakeMigrator.count);
         Breakpoint.resume("MigratorController:unlock");
 
+        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
         controller.interrupt();
+        Thread.sleep(100);
     }
 }
 

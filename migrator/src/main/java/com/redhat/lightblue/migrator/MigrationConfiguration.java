@@ -1,16 +1,16 @@
 package com.redhat.lightblue.migrator;
 
 import java.util.List;
+import java.util.Date;
 
 public class MigrationConfiguration {
 
     private String _id;
     private String configurationName;
     private String consistencyCheckerName;
-    private List<String> authorizedHostnames;
     private int threadCount;
     private String migratorClass;
-    private String consistencyCheckerClass;
+    private String consistencyCheckerControllerClass;
     private boolean overwriteDestinationDocuments = false;
     private List<String> comparisonExclusionPaths;
     private String destinationConfigPath;
@@ -22,6 +22,21 @@ public class MigrationConfiguration {
     private String sourceServiceURI;
     private String sourceEntityName;
     private String sourceEntityVersion;
+
+    private String timestampFieldName;
+    private Date timestampInitialValue;
+    /**
+     * The period is one of:
+     <pre>
+     millis
+     millis "ms"
+     seconds "s"
+     minutes "m"
+     hours "h"
+     days "d"
+     </pre>
+    */
+    private String period;
 
 
     /**
@@ -68,7 +83,7 @@ public class MigrationConfiguration {
     public final String getConsistencyCheckerName() {
         return this.consistencyCheckerName;
     }
-
+    
     /**
      * Sets the value of consistencyCheckerName
      *
@@ -77,7 +92,8 @@ public class MigrationConfiguration {
     public final void setConsistencyCheckerName(final String argConsistencyCheckerName) {
         this.consistencyCheckerName = argConsistencyCheckerName;
     }
-
+    
+ 
     /**
      * Gets the value of threadCount
      *
@@ -114,23 +130,6 @@ public class MigrationConfiguration {
         this.migratorClass = argMigratorClass;
     }
 
-    /**
-     * Gets the value of consistencyCheckerClass
-     *
-     * @return the value of consistencyCheckerClass
-     */
-    public final String getConsistencyCheckerClass() {
-        return this.consistencyCheckerClass;
-    }
-
-    /**
-     * Sets the value of consistencyCheckerClass
-     *
-     * @param argConsistencyCheckerClass Value to assign to this.consistencyCheckerClass
-     */
-    public final void setConsistencyCheckerClass(final String argConsistencyCheckerClass) {
-        this.consistencyCheckerClass = argConsistencyCheckerClass;
-    }
 
     public final List<String> getComparisonExclusionPaths() {
         return comparisonExclusionPaths;
@@ -310,6 +309,81 @@ public class MigrationConfiguration {
         this.sourceConfigPath = argSourceConfigPath;
     }
     
+
+    /**
+     * Gets the value of timestampFieldName
+     *
+     * @return the value of timestampFieldName
+     */
+    public final String getTimestampFieldName() {
+        return this.timestampFieldName;
+    }
+
+    /**
+     * Sets the value of timestampFieldName
+     *
+     * @param argTimestampFieldName Value to assign to this.timestampFieldName
+     */
+    public final void setTimestampFieldName(final String argTimestampFieldName) {
+        this.timestampFieldName = argTimestampFieldName;
+    }
+
+    /**
+     * Gets the value of timestampInitialValue
+     *
+     * @return the value of timestampInitialValue
+     */
+    public final Date getTimestampInitialValue() {
+        return this.timestampInitialValue;
+    }
+
+    /**
+     * Sets the value of timestampInitialValue
+     *
+     * @param argTimestampInitialValue Value to assign to this.timestampInitialValue
+     */
+    public final void setTimestampInitialValue(final Date argTimestampInitialValue) {
+        this.timestampInitialValue = argTimestampInitialValue;
+    }
+
+    /**
+     * Gets the value of period
+     *
+     * @return the value of period
+     */
+    public final String getPeriod() {
+        return this.period;
+    }
+
+    /**
+     * Sets the value of period
+     *
+     * @param argPeriod Value to assign to this.period
+     */
+    public final void setPeriod(final String argPeriod) {
+        this.period = argPeriod;
+    }
+
+
+    /**
+     * Gets the value of consistencyCheckerControllerClass
+     *
+     * @return the value of consistencyCheckerControllerClass
+     */
+    public final String getConsistencyCheckerControllerClass() {
+        return this.consistencyCheckerControllerClass;
+    }
+
+    /**
+     * Sets the value of consistencyCheckerControllerClass
+     *
+     * @param argConsistencyCheckerControllerClass Value to assign to this.consistencyCheckerControllerClass
+     */
+    public final void setConsistencyCheckerControllerClass(final String argConsistencyCheckerControllerClass) {
+        this.consistencyCheckerControllerClass = argConsistencyCheckerControllerClass;
+    }
+
+
     @Override
     public String toString() {
         final int sbSize = 1000;
@@ -326,7 +400,7 @@ public class MigrationConfiguration {
         sb.append(variableSeparator);
         sb.append("migratorClass=").append(migratorClass);
         sb.append(variableSeparator);
-        sb.append("consistencyCheckerClass=").append(consistencyCheckerClass);
+        sb.append("consistencyCheckerControllerClass=").append(consistencyCheckerControllerClass);
         sb.append(variableSeparator);
         sb.append("overwriteDestinationDocuments=").append(overwriteDestinationDocuments);
         sb.append(variableSeparator);

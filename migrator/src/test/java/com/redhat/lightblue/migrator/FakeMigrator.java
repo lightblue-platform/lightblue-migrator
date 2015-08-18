@@ -2,16 +2,17 @@ package com.redhat.lightblue.migrator;
 
 import java.util.List;
 import java.util.Collection;
+import java.util.Date;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public class TestMigrator extends Migrator {
+public class FakeMigrator extends Migrator {
 
     public static int count;
 
-    public TestMigrator(ThreadGroup g) {
+    public FakeMigrator(ThreadGroup g) {
         super(g);
     }
     
@@ -34,6 +35,10 @@ public class TestMigrator extends Migrator {
 
     public List<LightblueResponse> save(List<JsonNode> docs) {
         return null;
+    }
+
+    public String createRangeQuery(Date d,Date e) {
+        return d.toString()+"->"+e.toString();
     }
 }
 

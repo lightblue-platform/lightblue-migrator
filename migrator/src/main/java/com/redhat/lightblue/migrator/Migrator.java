@@ -27,6 +27,7 @@ import org.apache.commons.lang.StringUtils;
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
 import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
+import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.enums.ExpressionOperation;
@@ -35,7 +36,6 @@ import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.request.data.DataInsertRequest;
 import com.redhat.lightblue.client.request.data.DataDeleteRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.expression.update.SetUpdate;
@@ -56,7 +56,7 @@ public abstract class Migrator extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Migrator.class);
 
-    private MigratorController controller;
+    private AbstractController controller;
     private MigrationJob migrationJob;
     private ActiveExecution activeExecution;
 
@@ -89,11 +89,11 @@ public abstract class Migrator extends Thread {
         return rewriteDocs;
     }
     
-    public void setController(MigratorController c) {
+    public void setController(AbstractController c) {
         this.controller=c;
     }
 
-    public MigratorController getController() {
+    public AbstractController getController() {
         return controller;
     }
 
@@ -121,7 +121,7 @@ public abstract class Migrator extends Thread {
         throws IOException {
         return Utils.getLightblueClient(configPath);
     }
-    
+
     /**
      * Updates active execution numDocsProcessed and numDocsToPRocess values, and ping time
      */
@@ -252,6 +252,8 @@ public abstract class Migrator extends Thread {
     public abstract List<JsonNode> getDestinationDocuments(Collection<Identity> docs);
 
     public abstract List<LightblueResponse> save(List<JsonNode> docs);
+    
+    public abstract String createRangeQuery(Date startDate,Date endDate);
     
     
     @Override
