@@ -199,12 +199,12 @@ public class ConsistencyCheckTest {
     public void testWithMethodInclusion() {
         Person p1 = new Person("John", "Doe", 35, "British");
         Person p2 = new Person("John", "Doe", 35, "German");
-        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson"));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson2"));
+        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson2", null));
 
         p1 = new Person("John", "Doe", 35, "British");
         p2 = new Person("John", "Doe", 30, "British");
-        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson"));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson2"));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson", null));
+        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson2", null));
     }
 }
