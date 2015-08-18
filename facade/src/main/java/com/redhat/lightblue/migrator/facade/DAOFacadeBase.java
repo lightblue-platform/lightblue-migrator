@@ -104,10 +104,10 @@ public class DAOFacadeBase<D> {
             return true;
         }
         try {
+            long t1 = System.currentTimeMillis();
             String legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
             String lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
 
-            long t1 = System.currentTimeMillis();
             JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
             long t2 = System.currentTimeMillis();
 
