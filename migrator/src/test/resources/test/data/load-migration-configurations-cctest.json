@@ -23,7 +23,8 @@
             "threadCount": 1,
             "timestampFieldName":"updateDate,creationDate",
             "timestampInitialValue":"20000101T00:00:00.000+0000",
-            "period":"1 sec"
+            "period":"1 second"
+
         }
     ]
 }

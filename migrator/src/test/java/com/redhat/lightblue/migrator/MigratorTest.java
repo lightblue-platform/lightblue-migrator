@@ -126,17 +126,13 @@ public class MigratorTest extends AbstractMigratorController {
         Breakpoint.resume("Migrator:complete");
 
         Assert.assertEquals(5,ret.length);
-        Breakpoint.stop("MigratorController::end");
+        
         System.out.println("Interrupt controller");
         System.out.println("Interrupting "+controller.getMigrationProcesses().get("customerMigration_0").mig.getName());
         controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
         controller.interrupt();
-        System.out.println("Waiting migratorController:end");
-        Breakpoint.waitUntil("MigratorController:end");
-        System.out.println("resuming migratorController:end");
-        Breakpoint.resume("MigratorController:end");
         System.out.println("Test ends");
-        Thread.sleep(100);
+        Thread.sleep(1000);
     }
          
 }

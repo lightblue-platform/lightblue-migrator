@@ -177,7 +177,7 @@
             },
             "period" : {
                 "type":"string",
-                "description":"Period in which consistency checker runs. something like 6 hours, 1 day, 1 sec, etc. Units are msec, sec, min, hour, day"
+                "description":"Period in which consistency checker runs. something like 6 hours, 1 day, 1 seconds, etc. Units are millisecond, second, minute, hour, day"
             }            
         },
         "name": "migrationConfiguration",

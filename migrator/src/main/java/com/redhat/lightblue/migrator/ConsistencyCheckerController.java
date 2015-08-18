@@ -7,6 +7,10 @@ import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.joda.time.format.PeriodFormatter;
+import org.joda.time.format.PeriodFormat;
+import org.joda.time.Period;
+
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Update;
 import com.redhat.lightblue.client.Literal;
@@ -39,54 +43,13 @@ public class ConsistencyCheckerController extends AbstractController {
         super(controller,migrationConfiguration,"ConsistencyChecker:"+migrationConfiguration.getConfigurationName());
     }
 
-    private static final class UOM {
-        final long multiplier;
-        final String[] names;
-
-        public UOM(long multiplier,String...names) {
-            this.names=names;
-            this.multiplier=multiplier;
-        }
-
-        public boolean in(String s) {
-            for(String n:names)
-                if(s.equalsIgnoreCase(n))
-                    return true;
-            return false;
-        }
-    }
-
-    private static final UOM[] uoms=new UOM[] {
-        new UOM(1l,"ms","msec","msecs"),
-        new UOM(1000l,"s","sec","secs","second","seconds"),
-        new UOM(60l*1000l,"m","min","mins","minute","minutes"),
-        new UOM(60l*60l*1000l,"h","hr","hrs","hour","hours"),
-        new UOM(24l*60l*60l*1000l,"d","day","days") };
-    
     /**
      * Returns the period in msecs
      */
     public static long parsePeriod(String periodStr) {
-        // Expect a number, and an optional string
-        int n=periodStr.length();
-        int index=0;
-        for(int i=0;i<n;i++) {
-            if(!Character.isDigit(periodStr.charAt(i))&&index==0) {
-                index=i;
-                break;
-            }
-        }
-        if(index==0)
-            return Long.valueOf(periodStr);
-        else {
-            String number=periodStr.substring(0,index);
-            String unit=periodStr.substring(index).trim().toLowerCase();
-            Long l=Long.valueOf(number);
-            for(UOM u:uoms)
-                if(u.in(unit))
-                    return l*u.multiplier;
-            throw new IllegalArgumentException("period:"+periodStr);
-        }
+        PeriodFormatter fmt=PeriodFormat.getDefault();
+        Period p=fmt.parsePeriod(periodStr);
+        return p.toStandardDuration().getMillis();
     }
 
 
