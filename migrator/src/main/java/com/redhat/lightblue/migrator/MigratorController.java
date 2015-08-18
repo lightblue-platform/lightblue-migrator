@@ -148,7 +148,6 @@ public class MigratorController extends AbstractController {
         Breakpoint.checkpoint("MigratorController:start");
         while(!interrupted) {
 
-            System.out.println(getName()+" is still alive");
             interrupted=isInterrupted();
             if(!interrupted) {
                 // All active threads will notify on migratorThreads when they finish
