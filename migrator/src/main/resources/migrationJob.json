@@ -195,7 +195,7 @@
             "value": "active"
         },
         "version": {
-            "changelog": "Initial release",
+            "changelog": "add generated flag",
             "value": "2.0.1"
         }
     }
