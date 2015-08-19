@@ -169,7 +169,7 @@
             },
             "timestampFieldName": {
                 "type": "string",
-                "description": "Name of the timestamp field(s), for consistency checker. This field must be nonempty for the consistency checker to run. Can be comma separated list."
+                "description": "Name of the timestamp field(s), for consistency checker. Can be comma separated list."
             },
             "timestampInitialValue": {
                 "type": "date",
@@ -177,7 +177,7 @@
             },
             "period" : {
                 "type":"string",
-                "description":"Period in which consistency checker runs. something like 6 hours, 1 day, 1 seconds, etc. Units are millisecond, second, minute, hour, day"
+                "description":"Period in which consistency checker runs. Must be nonempty for the consistency checker to run. something like 6 hours, 1 day, 1 seconds, etc. Units are millisecond, second, minute, hour, day"
             }            
         },
         "name": "migrationConfiguration",
