@@ -86,6 +86,7 @@ public class ConsistencyCheckerController extends AbstractController {
         MigrationJob mj=new MigrationJob();
         mj.setConfigurationName(getMigrationConfiguration().getConfigurationName());
         mj.setScheduledDate(getNow());
+        mj.setGenerated(true);
         mj.setStatus(MigrationJob.STATE_AVAILABLE);
         Migrator migrator=createMigrator(mj,ae);
         mj.setQuery(migrator.createRangeQuery(startDate,endDate));
