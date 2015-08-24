@@ -156,11 +156,10 @@ public class Utils {
         String[] pathComponents=path.split("\\.");
         if(patternComponents.length<=pathComponents.length) {
             for(int i=0;i<patternComponents.length;i++) {
-                if(pathComponents[i].equals(patternComponents[i])||
-                   "*".equals(patternComponents[i]))
-                    ;
-                else
+                if(!(pathComponents[i].equals(patternComponents[i])||
+                     "*".equals(patternComponents[i]))) {
                     return false;
+                }
             }
             return true;
         }
