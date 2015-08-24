@@ -2,6 +2,9 @@ package com.redhat.lightblue.migrator;
 
 import java.util.List;
 
+/**
+ * Keeps the inconsistent field, its source and destination values
+ */
 public class Inconsistency {
     private final String field;
     private final Object sourceValue;
