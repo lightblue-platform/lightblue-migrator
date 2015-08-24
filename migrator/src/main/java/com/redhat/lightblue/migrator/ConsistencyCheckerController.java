@@ -59,6 +59,8 @@ public class ConsistencyCheckerController extends AbstractController {
      * end date is startDate+period, but only if endDate is at least
      * one period ago. That is, we always leave the last incomplete
      * period unprocessed.
+     *
+     * Override this to control the job generation algorithm
      */
     public Date getEndDate(Date startDate,long period) {
         long now=getNow().getTime();
@@ -77,10 +79,11 @@ public class ConsistencyCheckerController extends AbstractController {
     }
 
     /**
-     * Create a migration job to process records created between the
+     * Create a migration job or jobs to process records created between the
      * given dates. startDate is inclusive, end date is exclusive
      */
-    protected MigrationJob createJob(Date startDate,Date endDate,ActiveExecution ae) throws Exception {
+    protected List<MigrationJob> createJobs(Date startDate,Date endDate,ActiveExecution ae) throws Exception {
+        List<MigrationJob> ret=new ArrayList<MigrationJob>();
         LOGGER.debug("Creating the migrator to setup new jobs");
         // We setup a new migration job
         MigrationJob mj=new MigrationJob();
@@ -92,7 +95,8 @@ public class ConsistencyCheckerController extends AbstractController {
         mj.setQuery(migrator.createRangeQuery(startDate,endDate));
         // At this point, mj.query contains the range query
         LOGGER.debug("Migration job query:{}",mj.getQuery());
-        return mj;
+        ret.add(mj);
+        return ret;
     }
 
     private void update(List<MigrationJob> mjList) throws Exception {
@@ -164,21 +168,14 @@ public class ConsistencyCheckerController extends AbstractController {
                                     List<MigrationJob> mjList=new ArrayList<>();
                                     do {
                                         LOGGER.debug("{} will create a job for period {}-{}",migrationConfiguration.getConfigurationName(),startDate,endDate);
-                                        mjList.add(createJob(startDate,endDate,ae));
+                                        mjList.addAll(createJobs(startDate,endDate,ae));
                                         migrationConfiguration.setTimestampInitialValue(endDate);
                                         startDate=endDate;
                                         endDate=getEndDate(startDate,period);
-                                        if(mjList.size()>32) {
-                                            try {
-                                                update(mjList);
-                                                mjList.clear();
-                                            } catch(Exception e) {
-                                                LOGGER.error("Cannot create jobs: {}",e,e);
-                                            }
-                                        }
                                         interrupted=isInterrupted();
                                     } while(endDate!=null&&!interrupted);
-                                    if(!mjList.isEmpty()) {
+                                    interrupted=isInterrupted();
+                                    if(!mjList.isEmpty()&&!interrupted) {
                                         try {
                                             update(mjList);
                                         } catch (Exception e) {
