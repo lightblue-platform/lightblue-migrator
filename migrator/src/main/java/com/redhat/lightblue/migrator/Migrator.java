@@ -54,14 +54,13 @@ import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 
 public abstract class Migrator extends Thread {
 
-    private static final Logger LOGGER=LoggerFactory.getLogger(Migrator.class);
+    private Logger LOGGER;
 
     private AbstractController controller;
     private MigrationJob migrationJob;
     private ActiveExecution activeExecution;
 
     private LightblueClient lbClient;
-
 
     // Migration context, observable by tests
     private Map<Identity,JsonNode> sourceDocs;
@@ -149,11 +148,11 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("Retrieving source docs");
             sourceDocs=Utils.getDocumentIdMap(getSourceDocuments(),getMigrationConfiguration().getDestinationIdentityFields());
             Breakpoint.checkpoint("Migrator:sourceDocs");
-            LOGGER.info("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
+            LOGGER.debug("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
             LOGGER.debug("Retrieving destination docs");
             destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getMigrationConfiguration().getDestinationIdentityFields());
             Breakpoint.checkpoint("Migrator:destDocs");
-            LOGGER.info("There are {} destination docs:{}",destDocs.size(),migrationJob.getConfigurationName());
+            LOGGER.info("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
 
             insertDocs=new HashSet<>();
             for(Identity id:sourceDocs.keySet())
@@ -167,20 +166,21 @@ public abstract class Migrator extends Thread {
             for(Map.Entry<Identity,JsonNode> sourceEntry:sourceDocs.entrySet()) {
                 JsonNode destDoc=destDocs.get(sourceEntry.getKey());
                 if(destDoc!=null) {
-                    List<String> inconsistentFields=Utils.compareDocs(sourceEntry.getValue(),destDoc,getMigrationConfiguration().getComparisonExclusionPaths());
-                    if(inconsistentFields!=null&&!inconsistentFields.isEmpty()) {
+                    List<Inconsistency> inconsistencies=Utils.compareDocs(sourceEntry.getValue(),destDoc,getMigrationConfiguration().getComparisonExclusionPaths());
+                    if(inconsistencies!=null&&!inconsistencies.isEmpty()) {
                         rewriteDocs.add(sourceEntry.getKey());
                         // log as key=value to make parsing easy
                         // fields to log: config name, job id, dest entity name & version, id field names & values,
                         //list of inconsistent paths
-                        LOGGER.error("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\"",
+                        LOGGER.error("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\" mismatchedValues=\"{}\"",
                                      getMigrationConfiguration().getConfigurationName(),
                                      getMigrationConfiguration().getDestinationEntityName(),
                                      getMigrationConfiguration().getDestinationEntityVersion(),
                                      migrationJob.get_id(),
                                      StringUtils.join(getMigrationConfiguration().getDestinationIdentityFields(), ","),
                                      sourceEntry.getKey().toString(),
-                                     StringUtils.join(inconsistentFields, ","));
+                                     Inconsistency.getPathList(inconsistencies),
+                                     Inconsistency.getMismatchedValues(inconsistencies));
                     }
                 }
             }
@@ -217,7 +217,7 @@ public abstract class Migrator extends Thread {
                 LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),errorMsg);
                 execution.setErrorMsg(errorMsg.toString());
             } else {
-                LOGGER.info("Docs saved: {} {}",saveDocsList.size(),migrationJob.getConfigurationName());
+                LOGGER.info("saved: {}",saveDocsList.size());
             }
             Breakpoint.checkpoint("Migrator:complete");
 
@@ -258,6 +258,8 @@ public abstract class Migrator extends Thread {
     
     @Override
     public final void run() {
+        LOGGER=LoggerFactory.getLogger(Migrator.class.getName()+"."+getMigrationConfiguration().getConfigurationName());
+        
         // First update the migration job, mark its status as being
         // processed, so it doesn't show up in other controllers'
         // tasks lists
