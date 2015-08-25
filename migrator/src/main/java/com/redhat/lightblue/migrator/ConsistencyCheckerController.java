@@ -152,7 +152,7 @@ public class ConsistencyCheckerController extends AbstractController {
                     period=parsePeriod(migrationConfiguration.getPeriod());
 
                     if(migrationJobsExist()) {
-                        LOGGER.error("There are migration jobs for {}, not running consistency checker this time",
+                        LOGGER.info("There are migration jobs for {}, not running consistency checker this time",
                                      migrationConfiguration.getConfigurationName());
                     } else {
                         
