@@ -140,36 +140,41 @@ public class DAOFacadeBase<D> {
     }
 
     static String methodCallToString(String methodName, Object[] values) {
-        StringBuffer str = new StringBuffer();
-        str.append(methodName+"(");
-        Iterator<Object> it = Arrays.asList(values).iterator();
-        while(it.hasNext()) {
-            Object value = it.next();
-            if (value != null && value.getClass().isArray())
-                if (value.getClass().getComponentType().isPrimitive()) {
-                    // this is an array of primitives, convert to a meaningful string using reflection
-                    String primitiveArrayType = value.getClass().getComponentType().getName();
+        try {
+            StringBuffer str = new StringBuffer();
+            str.append(methodName+"(");
+            Iterator<Object> it = Arrays.asList(values).iterator();
+            while(it.hasNext()) {
+                Object value = it.next();
+                if (value != null && value.getClass().isArray())
+                    if (value.getClass().getComponentType().isPrimitive()) {
+                        // this is an array of primitives, convert to a meaningful string using reflection
+                        String primitiveArrayType = value.getClass().getComponentType().getName();
 
-                    StringBuffer pStr = new StringBuffer();
-                    for (int i = 0; i < Array.getLength(value); i ++) {
-                        pStr.append(Array.get(value, i));
-                        if (i != Array.getLength(value)-1) {
-                            pStr.append(", ");
+                        StringBuffer pStr = new StringBuffer();
+                        for (int i = 0; i < Array.getLength(value); i ++) {
+                            pStr.append(Array.get(value, i));
+                            if (i != Array.getLength(value)-1) {
+                                pStr.append(", ");
+                            }
                         }
+                        str.append(primitiveArrayType+"["+pStr.toString()+"]");
                     }
-                    str.append(primitiveArrayType+"["+pStr.toString()+"]");
+                    else {
+                        str.append(Arrays.deepToString((Object[])value));
+                    }
+                else
+                    str.append(value);
+                if (it.hasNext()) {
+                    str.append(", ");
                 }
-                else {
-                    str.append(Arrays.deepToString((Object[])value));
-                }
-            else
-                str.append(value);
-            if (it.hasNext()) {
-                str.append(", ");
             }
+            str.append(")");
+            return str.toString();
+        } catch (Exception e) {
+            log.error("Creating method call string failed", e);
+            return "<creating method call string failed>";
         }
-        str.append(")");
-        return str.toString();
     }
 
     private <T> ListenableFuture<T> callLightblueDAO(final boolean passIds, final Method method, final Object[] values) {
