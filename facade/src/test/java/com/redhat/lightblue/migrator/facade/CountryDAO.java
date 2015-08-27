@@ -12,4 +12,6 @@ public interface CountryDAO {
 
     public abstract Country getCountry(String iso2Code) throws CountryException;
 
+    public abstract Country getCountries(long[] ids) throws CountryException;
+
 }
