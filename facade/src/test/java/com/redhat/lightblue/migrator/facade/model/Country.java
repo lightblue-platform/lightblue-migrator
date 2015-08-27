@@ -49,4 +49,9 @@ public class Country {
         this.iso3Code = iso3code;
     }
 
+    @Override
+    public String toString() {
+        return iso2Code;
+    }
+
 }

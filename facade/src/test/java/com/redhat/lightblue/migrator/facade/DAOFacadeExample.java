@@ -66,4 +66,15 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
         }
     }
 
+    @Override
+    public Country getCountries(long[] ids) throws CountryException {
+        try {
+            return callDAOReadMethod(Country.class, "getCountries", ids);
+        } catch (CountryException ce) {
+            throw ce;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
 }

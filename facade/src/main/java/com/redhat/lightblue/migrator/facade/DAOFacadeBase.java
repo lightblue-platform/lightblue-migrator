@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.facade;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -138,14 +139,29 @@ public class DAOFacadeBase<D> {
         return classes.toArray(new Class[]{});
     }
 
-    private String methodCallToString(String methodName, Object[] values) {
+    static String methodCallToString(String methodName, Object[] values) {
         StringBuffer str = new StringBuffer();
         str.append(methodName+"(");
         Iterator<Object> it = Arrays.asList(values).iterator();
         while(it.hasNext()) {
             Object value = it.next();
             if (value != null && value.getClass().isArray())
-                str.append(Arrays.deepToString((Object[])value));
+                if (value.getClass().getComponentType().isPrimitive()) {
+                    // this is an array of primitives, convert to a meaningful string using reflection
+                    String primitiveArrayType = value.getClass().getComponentType().getName();
+
+                    StringBuffer pStr = new StringBuffer();
+                    for (int i = 0; i < Array.getLength(value); i ++) {
+                        pStr.append(Array.get(value, i));
+                        if (i != Array.getLength(value)-1) {
+                            pStr.append(", ");
+                        }
+                    }
+                    str.append(primitiveArrayType+"["+pStr.toString()+"]");
+                }
+                else {
+                    str.append(Arrays.deepToString((Object[])value));
+                }
             else
                 str.append(value);
             if (it.hasNext()) {

@@ -91,6 +91,28 @@ public class DAOFacadeTest {
     }
 
     @Test
+    public void dualReadPhaseReadInconsistentPrimitiveArrayTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country(1l, "PL");
+        Country ca = new Country(2l, "CA");
+
+        long[] ids = new long[]{1l,2l,3l};
+
+        Mockito.when(legacyDAO.getCountries(ids)).thenReturn(ca);
+        Mockito.when(lightblueDAO.getCountries(ids)).thenReturn(pl);
+
+        Country returnedCountry = facade.getCountries(ids);
+
+        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(legacyDAO).getCountries(ids);
+        Mockito.verify(lightblueDAO).getCountries(ids);
+
+        // when there is a conflict, facade will return what legacy dao returned
+        Assert.assertEquals(ca, returnedCountry);
+    }
+
+    @Test
     public void lightblueProxyTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
