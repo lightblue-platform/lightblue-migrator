@@ -31,11 +31,9 @@
     </repository>
   </distributionManagement>
   <modules>
-    <module>core</module>
     <module>migrator</module>
     <module>facade</module>
     <module>bean-consistency-checker</module>
-    <module>test</module>
   </modules>
   <properties>
     <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
