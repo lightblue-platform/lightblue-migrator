@@ -25,17 +25,7 @@ java -jar migrator-1.0.0-alldeps.jar
 --destinationconfig=destination-lightblue-client.properties
 ```
 
-###[facade](facade)
-Provides some aid with migration to Lightblue.
-
-###[entity-consistency-checker](entity-consistency-checker)
-A utility to compare POJOs field by field. Use it during migration to lightblue to ensure consistency between entities returned by legacy and lightblue DAOs.
-
-# License
-
-The license of lightblue is [GPLv3](https://www.gnu.org/licenses/gpl.html).  See LICENSE in root of project for the full text.
-
-# How it works
+### How it works
 
 The migrator/consistency checker expects these entities defined in the database:
  * MigrationConfiguration
@@ -82,3 +72,13 @@ Each migration job thread reads the entities using the query given in
 the migration job, and attempts to migrate them to the
 destination. The migration jobs should be created using queries that
 partition the data set in similar sizes.
+
+###[facade](facade)
+The facade helps with migrating a service to lightblue.
+
+###[entity-consistency-checker](entity-consistency-checker)
+A utility to compare POJOs field by field. Use it during migration to lightblue to ensure consistency between entities returned by legacy and lightblue DAOs.
+
+# License
+
+The license of lightblue is [GPLv3](https://www.gnu.org/licenses/gpl.html).  See LICENSE in root of project for the full text.
