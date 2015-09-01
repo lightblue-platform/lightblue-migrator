@@ -32,11 +32,6 @@
       <type>pom</type>
     </dependency>
     <dependency>
-      <groupId>com.redhat.lightblue.migrator</groupId>
-      <artifactId>lightblue-migrator-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency> 
@@ -73,18 +68,27 @@
         <scope>provided</scope>
     </dependency>
 
-
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-all</artifactId>
-      <version>1.10.8</version>
-      <scope>test</scope>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-all</artifactId>
+        <version>1.10.8</version>
+        <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.redhat.lightblue.migrator</groupId>
-      <artifactId>lightblue-migrator-test</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
+        <groupId>junit</groupId>
+        <artifactId>junit</artifactId>
+        <version>4.12</version>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.togglz</groupId>
+        <artifactId>togglz-testing</artifactId>
+        <scope>test</scope>
+    </dependency>
+    <dependency>
+        <groupId>org.togglz</groupId>
+        <artifactId>togglz-junit</artifactId>
+        <scope>test</scope>
     </dependency>
 
   </dependencies>
