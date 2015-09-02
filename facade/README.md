@@ -3,6 +3,7 @@
 The facade helps with migrating a service to lightblue by offering following features:
 * phased migration using feature flag support (Togglz - see LightblueMigrationFeatures),
 * parallel processing (when possible),
+* error handling and timeouts (destination too slow to respond) transparent to the service client,
 * handling identifiers and
 * checking for data integrity across source and destination (Lightblue) entities.
 
@@ -35,6 +36,8 @@ Will call lightblue in dual write phase and beyond.
 ### create with read
 
 Same as create, except it will call lightblue in dual read phase and beyond.
+
+## [How to configure togglz for migration to lightblue?](TOGGLZ.md)
 
 ## Notes
 
