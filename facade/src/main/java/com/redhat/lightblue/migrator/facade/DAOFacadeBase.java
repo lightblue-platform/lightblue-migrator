@@ -181,7 +181,6 @@ public class DAOFacadeBase<D> {
         ListeningExecutorService executor = createExecutor();
         try {
         // fetch from lightblue using future (asynchronously)
-        log.debug("."+method.getName()+" writing to lightblue");
         final long parentThreadId = Thread.currentThread().getId();
         return executor.submit(new Callable<T>(){
             @Override
