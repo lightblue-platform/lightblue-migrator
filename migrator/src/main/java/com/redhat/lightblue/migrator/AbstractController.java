@@ -2,6 +2,7 @@ package com.redhat.lightblue.migrator;
 
 import java.io.IOException;
 
+import java.util.UUID;
 import java.util.Date;
 
 import org.slf4j.Logger;
@@ -17,6 +18,8 @@ import com.redhat.lightblue.client.response.LightblueResponse;
 public abstract class AbstractController extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(AbstractController.class);
+
+    private final String callerId=UUID.randomUUID().toString();
     
     protected MigrationConfiguration migrationConfiguration;
     protected final Controller controller;
@@ -67,41 +70,20 @@ public abstract class AbstractController extends Thread {
      */
     public ActiveExecution lock(String id)
         throws Exception {
-        DataInsertRequest insRequest=new DataInsertRequest("activeExecution",null);
-        ActiveExecution ae=new ActiveExecution();
-        ae.setMigrationJobId(id);
-        ae.setStartTime(new Date());
-        
-        insRequest.create(ae);
-        insRequest.returns(Projection.includeFieldRecursively("*"));
-        LightblueResponse rsp;
-        try {
-            LOGGER.debug("Attempting to lock {}",ae.getMigrationJobId());
-            rsp=lbClient.data(insRequest);
-            LOGGER.debug("response:{}",rsp);
-            if(rsp.hasError()) {
-                LOGGER.debug("Response has error");
-                return null;
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Error during insert:{}",e);
-            return null;
-        }
-        if(rsp.parseModifiedCount()==1) {
-            return rsp.parseProcessed(ActiveExecution.class);
-        } else
-            return null;
+        if(lbClient.getLocking("migration").acquire(callerId,id,null)) {
+            ActiveExecution ae=new ActiveExecution();
+            ae.setMigrationJobId(id);
+            ae.setStartTime(new Date());
+            return ae;
+        } 
+        return null;
     }
 
     public void unlock(String id) {
         LOGGER.debug("Unlocking {}",id);
-        DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
-        req.where(Query.withValue("migrationJobId",Query.eq,id));
         try {
-            LightblueResponse rsp=lbClient.data(req);
-        } catch(Exception e) {
-            LOGGER.error("Cannot delete lock {}",id);
-        }
+            lbClient.getLocking("migration").release(callerId,id);
+        } catch (Exception e) {}
         Breakpoint.checkpoint("MigratorController:unlock");
     }
 
