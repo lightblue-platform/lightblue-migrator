@@ -28,29 +28,19 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
 import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
 import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.Update;
+import com.redhat.lightblue.client.Projection;
+import com.redhat.lightblue.client.Literal;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
-import com.redhat.lightblue.client.enums.ExpressionOperation;
-import com.redhat.lightblue.client.enums.SortDirection;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.request.SortCondition;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataDeleteRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
-import com.redhat.lightblue.client.expression.update.SetUpdate;
-import com.redhat.lightblue.client.expression.update.PathValuePair;
-import com.redhat.lightblue.client.expression.update.AppendUpdate;
-import com.redhat.lightblue.client.expression.update.LiteralRValue;
-import com.redhat.lightblue.client.expression.update.ObjectRValue;
-import com.redhat.lightblue.client.expression.update.ForeachUpdate;
-import com.redhat.lightblue.client.expression.update.Update;
 import com.redhat.lightblue.client.util.ClientConstants;
 
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeField;
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
 
 public abstract class Migrator extends Thread {
 
@@ -121,26 +111,6 @@ public abstract class Migrator extends Thread {
         return Utils.getLightblueClient(configPath);
     }
 
-    /**
-     * Updates active execution numDocsProcessed and numDocsToPRocess values, and ping time
-     */
-    public void updateActiveExecution(Integer numDocsProcessed, Integer numDocsToProcess)
-        throws LightblueException {
-        if(lbClient!=null) {
-            DataUpdateRequest req=new DataUpdateRequest("activeExecution",null);
-            req.where(withValue("_id",ExpressionOperation.EQ,activeExecution.get_id()));
-            req.returns(includeField("_id"));
-            List<Update> updates=new ArrayList<>();
-            updates.add(new SetUpdate(new PathValuePair("ping",new LiteralRValue(ClientConstants.getDateFormat().format(activeExecution.getStartTime())))));
-            if(numDocsProcessed!=null)
-                updates.add(new SetUpdate(new PathValuePair("numDocsProcessed",new LiteralRValue(numDocsProcessed.toString()))));
-            if(numDocsToProcess!=null)
-                updates.add(new SetUpdate(new PathValuePair("numDocsToProcess",new LiteralRValue(numDocsToProcess.toString()))));
-            req.setUpdates(updates);
-            lbClient.data(req);
-        } else
-            throw new IllegalStateException();
-    }
 
     public void migrate(MigrationJobExecution execution) {
         try {
@@ -265,8 +235,8 @@ public abstract class Migrator extends Thread {
         // tasks lists
         lbClient=controller.getController().getLightblueClient();
         DataUpdateRequest updateRequest = new DataUpdateRequest("migrationJob", null);
-        updateRequest.where(withValue("_id",ExpressionOperation.EQ, migrationJob.get_id()));
-        updateRequest.returns(includeField("_id"));
+        updateRequest.where(Query.withValue("_id",Query.eq, migrationJob.get_id()));
+        updateRequest.returns(Projection.includeField("_id"));
 
         MigrationJobExecution execution=new MigrationJobExecution();
         execution.setOwnerName(getMigrationConfiguration().getConsistencyCheckerName());
@@ -275,19 +245,19 @@ public abstract class Migrator extends Thread {
         execution.setActualStartDate(activeExecution.getStartTime());
         execution.setStatus(MigrationJob.STATE_ACTIVE);
         // State is active
-        updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(MigrationJob.STATE_ACTIVE)))),
-                              // Add a new execution element
-                              new AppendUpdate("jobExecutions",new ObjectRValue(new HashMap())),
-                              // Owner name
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.ownerName",new LiteralRValue(quote(execution.getOwnerName())))),
-                              // Host name
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.hostName",new LiteralRValue(quote(execution.getHostName())))),
-                              // Execution id
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.activeExecutionId",new LiteralRValue(quote(execution.getActiveExecutionId())))),
-                              // Start date
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.actualStartDate",new LiteralRValue(quote(ClientConstants.getDateFormat().format(execution.getActualStartDate()))))),
-                              // Status
-                              new SetUpdate(new PathValuePair("jobExecutions.-1.status",new LiteralRValue(quote(MigrationJob.STATE_ACTIVE)))));
+        updateRequest.updates(Update.update(Update.set("status",MigrationJob.STATE_ACTIVE),
+                                            // Add a new execution element
+                                            Update.append("jobExecutions",Literal.emptyObject()),
+                                            // Owner name
+                                            Update.set("jobExecutions.-1.ownerName",execution.getOwnerName()).
+                                            // Host name
+                                            more("jobExecutions.-1.hostName",execution.getHostName()).
+                                            // Execution id
+                                            more("jobExecutions.-1.activeExecutionId",execution.getActiveExecutionId()).
+                                            // Start date
+                                            more("jobExecutions.-1.actualStartDate",Literal.value(execution.getActualStartDate())).
+                                            // Status
+                                            more("jobExecutions.-1.status",MigrationJob.STATE_ACTIVE)));
         LOGGER.debug("Marking job {} as active",migrationJob.get_id());
         LightblueResponse response=null;
         try {
@@ -301,22 +271,22 @@ public abstract class Migrator extends Thread {
                 // If there is error, 'error' will contain a messages, otherwise it'll be null
                 // Update the state
                 updateRequest=new DataUpdateRequest("migrationJob",null);
-                updateRequest.where(withValue("_id = "+migrationJob.get_id()));
-                updateRequest.returns(includeField("_id"));
+                updateRequest.where(Query.withValue("_id",Query.eq,migrationJob.get_id()));
+                updateRequest.returns(Projection.includeField("_id"));
                 if(execution.getErrorMsg()!=null)
                     execution.setStatus(MigrationJob.STATE_FAILED);
                 else
                     execution.setStatus(MigrationJob.STATE_COMPLETED);
-                updateRequest.updates(new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(execution.getStatus())))),
-                                      new ForeachUpdate("jobExecutions",
-                                                        withValue("activeExecutionId",ExpressionOperation.EQ,activeExecution.get_id()),
-                                                        new SetUpdate(new PathValuePair("status",new LiteralRValue(quote(execution.getStatus()))),
-                                                                      new PathValuePair("errorMsg",new LiteralRValue(escape(execution.getErrorMsg()==null?"":execution.getErrorMsg()))),
-                                                                      new PathValuePair("processedDocumentCount",new LiteralRValue(Integer.toString(execution.getProcessedDocumentCount()))),
-                                                                      new PathValuePair("consistentDocumentCount",new LiteralRValue(Integer.toString(execution.getConsistentDocumentCount()))),
-                                                                      new PathValuePair("inconsistentDocumentCount",new LiteralRValue(Integer.toString(execution.getInconsistentDocumentCount()))),
-                                                                      new PathValuePair("overwrittenDocumentCount",new LiteralRValue(Integer.toString(execution.getOverwrittenDocumentCount()))),
-                                                                      new PathValuePair("actualEndDate", new LiteralRValue(quote(ClientConstants.getDateFormat().format(new Date())))))));
+                updateRequest.updates(Update.update(Update.set("status",execution.getStatus()),
+                                                    Update.forEach("jobExecutions",
+                                                                   Query.withValue("activeExecutionId",Query.eq,activeExecution.get_id()),
+                                                                   Update.set("status",execution.getStatus()).
+                                                                   more("errorMsg",execution.getErrorMsg()==null?"":execution.getErrorMsg()).
+                                                                   more("processedDocumentCount",execution.getProcessedDocumentCount()).
+                                                                   more("consistentDocumentCount",execution.getConsistentDocumentCount()).
+                                                                   more("inconsistentDocumentCount",execution.getInconsistentDocumentCount()).
+                                                                   more("overwrittenDocumentCount",execution.getOverwrittenDocumentCount()).
+                                                                   more("actualEndDate",Literal.value(new Date())))));
 
                 response=lbClient.data(updateRequest);
                 if(response.hasError())

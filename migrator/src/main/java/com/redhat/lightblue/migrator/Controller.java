@@ -10,14 +10,12 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.enums.ExpressionOperation;
 import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
-import com.redhat.lightblue.client.expression.query.ValueQuery;
+import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.Projection;
 
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class Controller extends Thread {
 
@@ -61,8 +59,8 @@ public class Controller extends Thread {
     public MigrationConfiguration[] getMigrationConfigurations()
         throws IOException, LightblueException {
         DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
-        findRequest.where(withValue("consistencyCheckerName = " + cfg.getName()));
-        findRequest.select(includeFieldRecursively("*"));
+        findRequest.where(Query.withValue("consistencyCheckerName",Query.eq,cfg.getName()));
+        findRequest.select(Projection.includeFieldRecursively("*"));
         LOGGER.debug("Loading configuration:{}",findRequest.getBody());
         return lightblueClient.data(findRequest, MigrationConfiguration[].class);
     }
@@ -73,8 +71,8 @@ public class Controller extends Thread {
     public MigrationConfiguration loadMigrationConfiguration(String migrationConfigurationId) 
         throws IOException, LightblueException {
         DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
-        findRequest.where(withValue("_id",ExpressionOperation.EQ,migrationConfigurationId));
-        findRequest.select(includeFieldRecursively("*"));
+        findRequest.where(Query.withValue("_id",Query.eq,migrationConfigurationId));
+        findRequest.select(Projection.includeFieldRecursively("*"));
         LOGGER.debug("Loading configuration");
         return lightblueClient.data(findRequest, MigrationConfiguration.class);
     }

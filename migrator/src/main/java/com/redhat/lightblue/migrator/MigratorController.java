@@ -28,7 +28,7 @@ import com.redhat.lightblue.client.util.ClientConstants;
 public class MigratorController extends AbstractController {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(MigratorController.class);
-    
+   
     private final Random rnd=new Random();
 
     public static final int JOB_FETCH_BATCH_SIZE=64;
