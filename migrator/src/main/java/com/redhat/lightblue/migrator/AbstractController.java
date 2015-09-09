@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.Locking;
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
@@ -19,11 +20,10 @@ public abstract class AbstractController extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(AbstractController.class);
 
-    private final String callerId=UUID.randomUUID().toString();
-    
     protected MigrationConfiguration migrationConfiguration;
     protected final Controller controller;
     protected final LightblueClient lbClient;
+    protected final Locking locking;
     protected final Class migratorClass;
     protected final ThreadGroup migratorThreads;
 
@@ -31,6 +31,7 @@ public abstract class AbstractController extends Thread {
         this.migrationConfiguration=migrationConfiguration;
         this.controller=controller;
         lbClient=controller.getLightblueClient();
+        locking=lbClient.getLocking("migration");
         if(migrationConfiguration.getMigratorClass()==null)
             migratorClass=DefaultMigrator.class;
         else
@@ -70,9 +71,11 @@ public abstract class AbstractController extends Thread {
      */
     public ActiveExecution lock(String id)
         throws Exception {
-        if(lbClient.getLocking("migration").acquire(callerId,id,null)) {
+        LOGGER.debug("locking {}",id);
+        if(locking.acquire(id,null)) {
             ActiveExecution ae=new ActiveExecution();
             ae.setMigrationJobId(id);
+            ae.set_id(id);
             ae.setStartTime(new Date());
             return ae;
         } 
@@ -82,8 +85,10 @@ public abstract class AbstractController extends Thread {
     public void unlock(String id) {
         LOGGER.debug("Unlocking {}",id);
         try {
-            lbClient.getLocking("migration").release(callerId,id);
-        } catch (Exception e) {}
+            locking.release(id);
+        } catch (Exception e) {
+            LOGGER.error("Error unlocking {}",id,e);
+        }
         Breakpoint.checkpoint("MigratorController:unlock");
     }
 
