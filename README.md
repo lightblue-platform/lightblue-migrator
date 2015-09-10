@@ -24,6 +24,58 @@ java -jar migrator-1.0.0-alldeps.jar
 --sourceconfig=source-lightblue-client.properties
 --destinationconfig=destination-lightblue-client.properties
 ```
+### Migration data:
+
+#### MigrationConfiguration:
+
+There is a migration configuration entry for every migrated
+entity. The default migration implementation reads entities from the
+source lightblue instance, and writes them to the destination
+lightblue instance. The MigrationConiguration.migratorClass entry can
+specify a migrator implementation that can modify this behavior.
+
+The migration configuration also specifies the consistency checker
+class. The consistency checker implementation is invoked only if a
+period is given. The consistency checker implementation wakes up
+periodically based on the period, and creates new migration jobs for
+the entries recently modified. It is assumed that the entities whose
+consistency is a concern have timestamp fields. The consistency
+checker creates migration jobs with queries that start from
+'timestampInitialValue', including 'period' amount of time. Once the
+migration jobs are created, it updates the 'timestampInitialValue' to
+the latest query end value. This way, the next time the consistency
+checker runs, it creates migration jobs for entries created or
+modified since the latest time the last run checked. The actual
+consistency checking and correcting/logging is done by the migration
+jobs.
+
+#### MigrationJob
+
+Each migration job represents a reasonable amount of migration
+data. The migration records should be partitioned in small batches to
+improve better distribution, and better observability.
+
+Migration jobs created by the consistency checker have
+generated:true. Migration jobs created for the first migration must
+have generated:false.
+
+When created, a migration job should have status:available. The
+migration jobs wait until 'scheduledDate' passes. For immediate
+execution, set 'scheduledDate' to now, or earlier.
+
+When migration job starts processing, the status is set to
+'active'. If the migration job completes without any errors, the
+status is set to 'completed'. If the migration fails, the status is
+set to 'failed'. Once the cause of the failuer is corrected, the job
+can be rescheduled by setting status:available.
+
+The failure information for every execution is also stored in the
+migration job.
+
+#### ActiveExecution
+
+These records keep the migration jobs that are being processed. Any
+entry in this collection is assumed to be locked.
 
 ### How it works
 
@@ -72,6 +124,9 @@ Each migration job thread reads the entities using the query given in
 the migration job, and attempts to migrate them to the
 destination. The migration jobs should be created using queries that
 partition the data set in similar sizes.
+
+
+
 
 ###[facade](facade)
 The facade helps with migrating a service to lightblue.
