@@ -1,11 +1,6 @@
 package com.redhat.lightblue.migrator.facade;
 
-import javax.management.RuntimeErrorException;
-
-import com.redhat.lightblue.migrator.facade.DAOFacadeBase;
-import com.redhat.lightblue.migrator.facade.EntityIdExtractor;
 import com.redhat.lightblue.migrator.facade.model.Country;
-
 
 
 public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements CountryDAO {
