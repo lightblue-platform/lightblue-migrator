@@ -380,6 +380,67 @@ public class DAOFacadeTest {
     }
 
     @Test
+    public void ligtblueFailureDuringReadProxyPhaseTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).getCountry("PL");
+
+        try {
+            facade.getCountry("PL");
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+
+    }
+
+    @Test
+    public void ligtblueFailureDuringCreateProxyPhaseTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).createCountry(pl);
+
+        try {
+            facade.createCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+
+    }
+
+    @Test
+    public void ligtblueFailureDuringUpdateProxyPhaseTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).updateCountry(pl);
+
+        try {
+            facade.updateCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+
+    }
+
+    @Test
     public void lightblueNullReturnedAfterCreateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
