@@ -15,11 +15,6 @@
         <type>pom</type>
     </dependency>
     <dependency>
-      <groupId>com.redhat.lightblue.migrator</groupId>
-      <artifactId>lightblue-migrator-core</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
     </dependency>
