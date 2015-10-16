@@ -16,6 +16,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.json.JSONException;
 import org.reflections.Reflections;
 import org.skyscreamer.jsonassert.JSONCompare;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -23,6 +24,7 @@ import org.skyscreamer.jsonassert.JSONCompareResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -101,8 +103,8 @@ public class DAOFacadeBase<D> {
         return checkConsistency(o1, o2, null, null);
     }
 
-    public boolean checkConsistency(Object o1, Object o2, String methodName, String callToLogInCaseOfInconsistency) {
-        if (o1==null&o2==null) {
+    public boolean checkConsistency(final Object o1, final Object o2, String methodName, String callToLogInCaseOfInconsistency) {
+        if (o1==null&&o2==null) {
             return true;
         }
         try {
@@ -121,7 +123,13 @@ public class DAOFacadeBase<D> {
                 log.warn(String.format("Inconsistency found in %s:%s legacyJson: %s, lightblueJson: %s", callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
             }
             return result.passed();
-        } catch (Exception e) {
+        } catch (JSONException e) {
+            if (o1!=null&&o1.equals(o2)) {
+                return true;
+            } else {
+                log.warn(String.format("Inconsistency found in %s:%s legacyJson: %s, lightblueJson: %s", callToLogInCaseOfInconsistency, methodName, o1, o2));
+            }
+        } catch (JsonProcessingException e) {
             log.error("Consistency check failed! Invalid JSON. " + e.getMessage());
         }
         return false;

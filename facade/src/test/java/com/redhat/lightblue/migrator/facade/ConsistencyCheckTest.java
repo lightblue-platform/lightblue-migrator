@@ -207,4 +207,18 @@ public class ConsistencyCheckTest {
         Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson", null));
         Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson2", null));
     }
+
+    @Test
+    public void testWithSimpleObjects() {
+        Assert.assertTrue(daoFacadeExample.checkConsistency("Test", "Test", "savePerson", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency("Test", "Test2", "savePerson", null));
+        Assert.assertTrue(daoFacadeExample.checkConsistency(true, true, "savePerson", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(true, false, "savePerson", null));
+        Assert.assertTrue(daoFacadeExample.checkConsistency(100, 100, "savePerson", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(100, 101, "savePerson", null));
+        Date d = new Date();
+        Assert.assertTrue(daoFacadeExample.checkConsistency(d, d, "savePerson", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(d, new Date(), "savePerson", null));
+
+    }
 }
