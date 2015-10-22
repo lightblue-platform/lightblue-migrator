@@ -275,23 +275,6 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void dualWritePhaseCreateWithReadTest() throws CountryException {
-        LightblueMigrationPhase.dualWritePhase(togglzRule);
-
-        Country pl = new Country(101l, "PL");
-
-        Mockito.when(legacyDAO.createCountryIfNotExists(pl)).thenReturn(pl);
-
-        facade.createCountryIfNotExists(pl);
-
-        Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
-
-        // not calling lightblueDAO in dual write phase, because this is also a read method
-        Mockito.verifyZeroInteractions(lightblueDAO);
-    }
-
-    @Test
     public void dualReadPhaseCreateWithReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
