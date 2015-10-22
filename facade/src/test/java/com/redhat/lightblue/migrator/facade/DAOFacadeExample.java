@@ -19,7 +19,7 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
     @Override
     public Country createCountry(Country country) throws CountryException {
         try {
-            return callDAOCreateSingleMethod(true, entityIdExtractor, Country.class, "createCountry", country);
+            return callDAOCreateSingleMethod(entityIdExtractor, Country.class, "createCountry", country);
         } catch (CountryException ce) {
             throw ce;
         } catch (Throwable t) {
@@ -30,7 +30,7 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
     @Override
     public Country createCountryIfNotExists(Country country) throws CountryException {
         try {
-            return callDAOCreateSingleMethod(false, entityIdExtractor, Country.class, "createCountryIfNotExists", country);
+            return callDAOCreateSingleMethod(entityIdExtractor, Country.class, "createCountryIfNotExists", country);
         } catch (CountryException ce) {
             throw ce;
         } catch (Throwable t) {
