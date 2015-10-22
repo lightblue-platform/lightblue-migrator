@@ -140,7 +140,7 @@ public class DAOFacadeBase<D> {
     }
 
     private Class[] toClasses(Object[] objects) {
-        List<Class> classes = new ArrayList<Class>();
+        List<Class> classes = new ArrayList<>();
         for (Object o: objects) {
             classes.add(o.getClass());
         }
@@ -149,8 +149,8 @@ public class DAOFacadeBase<D> {
 
     static String methodCallToString(String methodName, Object[] values) {
         try {
-            StringBuffer str = new StringBuffer();
-            str.append(methodName+"(");
+            StringBuilder str = new StringBuilder();
+            str.append(methodName).append("(");
             Iterator<Object> it = Arrays.asList(values).iterator();
             while(it.hasNext()) {
                 Object value = it.next();
@@ -159,14 +159,14 @@ public class DAOFacadeBase<D> {
                         // this is an array of primitives, convert to a meaningful string using reflection
                         String primitiveArrayType = value.getClass().getComponentType().getName();
 
-                        StringBuffer pStr = new StringBuffer();
+                        StringBuilder pStr = new StringBuilder();
                         for (int i = 0; i < Array.getLength(value); i ++) {
                             pStr.append(Array.get(value, i));
                             if (i != Array.getLength(value)-1) {
                                 pStr.append(", ");
                             }
                         }
-                        str.append(primitiveArrayType+"["+pStr.toString()+"]");
+                        str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
                     }
                     else {
                         str.append(Arrays.deepToString((Object[])value));
