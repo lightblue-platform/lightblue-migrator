@@ -62,6 +62,10 @@ public class ConsistencyCheckTest {
         Country c2 = new Country(1l, null);
 
         Assert.assertTrue(daoFacadeExample.checkConsistency(c1, c2));
+
+        Assert.assertTrue(daoFacadeExample.checkConsistency(null, null, "saveCountry", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(c1, null, "savePerson", null));
+        Assert.assertFalse(daoFacadeExample.checkConsistency(null, c1, "savePerson", null));
     }
 
     @Test
