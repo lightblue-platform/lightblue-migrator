@@ -54,6 +54,9 @@ public class DAOFacadeBase<D> {
 
     private int timeoutSeconds = 0;
 
+    // used to associate inconsistencies with the service in the logs
+    private final String implementationName;
+
     public EntityIdStore getEntityIdStore() {
         return entityIdStore;
     }
@@ -74,6 +77,8 @@ public class DAOFacadeBase<D> {
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
+        this.implementationName = this.getClass().getSimpleName();
+        log.info("Initialized facade for "+implementationName);
     }
 
     private Map<Class<?>,ModelMixIn> findModelMixInMappings() {
@@ -120,17 +125,17 @@ public class DAOFacadeBase<D> {
                 log.debug("Consistency check passed: "+ result.passed());
             }
             if (!result.passed()) {
-                log.warn(String.format("Inconsistency found in %s:%s legacyJson: %s, lightblueJson: %s", callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
+                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
             }
             return result.passed();
         } catch (JSONException e) {
             if (o1!=null&&o1.equals(o2)) {
                 return true;
             } else {
-                log.warn(String.format("Inconsistency found in %s:%s legacyJson: %s, lightblueJson: %s", callToLogInCaseOfInconsistency, methodName, o1, o2));
+                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, methodName, o1, o2));
             }
         } catch (JsonProcessingException e) {
-            log.error("Consistency check failed! Invalid JSON. " + e.getMessage());
+            log.error("Consistency check failed! Invalid JSON. ", e);
         }
         return false;
     }
