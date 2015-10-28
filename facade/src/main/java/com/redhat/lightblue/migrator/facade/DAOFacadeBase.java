@@ -135,7 +135,7 @@ public class DAOFacadeBase<D> {
                 log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, methodName, o1, o2));
             }
         } catch (JsonProcessingException e) {
-            log.error("Consistency check failed! Invalid JSON. " + e.getMessage());
+            log.error("Consistency check failed! Invalid JSON. ", e);
         }
         return false;
     }
