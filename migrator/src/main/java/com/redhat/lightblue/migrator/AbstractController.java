@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import java.util.UUID;
 import java.util.Date;
+import java.util.HashSet;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ public abstract class AbstractController extends Thread {
     protected final Locking locking;
     protected final Class migratorClass;
     protected final ThreadGroup migratorThreads;
+    protected final HashSet<String> myLocks=new HashSet<>();
 
     public AbstractController(Controller controller,MigrationConfiguration migrationConfiguration,String threadGroupName) {
         this.migrationConfiguration=migrationConfiguration;
@@ -72,13 +74,15 @@ public abstract class AbstractController extends Thread {
     public ActiveExecution lock(String id)
         throws Exception {
         LOGGER.debug("locking {}",id);
-        if(locking.acquire(id,null)) {
-            ActiveExecution ae=new ActiveExecution();
-            ae.setMigrationJobId(id);
-            ae.set_id(id);
-            ae.setStartTime(new Date());
-            return ae;
-        } 
+        if(!myLocks.contains(id))
+            if(locking.acquire(id,null)) {
+                myLocks.add(id);
+                ActiveExecution ae=new ActiveExecution();
+                ae.setMigrationJobId(id);
+                ae.set_id(id);
+                ae.setStartTime(new Date());
+                return ae;
+            } 
         return null;
     }
 
@@ -89,6 +93,7 @@ public abstract class AbstractController extends Thread {
         } catch (Exception e) {
             LOGGER.error("Error unlocking {}",id,e);
         }
+	myLocks.remove(id);
         Breakpoint.checkpoint("MigratorController:unlock");
     }
 
