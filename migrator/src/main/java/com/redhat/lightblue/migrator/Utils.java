@@ -12,6 +12,7 @@ import java.text.DateFormat;
 import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileInputStream;
+import java.io.File;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +27,7 @@ import org.skyscreamer.jsonassert.FieldComparisonFailure;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
@@ -38,9 +40,15 @@ public class Utils {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Utils.class);
 
-
-
     private Utils() {}
+
+    public static void main(String[] args) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode node1=mapper.readTree(new File(args[0]));
+        JsonNode node2=mapper.readTree(new File(args[1]));
+        List<Inconsistency> list=compareDocs(node1,node2,new ArrayList<String>());
+        System.out.println(list);
+    }
 
     public static LightblueClient getLightblueClient(String configPath)
         throws IOException {
