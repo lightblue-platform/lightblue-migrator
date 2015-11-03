@@ -31,7 +31,6 @@ import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Update;
 import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.Literal;
-import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueException;
