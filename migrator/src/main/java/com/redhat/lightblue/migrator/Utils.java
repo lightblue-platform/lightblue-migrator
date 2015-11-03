@@ -13,21 +13,22 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.io.FileInputStream;
 import java.io.File;
+import java.io.StringReader;
+import java.io.BufferedReader;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.apache.commons.lang.StringUtils;
 
-import org.skyscreamer.jsonassert.JSONCompareResult;
-import org.skyscreamer.jsonassert.JSONCompare;
-import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.skyscreamer.jsonassert.FieldComparisonFailure;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeType;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.redhat.jiff.JsonDiff;
+import com.redhat.jiff.JsonDelta;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
@@ -49,7 +50,7 @@ public class Utils {
         List<Inconsistency> list=compareDocs(node1,node2,new ArrayList<String>());
         System.out.println(list);
     }
-
+    
     public static LightblueClient getLightblueClient(String configPath)
         throws IOException {
         LOGGER.debug("Getting client with config {}",configPath);
@@ -90,16 +91,18 @@ public class Utils {
     public static List<Inconsistency> compareDocs(JsonNode sourceDocument, JsonNode destinationDocument,List<String> exclusionPaths) {
         List<Inconsistency> inconsistencies = new ArrayList<>();
         try {
-            JSONCompareResult result = JSONCompare.compareJSON(sourceDocument.toString(),
-                                                               destinationDocument.toString(),
-                                                               JSONCompareMode.STRICT);
-            for(FieldComparisonFailure x:result.getFieldFailures()) {
-                String field=toPath(x.getField());
+            JsonDiff diff=new JsonDiff();
+            diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
+            diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
+            List<JsonDelta> list=diff.computeDiff(sourceDocument,destinationDocument);
+            System.out.println("Failures:"+list);
+            for(JsonDelta x:list) {
+                String field=x.getField();
                 if(!isExcluded(exclusionPaths,field)) {
-                    if(reallyDifferent(x.getExpected(),x.getActual())) {
-                        inconsistencies.add(new Inconsistency(field,x.getExpected(),x.getActual()));
+                    if(reallyDifferent(x.getNode1(),x.getNode2())) {
+                        inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
                     }
-                }
+                } 
             }
         } catch (Exception e) {
             LOGGER.error("Cannot compare docs:{}",e,e);
@@ -116,17 +119,17 @@ public class Utils {
      * meaning: for anything but dates, check string equivalence. For
      * dates, normalize by TZ and check.
      */
-    private static boolean reallyDifferent(Object source,Object dest) {
-        if(source==null)
-            if(dest==null)
+    private static boolean reallyDifferent(JsonNode source,JsonNode dest) {
+        if(source==null || source instanceof NullNode)
+            if(dest==null||dest instanceof NullNode)
                 return false;
             else
                 return true;
-        else if(dest==null)
+        else if(dest==null||dest instanceof NullNode)
             return true;
         else {
-            String s1=source.toString();
-            String s2=dest.toString();
+            String s1=source.asText();
+            String s2=dest.asText();
             if(s1.equals(s2))
                 return false;
 
@@ -174,21 +177,4 @@ public class Utils {
         return false;
     }
     
-
-    /**
-     * Converts a JSONAssert path string to a lightblue path string
-     * That is, [number] is converted to .number
-     */
-    private static String toPath(String s) {
-        int n=s.length();
-        StringBuilder dest=new StringBuilder(n);
-        for(int i=0;i<n;i++) {
-            char c=s.charAt(i);
-            if(c=='[')
-                dest.append('.');
-            else if(c!=']')
-                dest.append(c);
-        }
-        return dest.toString();
-    }
 }
