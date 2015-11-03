@@ -21,6 +21,16 @@ public class JsonDiffTest {
     }
 
     @Test
+    public void basicEq_orderSignificant_w_parents() throws Exception {
+        JsonDiff diff=new JsonDiff();
+        diff.setOption(JsonDiff.Option.ARRAY_ORDER_SIGNIFICANT);
+        diff.setOption(JsonDiff.Option.RETURN_PARENT_DIFFS);
+        List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3]}"),
+                                              esc("{'b':'x','a':1,'c':[2,3,1]}"));
+        Assert.assertEquals(5,list.size()); // 3 array elems, array, and the root
+    }
+
+    @Test
     public void basicDiff() throws Exception {
         JsonDiff diff=new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
@@ -29,6 +39,16 @@ public class JsonDiffTest {
                                               esc("{'b':'y','a':1,'c':[2,3,1]}"));
         Assert.assertEquals(1,list.size());
         Assert.assertEquals("b",list.get(0).getField());
+    }
+
+    @Test
+    public void basicDiff_order_insignificant_w_parents() throws Exception {
+        JsonDiff diff=new JsonDiff();
+        diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
+        diff.setOption(JsonDiff.Option.RETURN_PARENT_DIFFS);
+        List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3]}"),
+                                              esc("{'b':'y','a':1,'c':[2,3,1]}"));
+        Assert.assertEquals(2,list.size()); // b and the root
     }
 
     @Test
@@ -80,6 +100,16 @@ public class JsonDiffTest {
         List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2} ] }"),
                                               esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1} ] }"));
         Assert.assertEquals(7,list.size());
+    }
+
+    @Test
+    public void arrCmp_order_insignificant_w_parents() throws Exception {
+        JsonDiff diff=new JsonDiff();
+        diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
+        diff.setOption(JsonDiff.Option.RETURN_PARENT_DIFFS);
+        List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2} ] }"),
+                                              esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':3}, {'a':1} ] }"));
+        Assert.assertEquals(4,list.size()); // d.0.b, d.0, d, root
     }
 
     @Test
