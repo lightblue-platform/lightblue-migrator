@@ -12,7 +12,6 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
-import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Projection;
 
@@ -81,11 +80,10 @@ public class Controller extends Thread {
         LightblueHttpClient httpClient;
         LOGGER.debug("Getting client, config={}",cfg.getClientConfig());
         if (cfg.getClientConfig() != null) {
-            httpClient = new LightblueHttpClient(cfg.getClientConfig());
+            return  new LightblueHttpClient(cfg.getClientConfig());
         } else {
-            httpClient = new LightblueHttpClient();
+            return new LightblueHttpClient();
         }
-        return new LightblueHystrixClient(httpClient, "migrator", "primaryClient");
     }
 
     /**

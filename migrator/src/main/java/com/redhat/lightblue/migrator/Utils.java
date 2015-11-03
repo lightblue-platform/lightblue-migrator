@@ -34,7 +34,6 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
 import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
 import com.redhat.lightblue.client.util.ClientConstants;
-import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 
 public class Utils {
@@ -63,7 +62,7 @@ public class Utils {
                 cli = new LightblueHttpClient(config);
             }
         }       
-        return new LightblueHystrixClient(cli, "migrator", "cli");
+        return cli;
     }
 
     /**
