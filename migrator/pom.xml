@@ -32,7 +32,6 @@
     <dependency>
       <groupId>org.skyscreamer</groupId>
       <artifactId>jsonassert</artifactId>
-      <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>commons-cli</groupId>
@@ -71,6 +70,11 @@
       <artifactId>commons-daemon</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.redhat.lightblue.migrator</groupId>
+      <artifactId>jiff</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+   <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
