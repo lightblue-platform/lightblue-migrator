@@ -111,15 +111,22 @@ public abstract class Migrator extends Thread {
     }
 
 
+    /**
+     * Override this to change how identity fields are retrieved
+     */
+    public List<String> getIdentityFields() {
+        return getMigrationConfiguration().getDestinationIdentityFields();
+    }
+    
     public void migrate(MigrationJobExecution execution) {
         try {
             initMigrator();
             LOGGER.debug("Retrieving source docs");
-            sourceDocs=Utils.getDocumentIdMap(getSourceDocuments(),getMigrationConfiguration().getDestinationIdentityFields());
+            sourceDocs=Utils.getDocumentIdMap(getSourceDocuments(),getIdentityFields());
             Breakpoint.checkpoint("Migrator:sourceDocs");
             LOGGER.debug("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
             LOGGER.debug("Retrieving destination docs");
-            destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getMigrationConfiguration().getDestinationIdentityFields());
+            destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getIdentityFields());
             Breakpoint.checkpoint("Migrator:destDocs");
             LOGGER.info("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
 
@@ -146,7 +153,7 @@ public abstract class Migrator extends Thread {
                                      getMigrationConfiguration().getDestinationEntityName(),
                                      getMigrationConfiguration().getDestinationEntityVersion(),
                                      migrationJob.get_id(),
-                                     StringUtils.join(getMigrationConfiguration().getDestinationIdentityFields(), ","),
+                                     StringUtils.join(getIdentityFields(), ","),
                                      sourceEntry.getKey().toString(),
                                      Inconsistency.getPathList(inconsistencies),
                                      Inconsistency.getMismatchedValues(inconsistencies));
