@@ -45,7 +45,7 @@
     <sonar.projectName>lightblue-migrator</sonar.projectName>
 
     <lightblue.core.version>1.8.1</lightblue.core.version>
-    <lightblue.client.version>1.8.1</lightblue.client.version>
+    <lightblue.client.version>1.9.0</lightblue.client.version>
   </properties>
   <dependencyManagement>
     <dependencies>
