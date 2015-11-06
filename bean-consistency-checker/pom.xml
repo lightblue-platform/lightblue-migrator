@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.redhat.lightblue.migrator</groupId>
     <artifactId>lightblue-migrator-pom</artifactId>
-    <version>2.8.0-SNAPSHOT</version>
+    <version>2.8.0</version>
   </parent>
   <artifactId>lightblue-bean-consistency-checker</artifactId>
   <packaging>jar</packaging>
