@@ -177,6 +177,7 @@ public class DefaultMigrator extends Migrator {
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getMigrationConfiguration().getDestinationEntityName(),
                                                           getMigrationConfiguration().getDestinationEntityVersion());
+        saveRequest.setUpsert(true);
         saveRequest.create(documentsToOverwrite.toArray());
         saveRequest.returns(Projection.includeField("*"));
         LightblueResponse response;
