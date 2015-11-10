@@ -11,6 +11,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.togglz.junit.TogglzRule;
 
@@ -21,6 +22,7 @@ import com.redhat.lightblue.migrator.facade.model.Person;
 import com.redhat.lightblue.migrator.facade.model.VeryExtendedCountry;
 import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.facade.model.ExtendedCountry;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -32,13 +34,12 @@ public class ConsistencyCheckTest {
     @Mock CountryDAO legacyDAO;
     @Mock CountryDAOLightblue lightblueDAO;
     CountryDAO facade;
-    DAOFacadeExample daoFacadeExample;
+    DAOFacadeBase<CountryDAO> daoFacadeExample;
 
     @Before
-    public void setup() {
-
-        daoFacadeExample = new DAOFacadeExample(legacyDAO, lightblueDAO);
-        facade = daoFacadeExample;
+    public void setup() throws InstantiationException, IllegalAccessException {
+        daoFacadeExample =  Mockito.spy(new DAOFacadeBase<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO));
+        facade = FacadeProxyFactory.createFacadeProxy(daoFacadeExample, CountryDAO.class);
     }
 
     @Test
