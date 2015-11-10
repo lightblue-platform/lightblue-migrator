@@ -15,18 +15,46 @@ import org.slf4j.LoggerFactory;
 import com.redhat.lightblue.migrator.facade.DAOFacadeBase;
 import com.redhat.lightblue.migrator.facade.EntityIdExtractor;
 
+/**
+ * Creates a dynamic proxy implementing given interface. The calls to the interface apis will be directed
+ * to the underlying {@link DAOFacadeBase} according to the type of the operation specified using annotations.
+ *
+ * @author mpatercz
+ *
+ */
 public class FacadeProxyFactory {
 
+    /**
+     * Indicates this api performs a read operation. See
+     * {@link DAOFacadeBase#callDAOReadMethod(Class, String, Class[], Object...)} for details.
+     *
+     * @author mpatercz
+     *
+     */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public static @interface ReadOperation {}
 
+    /**
+     * Indicates this api performs a write operation for a single entity. See
+     * {@link DAOFacadeBase#callDAOCreateSingleMethod(EntityIdExtractor, Class, String, Class[], Object...)} for details.
+     *
+     * @author mpatercz
+     *
+     */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public static @interface WriteSingleOperation {
         String entityIdExtractorClassName();
     }
 
+    /**
+     * Indicates this api performs an update operation. See
+     * {@link DAOFacadeBase#callDAOUpdateMethod(Class, String, Class[], Object...)} for details.
+     *
+     * @author mpatercz
+     *
+     */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public static @interface UpdateOperation {}
