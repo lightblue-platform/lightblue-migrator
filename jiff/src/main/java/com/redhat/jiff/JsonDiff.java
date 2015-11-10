@@ -77,6 +77,13 @@ public class JsonDiff {
     private JsonComparator arrayComparator=new DefaultArrayNodeComparator();
     private JsonComparator valueComparator=new DefaultValueNodeComparator();
 
+    private Filter filter=INCLUDE_ALL;
+
+    private static final Filter INCLUDE_ALL=new Filter() {
+            @Override public boolean includeField(String field) {return true;}
+        };
+                
+
     private boolean returnParentDiffs=false;
     
     /**
@@ -103,8 +110,8 @@ public class JsonDiff {
             for(Iterator<String> node2Names=node2.fieldNames();node2Names.hasNext();) {
                 String field=node2Names.next();
                 if(!node1.has(field)) {
-                    delta.add(new JsonDelta(fieldBase+field,null,node2.get(field)));
-                    ret=true;
+                    if(computeDiff(delta,fieldBase+field,null,node2.get(field)))
+                        ret=true;
                 }
             }
             if(ret&&returnParentDiffs)
@@ -132,9 +139,8 @@ public class JsonDiff {
                 if(computeDiff(delta,newContext,node1Value,node2Value))
                     ret=true;
             }
-            if(ret||node1.size()!=node2.size()) {
-                if(returnParentDiffs)
-                    delta.add(new JsonDelta(context,node1,node2));
+            if((ret&&returnParentDiffs)||node1.size()!=node2.size()) {
+                delta.add(new JsonDelta(context,node1,node2));
                 ret=true;
             }
             return ret;
@@ -144,15 +150,17 @@ public class JsonDiff {
     /**
      * Creates a hash for a json node. The hash is a weak hash, but insensitive to element order.
      */
-    private static final class HashedNode {
+    private final class HashedNode {
         private final JsonNode node;
         private final Long hash;
         private final int index;
+        private String fieldBase;
 
-        public HashedNode(JsonNode node,int index) {
+        public HashedNode(JsonNode node,int index,String fieldBase) {
             this.node=node;
-            hash=computeHash(node);
             this.index=index;
+            this.fieldBase=fieldBase;
+            hash=computeHash(node,fieldBase+index);
         }
 
         public JsonNode getNode() {
@@ -167,26 +175,29 @@ public class JsonDiff {
             return index;
         }
 
-        private long computeHash(JsonNode node) {
-            long hash;
-            if(node==null)
-                hash=0;
-            else if(node instanceof NullNode)
-                hash=1;
-            else if(node instanceof ObjectNode) {
-                hash=0;
-                for(Iterator<Map.Entry<String,JsonNode>> itr=node.fields();itr.hasNext();) {
-                    Map.Entry<String,JsonNode> entry=itr.next();
-                    hash+=entry.getKey().hashCode();
-                    hash+=computeHash(entry.getValue());
+        private long computeHash(JsonNode node,String fieldName) {
+            long hash=0;
+            if(filter.includeField(fieldName)) {
+                if(node==null)
+                    hash=0;
+                else if(node instanceof NullNode)
+                    hash=1;
+                else if(node instanceof ObjectNode) {
+                    hash=0;
+                    for(Iterator<Map.Entry<String,JsonNode>> itr=node.fields();itr.hasNext();) {
+                        Map.Entry<String,JsonNode> entry=itr.next();
+                        hash+=entry.getKey().hashCode();
+                        hash+=computeHash(entry.getValue(),fieldName+"."+entry.getKey());
+                    }
+                } else if(node instanceof ArrayNode) {
+                    hash=0;
+                    int i=0;
+                    for(Iterator<JsonNode> itr=node.elements();itr.hasNext();i++) {
+                        hash+=computeHash(itr.next(),fieldName+"."+i);
+                    }
+                } else {
+                    hash=node.asText().hashCode();
                 }
-            } else if(node instanceof ArrayNode) {
-                hash=0;
-                for(Iterator<JsonNode> itr=node.elements();itr.hasNext();) {
-                    hash+=computeHash(itr.next());
-                }
-            } else {
-                hash=node.asText().hashCode();
             }
             return hash;
         }
@@ -207,12 +218,12 @@ public class JsonDiff {
             int index=0;
             Map<Long,List<HashedNode>> node1Elements=new HashMap<>();
             for(Iterator<JsonNode> itr=node1.elements();itr.hasNext();index++) {
-                put(node1Elements,new HashedNode(itr.next(),index));
+                put(node1Elements,new HashedNode(itr.next(),index,fieldBase));
             }
             index=0;
             Map<Long,List<HashedNode>> node2Elements=new HashMap<>();
             for(Iterator<JsonNode> itr=node2.elements();itr.hasNext();index++) {
-                put(node2Elements,new HashedNode(itr.next(),index));
+                put(node2Elements,new HashedNode(itr.next(),index,fieldBase));
             }
 
             List<HashedNode> removed=new ArrayList<>(node1Elements.size());
@@ -240,9 +251,8 @@ public class JsonDiff {
                 }
              }
             
-            if(ret||node1.size()!=node2.size()) {
-                if(returnParentDiffs)
-                    delta.add(new JsonDelta(context,node1,node2));
+            if((ret&&returnParentDiffs)||node1.size()!=node2.size()) {
+                delta.add(new JsonDelta(context,node1,node2));
                 ret=true;
             }
             return ret;
@@ -267,7 +277,7 @@ public class JsonDiff {
                 return false;
             List<JsonDelta> delta=new ArrayList<>();
             for(HashedNode node:nodes) {
-                if(!computeDiff(delta,"",node.getNode(),elem.getNode())) {
+                if(!computeDiff(delta,node.fieldBase+node.index,node.getNode(),elem.getNode())) {
                     nodes.remove(node);
                     return true;
                 }
@@ -313,7 +323,13 @@ public class JsonDiff {
         case RETURN_PARENT_DIFFS: returnParentDiffs=true;break;
         case RETURN_LEAVES_ONLY: returnParentDiffs=false;break;
         }
-            
+    }
+
+    /**
+     * Sets a filter that determines whether to include fields in comparison
+     */
+    public void setFilter(Filter f) {
+        this.filter=f;
     }
 
     /**
@@ -338,12 +354,14 @@ public class JsonDiff {
      */
     public  boolean computeDiff(List<JsonDelta> delta,String context,JsonNode node1,JsonNode node2) {
         boolean ret=false;
-        JsonComparator cmp=getComparator(context,node1,node2);
-        if(cmp!=null)
-            ret=cmp.compare(delta,context,node1,node2);
-        else {
-            delta.add(new JsonDelta(context,node1,node2));
-            ret=true;
+        if(context.length()==0||filter.includeField(context)) {
+            JsonComparator cmp=getComparator(context,node1,node2);
+            if(cmp!=null)
+                ret=cmp.compare(delta,context,node1,node2);
+            else {
+                delta.add(new JsonDelta(context,node1,node2));
+                ret=true;
+            }
         }
         return ret;
     }

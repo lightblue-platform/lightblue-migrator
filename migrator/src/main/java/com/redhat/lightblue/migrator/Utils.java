@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.redhat.jiff.JsonDiff;
 import com.redhat.jiff.JsonDelta;
+import com.redhat.jiff.AbstractFieldFilter;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
@@ -93,14 +94,17 @@ public class Utils {
             JsonDiff diff=new JsonDiff();
             diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
             diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
+            diff.setFilter(new AbstractFieldFilter() {
+                    public boolean includeField(String fieldName) {
+                        return !fieldName.endsWith("#");
+                    }
+                });
             List<JsonDelta> list=diff.computeDiff(sourceDocument,destinationDocument);
             for(JsonDelta x:list) {
                 String field=x.getField();
-                if(!field.endsWith("#")) { // Array size field differences are ignored. Actual array differences are not ignores
-                    if(!isExcluded(exclusionPaths,field)) {
-                        if(reallyDifferent(x.getNode1(),x.getNode2())) {
-                            inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
-                        }
+                if(!isExcluded(exclusionPaths,field)) {
+                    if(reallyDifferent(x.getNode1(),x.getNode2())) {
+                        inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
                     }
                 }
             }
