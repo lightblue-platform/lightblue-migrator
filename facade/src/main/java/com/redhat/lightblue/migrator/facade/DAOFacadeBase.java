@@ -112,10 +112,13 @@ public class DAOFacadeBase<D> {
         if (o1==null&&o2==null) {
             return true;
         }
+
+        String legacyJson=null;
+        String lightblueJson=null;
         try {
             long t1 = System.currentTimeMillis();
-            String legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
-            String lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
+            legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
+            lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
 
             JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
             long t2 = System.currentTimeMillis();
@@ -132,7 +135,7 @@ public class DAOFacadeBase<D> {
             if (o1!=null&&o1.equals(o2)) {
                 return true;
             } else {
-                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, methodName, o1, o2));
+                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, methodName, legacyJson, lightblueJson));
             }
         } catch (JsonProcessingException e) {
             log.error("Consistency check failed! Invalid JSON. ", e);
