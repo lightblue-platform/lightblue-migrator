@@ -97,11 +97,13 @@ public class Utils {
             System.out.println("Failures:"+list);
             for(JsonDelta x:list) {
                 String field=x.getField();
-                if(!isExcluded(exclusionPaths,field)) {
-                    if(reallyDifferent(x.getNode1(),x.getNode2())) {
-                        inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
+                if(!field.endsWith("#")) { // Array size field differences are ignored. Actual array differences are not ignores
+                    if(!isExcluded(exclusionPaths,field)) {
+                        if(reallyDifferent(x.getNode1(),x.getNode2())) {
+                            inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
+                        }
                     }
-                } 
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Cannot compare docs:{}",e,e);
