@@ -285,7 +285,17 @@ public class JsonDiff {
                                String context,
                                JsonNode node1,
                                JsonNode node2) {
-            if(!node1.equals(node2)) {
+            if(node1.isValueNode()&&node2.isValueNode()) {
+                if(node1.isNumber()&&node2.isNumber()) {
+                    if(!node1.asText().equals(node2.asText())) {
+                        delta.add(new JsonDelta(context,node1,node2));
+                        return true;
+                    }
+                } else if(!node1.equals(node2)) {
+                    delta.add(new JsonDelta(context,node1,node2));
+                    return true;
+                }
+            } else  if(!node1.equals(node2)) {
                 delta.add(new JsonDelta(context,node1,node2));
                 return true;
             }
@@ -363,19 +373,17 @@ public class JsonDiff {
             } else if(node2 instanceof NullNode) {
                 return null;
             }
-
             // Nodes are not null, and they are not null node
-            if(node1.getClass().equals(node2.getClass())) {
-                // Nodes are of the same type
+            if(node1.isContainerNode()&&node2.isContainerNode()) {
                 if(node1 instanceof ObjectNode)
                     return objectComparator;
                 else if(node1 instanceof ArrayNode)
                     return arrayComparator;
-                else
+            } else if(node1.isValueNode()&&node2.isValueNode()) {
                     return valueComparator;
-            } else
-                return null;
+            } 
         }
+        return null;
     }
 
     public static void main(String[] args) throws Exception {

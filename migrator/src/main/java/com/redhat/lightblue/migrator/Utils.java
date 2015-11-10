@@ -94,7 +94,6 @@ public class Utils {
             diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
             diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
             List<JsonDelta> list=diff.computeDiff(sourceDocument,destinationDocument);
-            System.out.println("Failures:"+list);
             for(JsonDelta x:list) {
                 String field=x.getField();
                 if(!field.endsWith("#")) { // Array size field differences are ignored. Actual array differences are not ignores
