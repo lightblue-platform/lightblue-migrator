@@ -10,7 +10,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.togglz.junit.TogglzRule;
 
@@ -21,6 +21,7 @@ import com.redhat.lightblue.migrator.facade.model.CountryWithDate;
 import com.redhat.lightblue.migrator.facade.model.ExtendedCountry;
 import com.redhat.lightblue.migrator.facade.model.Person;
 import com.redhat.lightblue.migrator.facade.model.VeryExtendedCountry;
+import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreSetter;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -29,13 +30,13 @@ public class ConsistencyCheckTest {
     @Rule
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
 
-    @Mock CountryDAO legacyDAO;
-    @Mock CountryDAOLightblue lightblueDAO;
-    DAOFacadeBase<CountryDAO> daoFacadeExample;
+    CountryDAO legacyDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
+    CountryDAO lightblueDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
+    ServiceFacade<CountryDAO> daoFacadeExample;
 
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
-        daoFacadeExample = new DAOFacadeBase<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO);
+        daoFacadeExample = new ServiceFacade<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO, CountryDAO.class);
     }
 
     @Test

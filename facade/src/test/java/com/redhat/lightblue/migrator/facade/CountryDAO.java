@@ -4,26 +4,28 @@ import java.util.List;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.ReadOperation;
-import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.UpdateOperation;
-import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.WriteSingleOperation;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.WriteOperation;
 
 public interface CountryDAO {
 
-    @WriteSingleOperation(entityIdExtractorClass = CountryIdExtractor.class)
+    @WriteOperation
     public abstract Country createCountry(Country country) throws CountryException;
 
-    @WriteSingleOperation(entityIdExtractorClass = CountryIdExtractor.class)
+    @WriteOperation
     public abstract Country createCountryIfNotExists(Country country) throws CountryException;
 
-    @UpdateOperation
+    @WriteOperation(parallel=true)
     public abstract Country updateCountry(Country country) throws CountryException;
 
-    @ReadOperation
+    @ReadOperation(parallel=true)
     public abstract Country getCountry(String iso2Code) throws CountryException;
 
-    @ReadOperation
+    @ReadOperation(parallel=true)
     public abstract List<Country> getCountries(long[] ids) throws CountryException;
 
     public abstract Country getCountryFromLegacy(long id);
+
+    @WriteOperation
+    public abstract Country createGeneratedCountry();
 
 }
