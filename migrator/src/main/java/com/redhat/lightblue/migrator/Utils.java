@@ -27,9 +27,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.redhat.jiff.JsonDiff;
-import com.redhat.jiff.JsonDelta;
-import com.redhat.jiff.AbstractFieldFilter;
+import jiff.JsonDiff;
+import jiff.JsonDelta;
+import jiff.AbstractFieldFilter;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;

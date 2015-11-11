@@ -1,4 +1,4 @@
-package com.redhat.jiff;
+package jiff;
 
 /**
  * Filter that determines whether to include field in comparison

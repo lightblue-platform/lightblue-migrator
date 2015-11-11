@@ -1,12 +1,12 @@
-package com.redhat.jiff;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.*;
+package jiff;
 
 import java.util.List;
 
 import org.junit.Test;
 import org.junit.Assert;
+
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.node.*;
 
 public class JsonDiffTest {
     public static String esc(String s) {
@@ -122,7 +122,7 @@ public class JsonDiffTest {
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
         List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2},{'a':1} ] }"),
                                               esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1} ] }"));
-        Assert.assertEquals(2,list.size());
+        Assert.assertEquals(1,list.size());
     }
 
     @Test
@@ -132,7 +132,7 @@ public class JsonDiffTest {
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
         List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2},{'a':1} ] }"),
                                               esc("{'b':null,'a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1} ] }"));
-        Assert.assertEquals(3,list.size());  // b, d, d.2
+        Assert.assertEquals(2,list.size());
     }
 
     @Test
@@ -142,7 +142,7 @@ public class JsonDiffTest {
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
         List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2} ] }"),
                                               esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1},{'a':1} ] }"));
-        Assert.assertEquals(2,list.size());
+        Assert.assertEquals(1,list.size());
     }
 
     @Test
@@ -152,7 +152,7 @@ public class JsonDiffTest {
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
         List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':null,'c':[1,2,3],'d':[ {'a':1},{'b':2} ] }"),
                                               esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1},{'a':1} ] }"));
-        Assert.assertEquals(3,list.size());
+        Assert.assertEquals(2,list.size());
     }
 
     @Test
@@ -175,7 +175,7 @@ public class JsonDiffTest {
         Assert.assertEquals(0,list.size());
     }
 
-    @Test
+   @Test
     public void numericStringCmpTest() throws Exception {
         JsonDiff diff=new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
@@ -198,7 +198,7 @@ public class JsonDiffTest {
         List<JsonDelta> list=diff.computeDiff(node1,node2);
         Assert.assertEquals(0,list.size());
     }
-        
+
     @Test
     public void cmpWithFilter() throws Exception {
         JsonDiff diff=new JsonDiff();

@@ -1,4 +1,4 @@
-package com.redhat.jiff;
+package jiff;
 
 import org.junit.Test;
 import org.junit.Assert;

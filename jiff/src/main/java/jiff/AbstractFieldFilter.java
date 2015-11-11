@@ -1,4 +1,4 @@
-package com.redhat.jiff;
+package jiff;
 
 public abstract class AbstractFieldFilter implements Filter {
 
