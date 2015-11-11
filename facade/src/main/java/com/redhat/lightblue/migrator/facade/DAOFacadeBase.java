@@ -536,4 +536,8 @@ public class DAOFacadeBase<D> {
         this.timeoutSeconds = timeoutSeconds;
     }
 
+    public D getLegacyDAO() {
+        return legacyDAO;
+    }
+
 }
