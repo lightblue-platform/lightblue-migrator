@@ -175,8 +175,11 @@ public class JsonDiff {
                     hash=0;
                     for(Iterator<Map.Entry<String,JsonNode>> itr=node.fields();itr.hasNext();) {
                         Map.Entry<String,JsonNode> entry=itr.next();
-                        hash+=entry.getKey().hashCode();
-                        hash+=computeHash(entry.getValue(),fieldName+"."+entry.getKey());
+                        String fld=fieldName+"."+entry.getKey();
+                        if(filter.includeField(fld)) {
+                        	hash+=entry.getKey().hashCode();
+                        	hash+=computeHash(entry.getValue(),fld);
+                        }
                     }
                 } else if(node instanceof ArrayNode) {
                     hash=0;
@@ -267,7 +270,7 @@ public class JsonDiff {
                 return false;
             List<JsonDelta> delta=new ArrayList<>();
             for(HashedNode node:nodes) {
-                if(!computeDiff(delta,"",node.getNode(),elem.getNode())) {
+                if(!computeDiff(delta,elem.fieldBase+elem.index,node.getNode(),elem.getNode())) {
                     nodes.remove(node);
                     return true;
                 }

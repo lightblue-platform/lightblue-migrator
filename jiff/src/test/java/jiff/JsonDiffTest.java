@@ -204,8 +204,9 @@ public class JsonDiffTest {
         JsonDiff diff=new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
-        List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':null }"),
-                                              esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1},{'a':1} ] }"));
-        Assert.assertEquals(1,list.size());
+        diff.setFilter(new ExcludeFieldsFilter("d.*.c"));
+        List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'b':2}, {'a':1}] }"),
+                                              esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1,'c':3} ] }"));
+        Assert.assertEquals(0,list.size());
     }
 }
