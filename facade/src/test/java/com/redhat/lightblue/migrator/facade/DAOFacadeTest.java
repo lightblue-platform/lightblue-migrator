@@ -615,7 +615,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void legacyFailureDuringUpdateTest() throws CountryException {
+    public void legacyFailureDuringUpdateTest() throws CountryException, InterruptedException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -630,6 +630,9 @@ public class DAOFacadeTest {
         } catch(Exception e) {
             Assert.fail();
         }
+
+        // deal with the race condition causing verifyNoMoreInteractions() to fail occasionally
+        Thread.sleep(500);
 
         Mockito.verify(lightblueDAO).updateCountry(pl);
         Mockito.verify(legacyDAO).updateCountry(pl);
