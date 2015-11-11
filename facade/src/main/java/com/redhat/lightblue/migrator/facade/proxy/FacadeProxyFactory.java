@@ -45,8 +45,7 @@ public class FacadeProxyFactory {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public static @interface WriteSingleOperation {
-        @SuppressWarnings("rawtypes")
-        Class entityIdExtractorClass();
+        Class<? extends EntityIdExtractor<?>> entityIdExtractorClass();
     }
 
     /**
@@ -70,16 +69,14 @@ public class FacadeProxyFactory {
             this.daoFacadeBase = daoFacadeBase;
         }
 
-        @SuppressWarnings("rawtypes")
-        private HashMap<Class, EntityIdExtractor> entityIdExtractors = new HashMap<>();
+        private HashMap<Class<? extends EntityIdExtractor<?>>, EntityIdExtractor<?>> entityIdExtractors = new HashMap<>();
 
-        @SuppressWarnings("rawtypes")
-        private EntityIdExtractor lazyLoadEntityIdExtractor(Class clazz) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+        private EntityIdExtractor<?> lazyLoadEntityIdExtractor(Class<? extends EntityIdExtractor<?>> clazz) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
             if (entityIdExtractors.containsKey(clazz)) {
                 return entityIdExtractors.get(clazz);
             }
 
-            EntityIdExtractor extractor = (EntityIdExtractor) clazz.newInstance();
+            EntityIdExtractor<?> extractor = (EntityIdExtractor<?>) clazz.newInstance();
             entityIdExtractors.put(clazz, extractor);
 
             return extractor;
