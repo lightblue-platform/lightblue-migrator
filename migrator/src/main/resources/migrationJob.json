@@ -21,15 +21,15 @@
                 "fields": [
                     {
                         "dir": "$asc",
+                        "field": "configurationName"
+                    },
+                    {
+                        "dir": "$asc",
                         "field": "status"
                     },
                     {
                         "dir": "$asc",
                         "field": "scheduledDate"
-                    },
-                    {
-                        "dir": "$asc",
-                        "field": "configurationName"
                     }
                 ],
                 "name": "MigrationJobsToExecute",

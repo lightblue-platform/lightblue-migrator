@@ -77,10 +77,7 @@ public class MigratorController extends AbstractController {
                                     )
                           );
         findRequest.select(Projection.includeField("*"));
-        
-        // sort by scheduledDate ascending to process oldest jobs first
-        findRequest.sort(Sort.asc("scheduledDate"));
-        
+                
         findRequest.range(startIndex, startIndex+batchSize-1);
         
         LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
