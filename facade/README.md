@@ -33,10 +33,6 @@ Compare returned entities. If differences are found, return source entity and lo
 
 Will call lightblue in dual write phase and beyond.
 
-### create with read
-
-Same as create, except it will call lightblue in dual read phase and beyond.
-
 ## [How to configure togglz for migration to lightblue?](TOGGLZ.md)
 
 ## Notes
