@@ -27,8 +27,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import com.redhat.jiff.JsonDiff;
-import com.redhat.jiff.JsonDelta;
+import jiff.JsonDiff;
+import jiff.JsonDelta;
+import jiff.AbstractFieldFilter;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
@@ -93,15 +94,19 @@ public class Utils {
             JsonDiff diff=new JsonDiff();
             diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
             diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
+            diff.setFilter(new AbstractFieldFilter() {
+                    public boolean includeField(String fieldName) {
+                        return !fieldName.endsWith("#");
+                    }
+                });
             List<JsonDelta> list=diff.computeDiff(sourceDocument,destinationDocument);
-            System.out.println("Failures:"+list);
             for(JsonDelta x:list) {
                 String field=x.getField();
                 if(!isExcluded(exclusionPaths,field)) {
                     if(reallyDifferent(x.getNode1(),x.getNode2())) {
                         inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
                     }
-                } 
+                }
             }
         } catch (Exception e) {
             LOGGER.error("Cannot compare docs:{}",e,e);

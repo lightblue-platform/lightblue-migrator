@@ -1,9 +1,14 @@
-package com.redhat.jiff;
+package jiff;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 
+/**
+ * Represents a difference between two instances of a field
+ *
+ * @author bserdar
+ */
 public class JsonDelta {
 
     private final String field;
@@ -30,6 +35,7 @@ public class JsonDelta {
         return node2;
     }
 
+    @Override
     public String toString() {
         return field+"("+describe(node1)+" != "+ describe(node2)+")";
     }
