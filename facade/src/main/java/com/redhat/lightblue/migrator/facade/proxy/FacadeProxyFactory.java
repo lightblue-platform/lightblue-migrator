@@ -89,18 +89,18 @@ public class FacadeProxyFactory {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (method.getDeclaredAnnotation(ReadOperation.class) != null) {
+            if (method.isAnnotationPresent(ReadOperation.class)) {
                 return daoFacadeBase.callDAOReadMethod(method.getReturnType(), method.getName(), method.getParameterTypes(), args);
             }
 
-            if (method.getDeclaredAnnotation(WriteSingleOperation.class) != null) {
-                WriteSingleOperation a = method.getDeclaredAnnotation(WriteSingleOperation.class);
+            if (method.isAnnotationPresent(WriteSingleOperation.class)) {
+                WriteSingleOperation a = method.getAnnotation(WriteSingleOperation.class);
                 // initialize entity extractor
                 EntityIdExtractor e = lazyLoadEntityIdExtractor(a.entityIdExtractorClassName());
                 return daoFacadeBase.callDAOCreateSingleMethod(e, method.getReturnType(), method.getName(), method.getParameterTypes(), args);
             }
 
-            if (method.getDeclaredAnnotation(UpdateOperation.class) != null) {
+            if (method.isAnnotationPresent(UpdateOperation.class)) {
                 return daoFacadeBase.callDAOUpdateMethod(method.getReturnType(), method.getName(), method.getParameterTypes(), args);
             }
 
