@@ -11,18 +11,16 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.togglz.junit.TogglzRule;
 
-import com.redhat.lightblue.migrator.facade.model.CountryWithDate;
+import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.facade.model.CountryInCountry;
 import com.redhat.lightblue.migrator.facade.model.CountryWithBigDecimal;
+import com.redhat.lightblue.migrator.facade.model.CountryWithDate;
+import com.redhat.lightblue.migrator.facade.model.ExtendedCountry;
 import com.redhat.lightblue.migrator.facade.model.Person;
 import com.redhat.lightblue.migrator.facade.model.VeryExtendedCountry;
-import com.redhat.lightblue.migrator.facade.model.Country;
-import com.redhat.lightblue.migrator.facade.model.ExtendedCountry;
-import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -33,13 +31,11 @@ public class ConsistencyCheckTest {
 
     @Mock CountryDAO legacyDAO;
     @Mock CountryDAOLightblue lightblueDAO;
-    CountryDAO facade;
     DAOFacadeBase<CountryDAO> daoFacadeExample;
 
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
-        daoFacadeExample =  Mockito.spy(new DAOFacadeBase<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO));
-        facade = FacadeProxyFactory.createFacadeProxy(daoFacadeExample, CountryDAO.class);
+        daoFacadeExample = new DAOFacadeBase<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO);
     }
 
     @Test
@@ -214,7 +210,7 @@ public class ConsistencyCheckTest {
     }
 
     @Test
-    public void testWithSimpleObjects() {
+    public void testWithSimpleObjects() throws InterruptedException {
         Assert.assertTrue(daoFacadeExample.checkConsistency("Test", "Test", "savePerson", null));
         Assert.assertFalse(daoFacadeExample.checkConsistency("Test", "Test2", "savePerson", null));
         Assert.assertTrue(daoFacadeExample.checkConsistency(true, true, "savePerson", null));
@@ -223,6 +219,7 @@ public class ConsistencyCheckTest {
         Assert.assertFalse(daoFacadeExample.checkConsistency(100, 101, "savePerson", null));
         Date d = new Date();
         Assert.assertTrue(daoFacadeExample.checkConsistency(d, d, "savePerson", null));
+        Thread.sleep(10); // make sure dates below are inconsistent
         Assert.assertFalse(daoFacadeExample.checkConsistency(d, new Date(), "savePerson", null));
 
     }
