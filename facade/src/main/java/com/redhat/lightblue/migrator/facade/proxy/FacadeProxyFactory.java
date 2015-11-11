@@ -109,11 +109,11 @@ public class FacadeProxyFactory {
     }
 
     @SuppressWarnings("unchecked")
-    public static <D> D createFacadeProxy(DAOFacadeBase<D> daoFacadeBase, Class<D> daoClass) throws InstantiationException, IllegalAccessException {
+    public static <D> D createFacadeProxy(DAOFacadeBase<D> daoFacadeBase, Class<? extends D> daoClass) throws InstantiationException, IllegalAccessException {
         return (D) Proxy.newProxyInstance(daoClass.getClassLoader(), new Class[] {daoClass}, new FacadeInvocationHandler<D>(daoFacadeBase));
     }
 
-    public static <D> D createFacadeProxy(D legacyDAO, D lightblueDAO, Class<D> daoClass) throws InstantiationException, IllegalAccessException {
+    public static <D> D createFacadeProxy(D legacyDAO, D lightblueDAO, Class<? extends D> daoClass) throws InstantiationException, IllegalAccessException {
         return createFacadeProxy(new DAOFacadeBase<D>(legacyDAO, lightblueDAO), daoClass);
     }
 
