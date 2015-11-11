@@ -98,9 +98,11 @@ public class JsonDiff {
             // Are there any nodes that are in node2, but not in node1?
             for(Iterator<String> node2Names=node2.fieldNames();node2Names.hasNext();) {
                 String field=node2Names.next();
-                if(!node1.has(field)) {
-                    delta.add(new JsonDelta(fieldBase+field,null,node2.get(field)));
-                    ret=true;
+                if(filter.includeField(fieldBase+field)) {
+                    if(!node1.has(field)) {
+                        delta.add(new JsonDelta(fieldBase+field,null,node2.get(field)));
+                        ret=true;
+                    }
                 }
             }
             if(ret&&returnParentDiffs)
