@@ -45,7 +45,8 @@ public class FacadeProxyFactory {
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
     public static @interface WriteSingleOperation {
-        String entityIdExtractorClassName();
+        @SuppressWarnings("rawtypes")
+        Class entityIdExtractorClass();
     }
 
     /**
@@ -65,24 +66,21 @@ public class FacadeProxyFactory {
 
         private DAOFacadeBase<D> daoFacadeBase;
 
-        public FacadeInvocationHandler(D legacyDAO, D lightblueDAO) {
-            this.daoFacadeBase = new DAOFacadeBase<D>(legacyDAO, lightblueDAO);
-        }
-
         public FacadeInvocationHandler(DAOFacadeBase<D> daoFacadeBase) {
             this.daoFacadeBase = daoFacadeBase;
         }
 
-        // <className, entityIdExtractor>
-        private HashMap<String, EntityIdExtractor> entityIdExtractors = new HashMap<>();
+        @SuppressWarnings("rawtypes")
+        private HashMap<Class, EntityIdExtractor> entityIdExtractors = new HashMap<>();
 
-        private EntityIdExtractor lazyLoadEntityIdExtractor(String className) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
-            if (entityIdExtractors.containsKey(className)) {
-                return entityIdExtractors.get(className);
+        @SuppressWarnings("rawtypes")
+        private EntityIdExtractor lazyLoadEntityIdExtractor(Class clazz) throws InstantiationException, IllegalAccessException, ClassNotFoundException {
+            if (entityIdExtractors.containsKey(clazz)) {
+                return entityIdExtractors.get(clazz);
             }
 
-            EntityIdExtractor extractor = (EntityIdExtractor) Class.forName(className).newInstance();
-            entityIdExtractors.put(className, extractor);
+            EntityIdExtractor extractor = (EntityIdExtractor) clazz.newInstance();
+            entityIdExtractors.put(clazz, extractor);
 
             return extractor;
         }
@@ -96,8 +94,11 @@ public class FacadeProxyFactory {
             if (method.isAnnotationPresent(WriteSingleOperation.class)) {
                 WriteSingleOperation a = method.getAnnotation(WriteSingleOperation.class);
                 // initialize entity extractor
-                EntityIdExtractor e = lazyLoadEntityIdExtractor(a.entityIdExtractorClassName());
-                return daoFacadeBase.callDAOCreateSingleMethod(e, method.getReturnType(), method.getName(), method.getParameterTypes(), args);
+                @SuppressWarnings("rawtypes")
+                EntityIdExtractor e = lazyLoadEntityIdExtractor(a.entityIdExtractorClass());
+                @SuppressWarnings("unchecked")
+                Object ret = daoFacadeBase.callDAOCreateSingleMethod(e, method.getReturnType(), method.getName(), method.getParameterTypes(), args);
+                return ret;
             }
 
             if (method.isAnnotationPresent(UpdateOperation.class)) {
@@ -110,6 +111,7 @@ public class FacadeProxyFactory {
 
     }
 
+    @SuppressWarnings("unchecked")
     public static <D> D createFacadeProxy(DAOFacadeBase<D> daoFacadeBase, Class<D> daoClass) throws InstantiationException, IllegalAccessException {
         return (D) Proxy.newProxyInstance(daoClass.getClassLoader(), new Class[] {daoClass}, new FacadeInvocationHandler<D>(daoFacadeBase));
     }
