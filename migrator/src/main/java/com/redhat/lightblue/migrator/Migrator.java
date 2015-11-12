@@ -128,7 +128,7 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("Retrieving destination docs");
             destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getIdentityFields());
             Breakpoint.checkpoint("Migrator:destDocs");
-            LOGGER.info("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
+            LOGGER.debug("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
 
             insertDocs=new HashSet<>();
             for(Identity id:sourceDocs.keySet())
@@ -193,7 +193,7 @@ public abstract class Migrator extends Thread {
                 LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),errorMsg);
                 execution.setErrorMsg(errorMsg.toString());
             } else {
-                LOGGER.info("saved: {}",saveDocsList.size());
+                LOGGER.info("source: {}, dest: {}, written: {}",sourceDocs.size(),destDocs.size(),saveDocsList.size());
             }
             Breakpoint.checkpoint("Migrator:complete");
 
@@ -253,6 +253,7 @@ public abstract class Migrator extends Thread {
         // State is active
         updateRequest.updates(Update.update(Update.set("status",MigrationJob.STATE_ACTIVE),
                                             // Add a new execution element
+                                            Update.set("jobExecutions",Literal.emptyArray()),
                                             Update.append("jobExecutions",Literal.emptyObject()),
                                             // Owner name
                                             Update.set("jobExecutions.-1.ownerName",execution.getOwnerName()).
