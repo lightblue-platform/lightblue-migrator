@@ -65,6 +65,21 @@ public class Controller extends Thread {
     }
 
     /**
+     * Read a configuration from the database whose name matches the the given configuration name
+     */
+    public MigrationConfiguration getMigrationConfiguration(String configurationName)
+        throws IOException, LightblueException {
+        DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
+        findRequest.where(Query.and(
+                Query.withValue("configurationName",Query.eq,configurationName),
+                Query.withValue("consistencyCheckerName",Query.eq,cfg.getName()))
+        );
+        findRequest.select(Projection.includeFieldRecursively("*"));
+        LOGGER.debug("Loading configuration:{}",findRequest.getBody());
+        return lightblueClient.data(findRequest, MigrationConfiguration.class);
+    }
+
+    /**
      * Load migration configuration based on its id
      */
     public MigrationConfiguration loadMigrationConfiguration(String migrationConfigurationId) 
