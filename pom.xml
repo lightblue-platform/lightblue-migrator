@@ -33,7 +33,7 @@
   <modules>
     <module>migrator</module>
     <!--module>facade</module-->
-    <module>bean-consistency-checker</module>
+    <!--module>bean-consistency-checker</module-->
     <module>jiff</module>
   </modules>
   <properties>
