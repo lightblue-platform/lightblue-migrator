@@ -70,9 +70,9 @@
       <artifactId>commons-daemon</artifactId>
     </dependency>
     <dependency>
-      <groupId>jiff</groupId>
+      <groupId>com.redhat.lightblue.migrator</groupId>
       <artifactId>jiff</artifactId>
-      <version>1.0</version>
+      <version>1.0.0-SNAPSHOT</version>
     </dependency>
    <dependency>
       <groupId>junit</groupId>
