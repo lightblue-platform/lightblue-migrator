@@ -26,6 +26,18 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+  <scm>
+    <connection>scm:git:https://github.com/lightblue-platform/lightblue-migrator.git</connection>
+    <developerConnection>scm:git:git@github.com:lightblue-platform/lightblue-migrator.git</developerConnection>
+    <url>https://github.com/lightblue-platform/lightblue-migrator</url>
+    <tag>HEAD</tag>
+  </scm>
+  <distributionManagement>
+    <repository>
+      <id>ossrh</id>
+      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
   <build>
     <plugins>
       <plugin>
