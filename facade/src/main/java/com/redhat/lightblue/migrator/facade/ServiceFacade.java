@@ -75,7 +75,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         super();
         this.legacySvc = legacySvc;
         this.lightblueSvc = lightblueSvc;
-        setSharedStore(new SharedStoreImpl(this.getClass())); // this.getClass() will point at superclass
+        setSharedStore(new SharedStoreImpl(serviceClass));
         this.implementationName = serviceClass.getSimpleName();
         log.info("Initialized facade for "+implementationName);
     }
@@ -217,7 +217,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             @Override
             public T call() throws Exception {
                 Timer dest = new Timer("destination."+method.getName());
-                if (passIds)
+                if (sharedStore != null && passIds)
                     sharedStore.copyFromThread(parentThreadId);
                 try {
                     return (T) method.invoke(lightblueSvc, values);
@@ -291,11 +291,11 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      */
     public <T> T callSvcMethod(final FacadeOperation facadeOperation, final boolean callInParallel, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Performing "+facadeOperation+" "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+            log.debug("Performing parallel="+callInParallel+" "+facadeOperation+" "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
 
         TogglzRandomUsername.init();
 
-        if (shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
+        if (sharedStore != null && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
             sharedStore.setDualMigrationPhase(true);
         } else if (sharedStore != null){
             sharedStore.setDualMigrationPhase(false);
@@ -336,7 +336,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
-                    listenableFuture = callLightblueSvc(false, method, values);
+                    listenableFuture = callLightblueSvc(true, method, values);
                     lightblueEntity = getWithTimeout(listenableFuture);
                 }
             } catch (TimeoutException te) {
