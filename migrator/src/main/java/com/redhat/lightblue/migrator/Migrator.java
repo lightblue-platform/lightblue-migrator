@@ -148,7 +148,7 @@ public abstract class Migrator extends Thread {
                         // log as key=value to make parsing easy
                         // fields to log: config name, job id, dest entity name & version, id field names & values,
                         //list of inconsistent paths
-                        LOGGER.error("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\" mismatchedValues=\"{}\"",
+                        LOGGER.warn("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\" mismatchedValues=\"{}\"",
                                      getMigrationConfiguration().getConfigurationName(),
                                      getMigrationConfiguration().getDestinationEntityName(),
                                      getMigrationConfiguration().getDestinationEntityVersion(),
