@@ -23,9 +23,9 @@ public interface CountryDAO {
     @ReadOperation(parallel=true)
     public abstract List<Country> getCountries(long[] ids) throws CountryException;
 
-    public abstract Country getCountryFromLegacy(long id);
+    public abstract Country getCountryFromLegacy(long id) throws CountryException;
 
     @WriteOperation
-    public abstract Country createGeneratedCountry();
+    public abstract Country createGeneratedCountry() throws CountryException;
 
 }
