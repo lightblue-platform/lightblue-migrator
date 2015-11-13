@@ -32,7 +32,7 @@
   </distributionManagement>
   <modules>
     <module>migrator</module>
-    <!--module>facade</module-->
+    <module>facade</module>
     <!--module>bean-consistency-checker</module-->
     <module>jiff</module>
   </modules>
@@ -44,7 +44,7 @@
     <sonar.host.url>http://127.0.0.1:8080</sonar.host.url>
     <sonar.projectName>lightblue-migrator</sonar.projectName>
 
-    <lightblue.core.version>1.8.1</lightblue.core.version>
+    <lightblue.core.version>1.9.0-SNAPSHOT</lightblue.core.version>
     <lightblue.client.version>1.9.0</lightblue.client.version>
   </properties>
   <dependencyManagement>
