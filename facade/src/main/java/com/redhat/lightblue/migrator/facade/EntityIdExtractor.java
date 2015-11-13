@@ -7,6 +7,7 @@ package com.redhat.lightblue.migrator.facade;
  *
  * @param <E>
  */
+@Deprecated
 public interface EntityIdExtractor<E> {
     public Long extractId(E entity);
 }

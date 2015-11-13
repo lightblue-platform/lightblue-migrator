@@ -34,14 +34,18 @@ import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
 /**
+ * Deprecated. Use {@link ServiceFacade} instead.
+ *
  * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
  * service/dao to use and verifying returned data. Verification uses equals method - use {@link BeanConsistencyChecker} in your beans for sophisticated
  * consistency check.
+ *
  *
  * @author mpatercz
  *
  */
 @SuppressWarnings("all")
+@Deprecated
 public class DAOFacadeBase<D> {
 
     private static final Logger log = LoggerFactory.getLogger(DAOFacadeBase.class);
