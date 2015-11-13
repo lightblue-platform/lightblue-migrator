@@ -7,7 +7,6 @@
   </parent>
   <artifactId>lightblue-migrator-facade</artifactId>
   <packaging>jar</packaging>
-  <version>3.0.0-SNAPSHOT</version>
   <name>lightblue-migrator: ${project.groupId}|${project.artifactId}</name>
   <dependencies>
     <dependency>
