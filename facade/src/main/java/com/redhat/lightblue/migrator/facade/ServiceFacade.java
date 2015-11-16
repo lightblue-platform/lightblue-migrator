@@ -132,7 +132,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      *
      * @param o1                              object returned from legacy call
      * @param o2                              object returned from lightblue call
-     * @param methodName the                  method name
+     * @param methodName                      the method name
      * @param callToLogInCaseOfInconsistency  the call including parameters
      * @return
      */
