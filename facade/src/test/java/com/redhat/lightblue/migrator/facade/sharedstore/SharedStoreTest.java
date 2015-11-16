@@ -68,6 +68,7 @@ public class SharedStoreTest {
         store.push(101l);
         store.push(102l);
         store.push(103l);
+        store.setDualMigrationPhase(true);
 
         TestThread t = new TestThread(store, Thread.currentThread().getId());
 
@@ -128,7 +129,8 @@ public class SharedStoreTest {
         public void run() {
             store.copyFromThread(parentThreadId);
 
-            checksPassed = 101l == (Long)store.pop() && 102l == (Long)store.pop() && 103l == (Long)store.pop();
+            checksPassed = 101l == (Long)store.pop() && 102l == (Long)store.pop() && 103l == (Long)store.pop() &&
+                    store.isDualMigrationPhase();
         }
 
         public boolean isChecksPassed() {

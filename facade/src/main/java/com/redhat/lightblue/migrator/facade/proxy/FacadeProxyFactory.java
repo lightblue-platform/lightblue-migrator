@@ -68,11 +68,13 @@ public class FacadeProxyFactory {
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             if (method.isAnnotationPresent(ReadOperation.class)) {
                 ReadOperation ro = method.getAnnotation(ReadOperation.class);
+                log.debug("Performing parallel="+ro.parallel()+" "+FacadeOperation.READ+" operation");
                 return daoFacadeBase.callSvcMethod(FacadeOperation.READ, ro.parallel(), method.getReturnType(), method.getName(), method.getParameterTypes(), args);
             }
 
             if (method.isAnnotationPresent(WriteOperation.class)) {
                 WriteOperation wo = method.getAnnotation(WriteOperation.class);
+                log.debug("Performing parallel="+wo.parallel()+" "+FacadeOperation.WRITE+" operation");
                 return daoFacadeBase.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method.getReturnType(), method.getName(), method.getParameterTypes(), args);
             }
 

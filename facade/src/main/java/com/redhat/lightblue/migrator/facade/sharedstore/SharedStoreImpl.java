@@ -87,19 +87,33 @@ public class SharedStoreImpl implements SharedStore {
     @Override
     public void copyFromThread(long sourceThreadId) {
         long threadId = Thread.currentThread().getId();
-        log.debug("Copying key value pairs from thread="+sourceThreadId+" to thread="+threadId);
+
+        log.debug("copyFromThread thread="+sourceThreadId+" to thread="+threadId);
 
         Element sourceEl = cache.get(sourceThreadId);
 
-        if (sourceEl == null) {
-            throw new SharedStoreException(cache.getName(), sourceThreadId);
+        if (sourceEl != null) {
+
+            @SuppressWarnings("unchecked")
+            LinkedList<Object> list = (LinkedList<Object>)sourceEl.getObjectValue();
+
+            // copy by reference
+            cache.put(new Element(threadId, list));
+
+            log.debug("Copied key value pairs from thread="+sourceThreadId+" to thread="+threadId);
         }
 
-        @SuppressWarnings("unchecked")
-        LinkedList<Object> list = (LinkedList<Object>)sourceEl.getObjectValue();
 
-        // copy by reference
-        cache.put(new Element(threadId, list));
+        Element sourceEl2 = cache.get("isDualMigrationPhase-"+sourceThreadId);
+
+        if (sourceEl2 != null) {
+            Boolean isDualMigrationPhase = (Boolean)sourceEl2.getObjectValue();
+
+            // copy by reference
+            cache.put(new Element("isDualMigrationPhase-"+threadId, isDualMigrationPhase));
+
+            log.debug("Copied isDualMigrationPhase from thread="+sourceThreadId+" to thread="+threadId);
+        }
     }
 
     @Override
