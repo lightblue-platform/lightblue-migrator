@@ -48,6 +48,7 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 public class ServiceFacade<D> implements SharedStoreSetter {
 
     private static final Logger log = LoggerFactory.getLogger(ServiceFacade.class);
+    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacySvc, lightblueSvc;
 
@@ -56,6 +57,8 @@ public class ServiceFacade<D> implements SharedStoreSetter {
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
     private int timeoutSeconds = 0;
+
+    private int maxInconsistencyLogLength = 65536; // 64KB
 
     // used to associate inconsistencies with the service in the logs
     private final String implementationName;
@@ -102,18 +105,35 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         return mapper.writer();
     }
 
-    // user for unit testing
+    // for unit testing
     public boolean checkConsistency(Object o1, Object o2) {
         return checkConsistency(o1, o2, null, null);
     }
 
+    /*
+     * Log message < MAX_INCONSISTENCY_LOG_LENGTH to server.log.
+     * Log message > MAX_INCONSISTENCY_LOG_LENGTH and diff <= MAX_INCONSISTENCY_LOG_LENGTH, log diff to server.log.
+     * Otherwise log method name and parameters to server.log and full message to inconsistency.log.
+     */
+    private void logInconsistency(String callToLogInCaseOfInconsistency, String legacyJson, String lightblueJson, String diff) {
+        String logMessage = String.format("Inconsistency found in %s.%s - diff: %s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, diff, legacyJson, lightblueJson);
+        if (logMessage.length()<=maxInconsistencyLogLength) {
+            log.warn(logMessage);
+        } else if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
+            log.warn(String.format("Inconsistency found in %s.%s - diff: %s", implementationName, callToLogInCaseOfInconsistency, diff));
+        } else {
+            log.warn(String.format("Inconsistency found in %s.%s - payload and diff is greater than %d bytes!", implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
+            logInconsisteny.debug(logMessage); // logging at debug level since everything >= info would also land in server.log
+        }
+    }
+
     /**
-     * Check that objects are equal using org.skyscreamer.jsonassert.
+     * Check that objects are equal using org.skyscreamer.jsonassert library.
      *
-     * @param o1
-     * @param o2
-     * @param methodName
-     * @param callToLogInCaseOfInconsistency
+     * @param o1                              object returned from legacy call
+     * @param o2                              object returned from lightblue call
+     * @param methodName the                  method name
+     * @param callToLogInCaseOfInconsistency  the call including parameters
      * @return
      */
     public boolean checkConsistency(final Object o1, final Object o2, String methodName, String callToLogInCaseOfInconsistency) {
@@ -136,14 +156,14 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 log.debug("Consistency check passed: "+ result.passed());
             }
             if (!result.passed()) {
-                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
+                logInconsistency(callToLogInCaseOfInconsistency, legacyJson, lightblueJson, result.getMessage().replaceAll("\n", ","));
             }
             return result.passed();
         } catch (JSONException e) {
             if (o1!=null&&o1.equals(o2)) {
                 return true;
             } else {
-                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, methodName, legacyJson, lightblueJson));
+                logInconsistency(callToLogInCaseOfInconsistency, legacyJson, lightblueJson, null);
             }
         } catch (JsonProcessingException e) {
             log.error("Consistency check failed! Invalid JSON. ", e);
@@ -395,6 +415,14 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
     public void setTimeoutSeconds(int timeoutSeconds) {
         this.timeoutSeconds = timeoutSeconds;
+    }
+
+    public void setMaxInconsistencyLogLength(int length) {
+        this.maxInconsistencyLogLength = length;
+    }
+
+    public int getMaxInconsistencyLogLength() {
+        return maxInconsistencyLogLength;
     }
 
     public D getLegacySvc() {
