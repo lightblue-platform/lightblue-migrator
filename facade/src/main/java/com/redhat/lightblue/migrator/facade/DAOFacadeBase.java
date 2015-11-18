@@ -7,11 +7,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -32,13 +36,23 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
  */
 @SuppressWarnings("all")
 @Deprecated
-public class DAOFacadeBase<D> extends AbstractServiceFacade {
+public class DAOFacadeBase<D> {
+
+    private static final Logger log = LoggerFactory.getLogger(DAOFacadeBase.class);
+    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacyDAO, lightblueDAO;
 
     private EntityIdStore entityIdStore = null;
 
+    private Map<Class<?>,ModelMixIn> modelMixIns;
+
     private int timeoutSeconds = 0;
+
+    private ConsistencyChecker consistencyChecker;
+
+    // used to associate inconsistencies with the service in the logs
+    private final String implementationName;
 
     public EntityIdStore getEntityIdStore() {
         return entityIdStore;
@@ -55,11 +69,23 @@ public class DAOFacadeBase<D> extends AbstractServiceFacade {
         }
     }
 
+    public ConsistencyChecker getConsistencyChecker() {
+        if (consistencyChecker == null) {
+            consistencyChecker = new ConsistencyChecker(implementationName);
+        }
+        return consistencyChecker;
+    }
+
+    public void setConsistencyChecker(ConsistencyChecker consistencyChecker) {
+        this.consistencyChecker = consistencyChecker;
+    }
+
     public DAOFacadeBase(D legacyDAO, D lightblueDAO) {
+        super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
-        super.implementationName = this.getClass().getSimpleName();
+        this.implementationName = this.getClass().getSimpleName();
         log.info("Initialized facade for "+implementationName);
     }
 
@@ -214,7 +240,7 @@ public class DAOFacadeBase<D> extends AbstractServiceFacade {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -305,7 +331,7 @@ public class DAOFacadeBase<D> extends AbstractServiceFacade {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -420,7 +446,7 @@ public class DAOFacadeBase<D> extends AbstractServiceFacade {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -456,12 +482,12 @@ public class DAOFacadeBase<D> extends AbstractServiceFacade {
         this.timeoutSeconds = timeoutSeconds;
     }
 
-    public void setMaxInconsistencyLogLength(int length) {
-        this.maxInconsistencyLogLength = length;
+    public void setLogResponseDataEnabled(boolean logResponsesEnabled) {
+        getConsistencyChecker().setLogResponseDataEnabled(logResponsesEnabled);
     }
 
-    public int getMaxInconsistencyLogLength() {
-        return maxInconsistencyLogLength;
+    public void setMaxInconsistencyLogLength(int length) {
+        getConsistencyChecker().setMaxInconsistencyLogLength(length);
     }
 
     public D getLegacyDAO() {

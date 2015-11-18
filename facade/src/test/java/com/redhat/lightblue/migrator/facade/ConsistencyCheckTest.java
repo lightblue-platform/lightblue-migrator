@@ -32,11 +32,11 @@ public class ConsistencyCheckTest {
 
     CountryDAO legacyDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
     CountryDAO lightblueDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
-    ServiceFacade<CountryDAO> daoFacadeExample;
+    ConsistencyChecker consistencyChecker;
 
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
-        daoFacadeExample = new ServiceFacade<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO, CountryDAO.class);
+        consistencyChecker = new ConsistencyChecker(CountryDAO.class.getSimpleName());
     }
 
     @Test
@@ -47,23 +47,23 @@ public class ConsistencyCheckTest {
         Country pl2 = new Country(1l, "PL");
         pl2.setName("Poland2");
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
     }
 
     @Test
     public void testConsistencyWithNull() {
-        Assert.assertTrue(daoFacadeExample.checkConsistency(null, null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(null, new Country()));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(new Country(), null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(null, null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(null, new Country()));
+        Assert.assertFalse(consistencyChecker.checkConsistency(new Country(), null));
 
         Country c1 = new Country(1l, null);
         Country c2 = new Country(1l, null);
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(c1, c2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(c1, c2));
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(null, null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(c1, null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(null, c1));
+        Assert.assertTrue(consistencyChecker.checkConsistency(null, null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(c1, null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(null, c1));
     }
 
     @Test
@@ -71,7 +71,7 @@ public class ConsistencyCheckTest {
         Country pl1 = new Country(1l, "PL");
         Country pl2 = new Country(2l, "PL");
 
-        Assert.assertFalse(daoFacadeExample.checkConsistency(pl1, pl2));
+        Assert.assertFalse(consistencyChecker.checkConsistency(pl1, pl2));
     }
 
     @Test
@@ -79,7 +79,7 @@ public class ConsistencyCheckTest {
         Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
         Country[] cArr2 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(Arrays.asList(cArr1), Arrays.asList(cArr2)));
+        Assert.assertTrue(consistencyChecker.checkConsistency(Arrays.asList(cArr1), Arrays.asList(cArr2)));
     }
 
     @Test
@@ -87,12 +87,12 @@ public class ConsistencyCheckTest {
         Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
         Country[] cArr2 = new Country[] { new Country(3l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertFalse(daoFacadeExample.checkConsistency(Arrays.asList(cArr1), Arrays.asList(cArr2)));
+        Assert.assertFalse(consistencyChecker.checkConsistency(Arrays.asList(cArr1), Arrays.asList(cArr2)));
 
         Country[] cArr3 = new Country[] { new Country(2l, "CA"), new Country(1l, "PL")};
         Country[] cArr4 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(Arrays.asList(cArr3), Arrays.asList(cArr4)));
+        Assert.assertTrue(consistencyChecker.checkConsistency(Arrays.asList(cArr3), Arrays.asList(cArr4)));
     }
 
     @Test
@@ -100,7 +100,7 @@ public class ConsistencyCheckTest {
         Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
         Country[] cArr2 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(cArr1, cArr2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(cArr1, cArr2));
     }
 
     @Test
@@ -108,12 +108,12 @@ public class ConsistencyCheckTest {
         Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
         Country[] cArr2 = new Country[] { new Country(3l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertFalse(daoFacadeExample.checkConsistency(cArr1, cArr2));
+        Assert.assertFalse(consistencyChecker.checkConsistency(cArr1, cArr2));
 
         Country[] cArr3 = new Country[] { new Country(2l, "CA"), new Country(1l, "PL")};
         Country[] cArr4 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(cArr3, cArr4));
+        Assert.assertTrue(consistencyChecker.checkConsistency(cArr3, cArr4));
     }
 
     @Test
@@ -123,7 +123,7 @@ public class ConsistencyCheckTest {
         Country pl2 = new ExtendedCountry(1l, "PL");
         pl2.setName("Poland2");
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
     }
 
     @Test
@@ -131,10 +131,10 @@ public class ConsistencyCheckTest {
         Country pl1 = new ExtendedCountry(1l, "PL");
         Country pl2 = new Country(1l, "PL");
 
-        Assert.assertFalse(daoFacadeExample.checkConsistency(pl1, pl2));
+        Assert.assertFalse(consistencyChecker.checkConsistency(pl1, pl2));
 
         // We are using compare mode = Lenient, which means object 2 can have additional data
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl2, pl1));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
     }
 
     @Test
@@ -142,7 +142,7 @@ public class ConsistencyCheckTest {
         Country pl1 = new VeryExtendedCountry(1l, "PL", "foo");
         Country pl2 = new VeryExtendedCountry(1l, "PL", "bar");
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
     }
 
     @Test
@@ -153,9 +153,9 @@ public class ConsistencyCheckTest {
         Country pl1 = new CountryInCountry(1l, "PL", inner1);
         Country pl2 = new CountryInCountry(1l, "PL", inner2);
 
-        Assert.assertFalse(daoFacadeExample.checkConsistency(pl1, pl2));
+        Assert.assertFalse(consistencyChecker.checkConsistency(pl1, pl2));
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, new CountryInCountry(1l, "PL", new Country(2l, "CA"))));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, new CountryInCountry(1l, "PL", new Country(2l, "CA"))));
     }
 
     @Test
@@ -166,8 +166,8 @@ public class ConsistencyCheckTest {
         CountryWithDate pl1 = new CountryWithDate(date);
         CountryWithDate pl2 = new CountryWithDate(timestamp);
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl2, pl1));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
     }
 
     @Test
@@ -181,8 +181,8 @@ public class ConsistencyCheckTest {
         CountryWithDate pl1 = new CountryWithDate(date);
         CountryWithDate pl2 = new CountryWithDate(timestamp);
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl2, pl1));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
     }
 
     @Test
@@ -193,35 +193,35 @@ public class ConsistencyCheckTest {
         CountryWithBigDecimal pl1 = new CountryWithBigDecimal(value1);
         CountryWithBigDecimal pl2 = new CountryWithBigDecimal(value2);
 
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl1, pl2));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(pl2, pl1));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
+        Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
     }
 
     @Test
     public void testWithMethodInclusion() {
         Person p1 = new Person("John", "Doe", 35, "British");
         Person p2 = new Person("John", "Doe", 35, "German");
-        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson", null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson2", null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
 
         p1 = new Person("John", "Doe", 35, "British");
         p2 = new Person("John", "Doe", 30, "British");
-        Assert.assertFalse(daoFacadeExample.checkConsistency(p1, p2, "getPerson", null));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(p1, p2, "getPerson2", null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
     }
 
     @Test
     public void testWithSimpleObjects() throws InterruptedException {
-        Assert.assertTrue(daoFacadeExample.checkConsistency("Test", "Test", "savePerson", null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency("Test", "Test2", "savePerson", null));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(true, true, "savePerson", null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(true, false, "savePerson", null));
-        Assert.assertTrue(daoFacadeExample.checkConsistency(100, 100, "savePerson", null));
-        Assert.assertFalse(daoFacadeExample.checkConsistency(100, 101, "savePerson", null));
+        Assert.assertTrue(consistencyChecker.checkConsistency("Test", "Test", "savePerson", null));
+        Assert.assertFalse(consistencyChecker.checkConsistency("Test", "Test2", "savePerson", null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(true, true, "savePerson", null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(true, false, "savePerson", null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(100, 100, "savePerson", null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(100, 101, "savePerson", null));
         Date d = new Date();
-        Assert.assertTrue(daoFacadeExample.checkConsistency(d, d, "savePerson", null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(d, d, "savePerson", null));
         Thread.sleep(10); // make sure dates below are inconsistent
-        Assert.assertFalse(daoFacadeExample.checkConsistency(d, new Date(), "savePerson", null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(d, new Date(), "savePerson", null));
 
     }
 }

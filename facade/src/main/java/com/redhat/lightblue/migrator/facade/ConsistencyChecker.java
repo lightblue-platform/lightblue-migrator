@@ -18,21 +18,25 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 
 /**
- * An abstract base class for Service Facade which handles inconsistencies and logging.
+ * This class checks for data inconsistencies and handles logging.
  *
  * @author ykoer
  *
  */
-public abstract class AbstractServiceFacade {
+public class ConsistencyChecker {
 
-    protected static final Logger log = LoggerFactory.getLogger(AbstractServiceFacade.class);
-    private static final Logger inconsistencyLog = LoggerFactory.getLogger("Inconsistency");
+    // using non-static slf4j loggers for easy unit testing
+    private Logger log = LoggerFactory.getLogger(this.getClass());
+    private Logger inconsistencyLog = LoggerFactory.getLogger("Inconsistency");
 
-    // used to associate inconsistencies with the service in the logs
-    protected String implementationName;
+    private final String implementationName;
     protected int maxInconsistencyLogLength = 65536; // 64KB
-    protected boolean logData = true;
+    protected boolean logResponseDataEnabled = true;
     private Map<Class<?>,ModelMixIn> modelMixIns;
+
+    public ConsistencyChecker(String implementationName) {
+        this.implementationName = implementationName;
+    }
 
     private Map<Class<?>,ModelMixIn> findModelMixInMappings() {
         if  (modelMixIns==null) {
@@ -56,26 +60,30 @@ public abstract class AbstractServiceFacade {
         return mapper.writer();
     }
 
-    /* If logData=true:
+    /* Log inconsistencies based on following rules:
+     *
+     * If logResponseDataEnabled=true:
      *     - Log message < MAX_INCONSISTENCY_LOG_LENGTH to server.log.
      *     - Log message > MAX_INCONSISTENCY_LOG_LENGTH and diff <= MAX_INCONSISTENCY_LOG_LENGTH, log diff to server.log.
      *     - Otherwise log method name and parameters to server.log and full message to inconsistency.log.
-     * If logData=false:
+     * If logResponseDataEnabled=false:
      *     - diff <= MAX_INCONSISTENCY_LOG_LENGTH, log diff to server.log.
      *     - Otherwise log method name and parameters to server.log
      *     - Always log full message to inconsistency.log
+     *
+     *  Logging inconsistencies at debug level since everything >= info would also appear in server.log
      */
     private void logInconsistency(String callToLogInCaseOfInconsistency, String legacyJson, String lightblueJson, String diff) {
-        String logMessage = String.format("Inconsistency found in %s.%s - diff: %s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, diff, legacyJson, lightblueJson);
-
-        if (logData) {
+        String logMessage = String.format("Inconsistency found in %s.%s - diff: %s - legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, diff, legacyJson, lightblueJson);
+        if (logResponseDataEnabled) {
             if (logMessage.length()<=maxInconsistencyLogLength) {
                 log.warn(logMessage);
             } else if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
                 log.warn(String.format("Inconsistency found in %s.%s - diff: %s", implementationName, callToLogInCaseOfInconsistency, diff));
+                inconsistencyLog.debug(logMessage);
             } else {
                 log.warn(String.format("Inconsistency found in %s.%s - payload and diff is greater than %d bytes!", implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
-                inconsistencyLog.debug(logMessage); // logging at debug level since everything >= info would also land in server.log
+                inconsistencyLog.debug(logMessage);
             }
         } else {
             if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
@@ -141,7 +149,7 @@ public abstract class AbstractServiceFacade {
         this.maxInconsistencyLogLength = length;
     }
 
-    public void setLogData(boolean logData) {
-        this.logData = logData;
+    public void setLogResponseDataEnabled(boolean logResponseDataEnabled) {
+        this.logResponseDataEnabled = logResponseDataEnabled;
     }
 }

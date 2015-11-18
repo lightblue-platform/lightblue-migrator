@@ -14,6 +14,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -32,7 +35,10 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
  *
  */
 @SuppressWarnings("all")
-public class ServiceFacade<D> extends AbstractServiceFacade implements SharedStoreSetter {
+public class ServiceFacade<D> implements SharedStoreSetter {
+
+    private static final Logger log = LoggerFactory.getLogger(ServiceFacade.class);
+    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacySvc, lightblueSvc;
 
@@ -41,6 +47,11 @@ public class ServiceFacade<D> extends AbstractServiceFacade implements SharedSto
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
     private int timeoutSeconds = 0;
+
+    private ConsistencyChecker consistencyChecker;
+
+    // used to associate inconsistencies with the service in the logs
+    private final String implementationName;
 
     public SharedStore getSharedStore() {
         return sharedStore;
@@ -53,12 +64,23 @@ public class ServiceFacade<D> extends AbstractServiceFacade implements SharedSto
         ((SharedStoreSetter)lightblueSvc).setSharedStore(shareStore);
     }
 
+    public ConsistencyChecker getConsistencyChecker() {
+        if (consistencyChecker == null) {
+            consistencyChecker = new ConsistencyChecker(implementationName);
+        }
+        return consistencyChecker;
+    }
+
+    public void setConsistencyChecker(ConsistencyChecker consistencyChecker) {
+        this.consistencyChecker = consistencyChecker;
+    }
+
     public ServiceFacade(D legacySvc, D lightblueSvc, Class serviceClass) {
         super();
         this.legacySvc = legacySvc;
         this.lightblueSvc = lightblueSvc;
         setSharedStore(new SharedStoreImpl(serviceClass));
-        super.implementationName = this.getClass().getSimpleName();
+        this.implementationName = serviceClass.getSimpleName();
         log.info("Initialized facade for "+implementationName);
     }
 
@@ -272,7 +294,7 @@ public class ServiceFacade<D> extends AbstractServiceFacade implements SharedSto
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -306,6 +328,14 @@ public class ServiceFacade<D> extends AbstractServiceFacade implements SharedSto
 
     public void setTimeoutSeconds(int timeoutSeconds) {
         this.timeoutSeconds = timeoutSeconds;
+    }
+
+    public void setLogResponseDataEnabled(boolean logResponsesEnabled) {
+        getConsistencyChecker().setLogResponseDataEnabled(logResponsesEnabled);
+    }
+
+    public void setMaxInconsistencyLogLength(int length) {
+        getConsistencyChecker().setMaxInconsistencyLogLength(length);
     }
 
     public D getLegacySvc() {
