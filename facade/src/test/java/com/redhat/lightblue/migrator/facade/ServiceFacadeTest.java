@@ -9,6 +9,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -29,11 +30,13 @@ public class ServiceFacadeTest {
     CountryDAO legacyDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
     CountryDAO lightblueDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
     CountryDAO countryDAOProxy;
-    ServiceFacade<CountryDAO> daoFacade;
+
+    @Spy ServiceFacade<CountryDAO> daoFacade = new ServiceFacade<CountryDAO>(legacyDAO, lightblueDAO, CountryDAO.class);
+    @Spy ConsistencyChecker consistencyChecker = new ConsistencyChecker(CountryDAO.class.getSimpleName());
 
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
-        daoFacade =  Mockito.spy(new ServiceFacade<CountryDAO>(legacyDAO, (CountryDAO)lightblueDAO, CountryDAO.class));
+        daoFacade.setConsistencyChecker(consistencyChecker);
 
         // countryDAO is daoFacade using CountryDAO interface to invoke methods
         countryDAOProxy = FacadeProxyFactory.createFacadeProxy(daoFacade, CountryDAO.class);
@@ -67,7 +70,7 @@ public class ServiceFacadeTest {
 
         countryDAOProxy.getCountry("PL");
 
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).getCountry("PL");
     }
@@ -83,7 +86,7 @@ public class ServiceFacadeTest {
 
         countryDAOProxy.getCountry("PL");
 
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verify(legacyDAO).getCountry("PL");
         Mockito.verify(lightblueDAO).getCountry("PL");
     }
@@ -100,7 +103,7 @@ public class ServiceFacadeTest {
 
         Country returnedCountry = countryDAOProxy.getCountry("PL");
 
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verify(legacyDAO).getCountry("PL");
         Mockito.verify(lightblueDAO).getCountry("PL");
 
@@ -122,7 +125,7 @@ public class ServiceFacadeTest {
 
         Country returnedCountry = countryDAOProxy.getCountries(ids).get(0);
 
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verify(legacyDAO).getCountries(ids);
         Mockito.verify(lightblueDAO).getCountries(ids);
 
@@ -136,7 +139,7 @@ public class ServiceFacadeTest {
 
         countryDAOProxy.getCountry("PL");
 
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).getCountry("PL");
     }
@@ -153,7 +156,7 @@ public class ServiceFacadeTest {
 
         Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).updateCountry(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -166,7 +169,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(legacyDAO).updateCountry(pl);
         Mockito.verify(lightblueDAO).updateCountry(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -183,7 +186,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(legacyDAO).updateCountry(pl);
         Mockito.verify(lightblueDAO).updateCountry(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         // when there is a conflict, facade will return what legacy dao returned
         Assert.assertEquals(ca, updatedEntity);
@@ -199,7 +202,7 @@ public class ServiceFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).updateCountry(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     /* insert tests */
@@ -214,7 +217,7 @@ public class ServiceFacadeTest {
 
         Mockito.verifyZeroInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -232,7 +235,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(legacyDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -249,7 +252,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(legacyDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl.getIso2Code(), "PL");
     }
@@ -269,7 +272,7 @@ public class ServiceFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     /* insert tests when method also does a read */
@@ -284,7 +287,7 @@ public class ServiceFacadeTest {
 
         Mockito.verifyZeroInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -302,7 +305,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
         Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
@@ -315,7 +318,7 @@ public class ServiceFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     /* lightblue failure tests */
@@ -474,7 +477,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
@@ -501,7 +504,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacade).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
@@ -528,7 +531,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
@@ -555,7 +558,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(lightblueDAO).getCountry("PL");
         Mockito.verify(legacyDAO).getCountry("PL");
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
@@ -582,7 +585,7 @@ public class ServiceFacadeTest {
 
         Mockito.verify(lightblueDAO).updateCountry(pl);
         Mockito.verify(legacyDAO).updateCountry(pl);
-        Mockito.verify(daoFacade, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }

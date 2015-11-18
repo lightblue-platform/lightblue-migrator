@@ -5,28 +5,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.json.JSONException;
-import org.reflections.Reflections;
-import org.skyscreamer.jsonassert.JSONCompare;
-import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.skyscreamer.jsonassert.JSONCompareResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -49,6 +39,7 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 public class DAOFacadeBase<D> {
 
     private static final Logger log = LoggerFactory.getLogger(DAOFacadeBase.class);
+    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacyDAO, lightblueDAO;
 
@@ -57,6 +48,8 @@ public class DAOFacadeBase<D> {
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
     private int timeoutSeconds = 0;
+
+    private ConsistencyChecker consistencyChecker;
 
     // used to associate inconsistencies with the service in the logs
     private final String implementationName;
@@ -76,6 +69,17 @@ public class DAOFacadeBase<D> {
         }
     }
 
+    public ConsistencyChecker getConsistencyChecker() {
+        if (consistencyChecker == null) {
+            consistencyChecker = new ConsistencyChecker(implementationName);
+        }
+        return consistencyChecker;
+    }
+
+    public void setConsistencyChecker(ConsistencyChecker consistencyChecker) {
+        this.consistencyChecker = consistencyChecker;
+    }
+
     public DAOFacadeBase(D legacyDAO, D lightblueDAO) {
         super();
         this.legacyDAO = legacyDAO;
@@ -83,68 +87,6 @@ public class DAOFacadeBase<D> {
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
         this.implementationName = this.getClass().getSimpleName();
         log.info("Initialized facade for "+implementationName);
-    }
-
-    private Map<Class<?>,ModelMixIn> findModelMixInMappings() {
-        if  (modelMixIns==null) {
-            Reflections reflections = new Reflections("");
-            Set<Class<?>> classes = reflections.getTypesAnnotatedWith(ModelMixIn.class);
-            modelMixIns = new HashMap<>();
-            for (Class<?> clazz : classes) {
-                modelMixIns.put(clazz, clazz.getAnnotation(ModelMixIn.class));
-            }
-        }
-        return modelMixIns;
-    }
-
-    private ObjectWriter getObjectWriter(String methodName) {
-        ObjectMapper mapper = new ObjectMapper();
-        for (Map.Entry<Class<?>, ModelMixIn> entry : findModelMixInMappings().entrySet()) {
-            if (methodName==null || entry.getValue().includeMethods().length==0 || Arrays.asList(entry.getValue().includeMethods()).contains(methodName)) {
-                mapper.addMixInAnnotations(entry.getValue().clazz(), entry.getKey());
-            }
-        }
-        return mapper.writer();
-    }
-
-    // user for unit testing
-    public boolean checkConsistency(Object o1, Object o2) {
-        return checkConsistency(o1, o2, null, null);
-    }
-
-    public boolean checkConsistency(final Object o1, final Object o2, String methodName, String callToLogInCaseOfInconsistency) {
-        if (o1==null&&o2==null) {
-            return true;
-        }
-
-        String legacyJson=null;
-        String lightblueJson=null;
-        try {
-            long t1 = System.currentTimeMillis();
-            legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
-            lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
-
-            JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
-            long t2 = System.currentTimeMillis();
-
-            if (log.isDebugEnabled()) {
-                log.debug("Consistency check took: " + (t2-t1)+" ms");
-                log.debug("Consistency check passed: "+ result.passed());
-            }
-            if (!result.passed()) {
-                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, result.getMessage().replaceAll("\n", ","), legacyJson, lightblueJson));
-            }
-            return result.passed();
-        } catch (JSONException e) {
-            if (o1!=null&&o1.equals(o2)) {
-                return true;
-            } else {
-                log.warn(String.format("Inconsistency found in %s.%s:%s legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, methodName, legacyJson, lightblueJson));
-            }
-        } catch (JsonProcessingException e) {
-            log.error("Consistency check failed! Invalid JSON. ", e);
-        }
-        return false;
     }
 
     private ListeningExecutorService createExecutor() {
@@ -298,7 +240,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -389,7 +331,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -504,7 +446,7 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -540,8 +482,15 @@ public class DAOFacadeBase<D> {
         this.timeoutSeconds = timeoutSeconds;
     }
 
+    public void setLogResponseDataEnabled(boolean logResponsesEnabled) {
+        getConsistencyChecker().setLogResponseDataEnabled(logResponsesEnabled);
+    }
+
+    public void setMaxInconsistencyLogLength(int length) {
+        getConsistencyChecker().setMaxInconsistencyLogLength(length);
+    }
+
     public D getLegacyDAO() {
         return legacyDAO;
     }
-
 }
