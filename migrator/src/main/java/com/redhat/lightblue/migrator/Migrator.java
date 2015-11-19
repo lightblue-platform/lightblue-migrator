@@ -1,15 +1,12 @@
 package com.redhat.lightblue.migrator;
 
-import java.io.InputStream;
 import java.io.IOException;
-import java.io.FileInputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
 import java.util.Date;
 import java.util.List;
 import java.util.ArrayList;
@@ -25,21 +22,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.lang.StringUtils;
 
 import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.LightblueClientConfiguration;
-import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Update;
 import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.Literal;
-import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueException;
-import com.redhat.lightblue.client.request.SortCondition;
-import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.request.data.DataDeleteRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
-import com.redhat.lightblue.client.util.ClientConstants;
-
 
 public abstract class Migrator extends Thread {
 
@@ -183,17 +172,12 @@ public abstract class Migrator extends Thread {
             execution.setProcessedDocumentCount(sourceDocs.size());
             
             LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
-            List<LightblueResponse> responses=save(saveDocsList);
-            StringBuffer errorMsg=new StringBuffer();
-            for(LightblueResponse response:responses) {
-                if(response.hasError()||response.hasDataErrors())
-                    errorMsg.append(response.getText());
-            }
-            if(errorMsg.length()>0) {
-                LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),errorMsg);
-                execution.setErrorMsg(errorMsg.toString());
-            } else {
+            try {
+                List<LightblueResponse> responses=save(saveDocsList);
                 LOGGER.info("source: {}, dest: {}, written: {}",sourceDocs.size(),destDocs.size(),saveDocsList.size());
+            } catch (LightblueException ex) {
+                LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),ex.getMessage());
+                execution.setErrorMsg(ex.getMessage());
             }
             Breakpoint.checkpoint("Migrator:complete");
 
@@ -227,7 +211,7 @@ public abstract class Migrator extends Thread {
      */
     public abstract List<JsonNode> getDestinationDocuments(Collection<Identity> docs);
 
-    public abstract List<LightblueResponse> save(List<JsonNode> docs);
+    public abstract List<LightblueResponse> save(List<JsonNode> docs) throws LightblueException;
     
     public abstract String createRangeQuery(Date startDate,Date endDate);
     
@@ -269,38 +253,32 @@ public abstract class Migrator extends Thread {
         LightblueResponse response=null;
         try {
             LOGGER.debug("Req:{}",updateRequest.getBody());
-                         
+
             response = lbClient.data(updateRequest);
-            if(!response.hasError()) {
-                // Do the migration
-                migrate(execution);
+            // Do the migration
+            migrate(execution);
 
-                // If there is error, 'error' will contain a messages, otherwise it'll be null
-                // Update the state
-                updateRequest=new DataUpdateRequest("migrationJob",null);
-                updateRequest.where(Query.withValue("_id",Query.eq,migrationJob.get_id()));
-                updateRequest.returns(Projection.includeField("_id"));
-                if(execution.getErrorMsg()!=null)
-                    execution.setStatus(MigrationJob.STATE_FAILED);
-                else
-                    execution.setStatus(MigrationJob.STATE_COMPLETED);
-                updateRequest.updates(Update.update(Update.set("status",execution.getStatus()),
-                                                    Update.forEach("jobExecutions",
-                                                                   Query.withValue("activeExecutionId",Query.eq,activeExecution.get_id()),
-                                                                   Update.set("status",execution.getStatus()).
-                                                                   more("errorMsg",execution.getErrorMsg()==null?"":execution.getErrorMsg()).
-                                                                   more("processedDocumentCount",execution.getProcessedDocumentCount()).
-                                                                   more("consistentDocumentCount",execution.getConsistentDocumentCount()).
-                                                                   more("inconsistentDocumentCount",execution.getInconsistentDocumentCount()).
-                                                                   more("overwrittenDocumentCount",execution.getOverwrittenDocumentCount()).
-                                                                   more("actualEndDate",Literal.value(new Date())))));
+            // If there is error, 'error' will contain a messages, otherwise it'll be null
+            // Update the state
+            updateRequest=new DataUpdateRequest("migrationJob",null);
+            updateRequest.where(Query.withValue("_id",Query.eq,migrationJob.get_id()));
+            updateRequest.returns(Projection.includeField("_id"));
+            if(execution.getErrorMsg()!=null)
+                execution.setStatus(MigrationJob.STATE_FAILED);
+            else
+                execution.setStatus(MigrationJob.STATE_COMPLETED);
+            updateRequest.updates(Update.update(Update.set("status",execution.getStatus()),
+                                                Update.forEach("jobExecutions",
+                                                               Query.withValue("activeExecutionId",Query.eq,activeExecution.get_id()),
+                                                               Update.set("status",execution.getStatus()).
+                                                               more("errorMsg",execution.getErrorMsg()==null?"":execution.getErrorMsg()).
+                                                               more("processedDocumentCount",execution.getProcessedDocumentCount()).
+                                                               more("consistentDocumentCount",execution.getConsistentDocumentCount()).
+                                                               more("inconsistentDocumentCount",execution.getInconsistentDocumentCount()).
+                                                               more("overwrittenDocumentCount",execution.getOverwrittenDocumentCount()).
+                                                               more("actualEndDate",Literal.value(new Date())))));
 
-                response=lbClient.data(updateRequest);
-                if(response.hasError())
-                    throw new RuntimeException("Failed to update:"+response);
-
-            } else
-                throw new RuntimeException("Failed to update:"+response);
+            response=lbClient.data(updateRequest);
         } catch (Exception e) {
             LOGGER.error("Cannot update job {}, {} response:{}",migrationJob.get_id(),e,response.getJson());
         }

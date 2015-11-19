@@ -1,29 +1,18 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.Map;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.StringTokenizer;
 import java.util.Date;
 
-import java.io.IOException;
-
-import java.sql.SQLException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ContainerNode;
-
-import org.apache.commons.lang.StringUtils;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.Query;
@@ -31,8 +20,9 @@ import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.util.JSON;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
-import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueException;
+import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueResponseException;
 
 public class DefaultMigrator extends Migrator {
 
@@ -69,6 +59,7 @@ public class DefaultMigrator extends Migrator {
         }
     }
     
+    @Override
     public List<JsonNode> getSourceDocuments() {
         LOGGER.debug("Retrieving source docs");
         try {
@@ -86,6 +77,7 @@ public class DefaultMigrator extends Migrator {
         }
     }
   
+    @Override
     public List<JsonNode> getDestinationDocuments(Collection<Identity> ids) {
         try {
             List<JsonNode> destinationDocuments = new ArrayList<>();
@@ -143,22 +135,39 @@ public class DefaultMigrator extends Migrator {
         }
     }
 
-    public List<LightblueResponse> save(List<JsonNode> docs) {
+    @Override
+    public List<LightblueResponse> save(List<JsonNode> docs) throws LightblueException {
         List<LightblueResponse> responses = new ArrayList<>();
+        StringBuilder errorMessage = new StringBuilder();
+        
         List<JsonNode> batch=new ArrayList<>();
         for(JsonNode doc:docs) {
             batch.add(doc);
             if(batch.size()>=BATCH_SIZE) {
-                responses.add(saveBatch(batch));
+                try {
+                    responses.add(saveBatch(batch));
+                } catch (LightblueResponseException ex) {
+                    errorMessage.append(ex.getLightblueResponse().getText());
+                }
                 batch.clear();
             }
         }
         if(!batch.isEmpty()) {
-            responses.add(saveBatch(batch));
+            try {
+                responses.add(saveBatch(batch));
+            } catch (LightblueResponseException ex) {
+                errorMessage.append(ex.getLightblueResponse().getText());
+            }
         }
+        
+        if (errorMessage.length() > 0) {
+            throw new LightblueException("Failed saving docs: " + errorMessage);
+        }
+        
         return responses;
     }
                 
+    @Override
     public String createRangeQuery(Date startDate,Date endDate) {
         StringTokenizer tkz=new StringTokenizer(getMigrationConfiguration().getTimestampFieldName(),", ");
         List<Query> ql=new ArrayList<>();
@@ -173,7 +182,7 @@ public class DefaultMigrator extends Migrator {
             return Query.or(ql).toString();
     }
     
-    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) {        
+    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) throws LightblueResponseException {        
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getMigrationConfiguration().getDestinationEntityName(),
                                                           getMigrationConfiguration().getDestinationEntityVersion());
@@ -183,8 +192,9 @@ public class DefaultMigrator extends Migrator {
         LightblueResponse response;
         try {
             response=getDestCli().data(saveRequest);
-        } catch (LightblueException e) {
-            response=e.getLightblueResponse();
+        } catch (LightblueException ex) {
+            // bad things happened, bail!
+            throw new RuntimeException(ex);
         }
         return response;
     }
