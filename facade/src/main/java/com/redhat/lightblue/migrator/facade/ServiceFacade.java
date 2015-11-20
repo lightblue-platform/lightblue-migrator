@@ -223,8 +223,9 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      * @throws Exception
      */
     public <T> T callSvcMethod(final FacadeOperation facadeOperation, final boolean callInParallel, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        if (log.isDebugEnabled())
-            log.debug("Performing parallel="+callInParallel+" "+facadeOperation+" "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled()) {
+            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), callInParallel ? "parallel": "serial", facadeOperation);
+        }
 
         TogglzRandomUsername.init();
 
@@ -247,7 +248,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
         if (shouldSource(facadeOperation)) {
             // perform operation in oracle, synchronously
-            log.debug("."+methodName+" creating in legacy");
+            log.debug("Calling legacy {}.{}", implementationName, methodName);
             Method method = legacySvc.getClass().getMethod(methodName,types);
             Timer source = new Timer("source."+methodName);
             try {
@@ -260,7 +261,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         }
 
         if (shouldDestination(facadeOperation)) {
-            log.debug("."+methodName+" "+facadeOperation+" in lightblue");
+            log.debug("Calling lightblue {}.{}", implementationName, methodName);
 
             try {
                 if (callInParallel) {
