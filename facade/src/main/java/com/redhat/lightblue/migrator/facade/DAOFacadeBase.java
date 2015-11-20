@@ -47,7 +47,8 @@ public class DAOFacadeBase<D> {
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
-    private int timeoutSeconds = 0;
+    // default timeout is 5 seconds
+    private int timeoutSeconds = 5;
 
     private ConsistencyChecker consistencyChecker;
 
@@ -223,7 +224,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
@@ -315,7 +316,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
@@ -427,7 +428,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;

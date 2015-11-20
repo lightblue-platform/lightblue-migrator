@@ -46,7 +46,8 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
-    private int timeoutSeconds = 0;
+    // default timeout is 5 seconds
+    private int timeoutSeconds = 5;
 
     private ConsistencyChecker consistencyChecker;
 
@@ -275,7 +276,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
