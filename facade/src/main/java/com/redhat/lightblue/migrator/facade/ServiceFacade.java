@@ -46,7 +46,8 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
-    private int timeoutSeconds = 0;
+    // default timeout is 5 seconds
+    private int timeoutSeconds = 5;
 
     private ConsistencyChecker consistencyChecker;
 
@@ -223,8 +224,9 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      * @throws Exception
      */
     public <T> T callSvcMethod(final FacadeOperation facadeOperation, final boolean callInParallel, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        if (log.isDebugEnabled())
-            log.debug("Performing parallel="+callInParallel+" "+facadeOperation+" "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+        if (log.isDebugEnabled()) {
+            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), callInParallel ? "parallel": "serial", facadeOperation);
+        }
 
         TogglzRandomUsername.init();
 
@@ -247,7 +249,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
         if (shouldSource(facadeOperation)) {
             // perform operation in oracle, synchronously
-            log.debug("."+methodName+" creating in legacy");
+            log.debug("Calling legacy {}.{}", implementationName, methodName);
             Method method = legacySvc.getClass().getMethod(methodName,types);
             Timer source = new Timer("source."+methodName);
             try {
@@ -260,7 +262,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         }
 
         if (shouldDestination(facadeOperation)) {
-            log.debug("."+methodName+" "+facadeOperation+" in lightblue");
+            log.debug("Calling lightblue {}.{}", implementationName, methodName);
 
             try {
                 if (callInParallel) {
@@ -274,7 +276,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;

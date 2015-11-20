@@ -47,7 +47,8 @@ public class DAOFacadeBase<D> {
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
-    private int timeoutSeconds = 0;
+    // default timeout is 5 seconds
+    private int timeoutSeconds = 5;
 
     private ConsistencyChecker consistencyChecker;
 
@@ -191,7 +192,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Reading "+returnedType.getName()+" "+methodCallToString(methodName, values));
+            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "parallel", "READ");
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -204,7 +205,7 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldReadSourceEntity()) {
             // fetch from oracle, synchronously
-            log.debug("."+methodName+" reading from legacy");
+            log.debug("Calling legacy {}.{}", implementationName, methodName);
             Method method = legacyDAO.getClass().getMethod(methodName,types);
             Timer source = new Timer("source."+methodName);
             try {
@@ -219,10 +220,11 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldReadDestinationEntity()) {
             // make sure async call to lightblue has completed
             try {
+                log.debug("Calling lightblue {}.{}", implementationName, methodName);
                 lightblueEntity = getWithTimeout(listenableFuture);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
@@ -282,7 +284,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Writing "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "parallel", "WRITE");
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -295,7 +297,7 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldWriteSourceEntity()) {
             // fetch from oracle, synchronously
-            log.debug("."+methodName+" writing to legacy");
+            log.debug("Calling legacy {}.{}", implementationName, methodName);
             Method method = legacyDAO.getClass().getMethod(methodName,types);
             Timer source = new Timer("source."+methodName);
             try {
@@ -309,11 +311,12 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure asnyc call to lightblue has completed
+            log.debug("Calling lightblue {}.{}", implementationName, methodName);
             try {
                 lightblueEntity = getWithTimeout(listenableFuture);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
@@ -368,14 +371,14 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Creating "+(returnedType!=null?returnedType.getName():"")+" "+methodCallToString(methodName, values));
+            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "serial", "WRITE");
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
 
         if (LightblueMigration.shouldWriteSourceEntity()) {
             // insert to oracle, synchronously
-            log.debug("."+methodName+" creating in legacy");
+            log.debug("Calling legacy {}.{}", implementationName, methodName);
             Method method = legacyDAO.getClass().getMethod(methodName,types);
             Timer source = new Timer("source."+methodName);
             try {
@@ -388,7 +391,7 @@ public class DAOFacadeBase<D> {
         }
 
         if (LightblueMigration.shouldWriteDestinationEntity()) {
-            log.debug("."+methodName+" creating in lightblue");
+            log.debug("Calling lightblue {}.{}", implementationName, methodName);
 
             // don't attempt to pass ids when entity returned from legacy is null
             boolean passIds = entityIdStore != null && legacyEntity != null;
@@ -425,7 +428,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
