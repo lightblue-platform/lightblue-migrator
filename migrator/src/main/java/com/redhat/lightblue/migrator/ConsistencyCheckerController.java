@@ -18,7 +18,7 @@ import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.response.LightblueResponse;
+import com.redhat.lightblue.client.response.LightblueDataResponse;
 
 /**
  * There is one consistency checker controller for each
@@ -122,7 +122,7 @@ public class ConsistencyCheckerController extends AbstractController {
         req.select(Projection.includeField("_id"));
         req.range(1,1);
         try {
-            LightblueResponse resp=lbClient.data(req);
+            LightblueDataResponse resp=lbClient.data(req);
             return resp.parseMatchCount()>0;
         } catch (Exception e) {
             LOGGER.error("Cannot query migration jobs:{}",e,e);
