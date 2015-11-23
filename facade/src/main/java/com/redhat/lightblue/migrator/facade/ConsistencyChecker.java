@@ -104,14 +104,14 @@ public class ConsistencyChecker {
     /**
      * Check that objects are equal using org.skyscreamer.jsonassert library.
      *
-     * @param o1                              object returned from legacy call
-     * @param o2                              object returned from lightblue call
+     * @param legacyEntity                    object returned from legacy call
+     * @param lightblueEntity                 object returned from lightblue call
      * @param methodName                      the method name
      * @param callToLogInCaseOfInconsistency  the call including parameters
      * @return
      */
-    protected boolean checkConsistency(final Object o1, final Object o2, String methodName, String callToLogInCaseOfInconsistency) {
-        if (o1==null&&o2==null) {
+    protected boolean checkConsistency(final Object legacyEntity, final Object lightblueEntity, String methodName, String callToLogInCaseOfInconsistency) {
+        if (legacyEntity==null&&lightblueEntity==null) {
             return true;
         }
 
@@ -119,8 +119,8 @@ public class ConsistencyChecker {
         String lightblueJson=null;
         try {
             long t1 = System.currentTimeMillis();
-            legacyJson = getObjectWriter(methodName).writeValueAsString(o1);
-            lightblueJson = getObjectWriter(methodName).writeValueAsString(o2);
+            legacyJson = getObjectWriter(methodName).writeValueAsString(legacyEntity);
+            lightblueJson = getObjectWriter(methodName).writeValueAsString(lightblueEntity);
 
             JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
             long t2 = System.currentTimeMillis();
@@ -134,7 +134,7 @@ public class ConsistencyChecker {
             }
             return result.passed();
         } catch (JSONException e) {
-            if (o1!=null&&o1.equals(o2)) {
+            if (legacyEntity!=null&&legacyEntity.equals(lightblueEntity)) {
                 return true;
             } else {
                 logInconsistency(callToLogInCaseOfInconsistency, legacyJson, lightblueJson, null);
