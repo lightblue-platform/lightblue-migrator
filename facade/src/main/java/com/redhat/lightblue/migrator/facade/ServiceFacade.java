@@ -296,7 +296,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (getConsistencyChecker().checkConsistency(lightblueEntity, legacyEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
