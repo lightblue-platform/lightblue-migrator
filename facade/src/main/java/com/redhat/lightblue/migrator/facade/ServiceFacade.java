@@ -5,9 +5,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -46,8 +48,12 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
-    // default timeout is 5 seconds
-    private int timeoutSeconds = 5;
+    private Properties properties = new Properties();
+
+    private TimeoutConfiguration timeoutConfiguration;
+
+    // default timeout is 2 seconds
+    public static final long DEFAULT_TIMEOUT_MS = 2000;
 
     private ConsistencyChecker consistencyChecker;
 
@@ -77,12 +83,31 @@ public class ServiceFacade<D> implements SharedStoreSetter {
     }
 
     public ServiceFacade(D legacySvc, D lightblueSvc, Class serviceClass) {
+        this(legacySvc, lightblueSvc, serviceClass, null);
+    }
+
+    public ServiceFacade(D legacySvc, D lightblueSvc, Class serviceClass, Properties properties) {
         super();
         this.legacySvc = legacySvc;
         this.lightblueSvc = lightblueSvc;
         setSharedStore(new SharedStoreImpl(serviceClass));
         this.implementationName = serviceClass.getSimpleName();
+        if (properties != null)
+            this.properties = properties;
+
+        timeoutConfiguration = new TimeoutConfiguration(DEFAULT_TIMEOUT_MS, implementationName, this.properties);
+
         log.info("Initialized facade for "+implementationName);
+    }
+
+    private long getLightblueExecutionTimeout(String methodName) {
+
+
+        String timeout = properties.getProperty("com.redhat.lightblue.migrator.facade.timeout."+implementationName+"."+methodName);
+        if (timeout == null)
+            timeout = properties.getProperty("com.redhat.lightblue.migrator.facade.timeout."+implementationName, ""+DEFAULT_TIMEOUT_MS);
+
+        return Long.parseLong(timeout);
     }
 
     private ListeningExecutorService createExecutor() {
@@ -165,11 +190,11 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         }
     }
 
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture) throws InterruptedException, ExecutionException, TimeoutException {
-        if (timeoutSeconds <= 0) {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName) throws InterruptedException, ExecutionException, TimeoutException {
+        if (timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
             return listenableFuture.get();
         } else {
-            return listenableFuture.get(timeoutSeconds, TimeUnit.SECONDS);
+            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -267,16 +292,16 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             try {
                 if (callInParallel) {
                     // lightblue was called before source/legacy, now just getting results
-                    lightblueEntity = getWithTimeout(listenableFuture);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName);
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
                     listenableFuture = callLightblueSvc(true, method, values);
-                    lightblueEntity = getWithTimeout(listenableFuture);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName);
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.", te);
                     return legacyEntity;
                 } else {
                     throw te;
@@ -324,12 +349,14 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         return callSvcWriteMethod(callInParallel, returnedType, methodName, toClasses(values), values);
     }
 
+    @Deprecated
     public int getTimeoutSeconds() {
-        return timeoutSeconds;
+        throw new UnsupportedOperationException();
     }
 
+    @Deprecated
     public void setTimeoutSeconds(int timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
+        timeoutConfiguration = new TimeoutConfiguration(timeoutSeconds*1000, implementationName, properties);
     }
 
     public void setLogResponseDataEnabled(boolean logResponsesEnabled) {
@@ -342,5 +369,13 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
     public D getLegacySvc() {
         return legacySvc;
+    }
+
+    public TimeoutConfiguration getTimeoutConfiguration() {
+        return timeoutConfiguration;
+    }
+
+    public void setTimeoutConfiguration(TimeoutConfiguration timeoutConfiguration) {
+        this.timeoutConfiguration = timeoutConfiguration;
     }
 }
