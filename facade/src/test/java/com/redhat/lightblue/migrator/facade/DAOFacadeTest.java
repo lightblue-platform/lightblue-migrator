@@ -1,6 +1,7 @@
 package com.redhat.lightblue.migrator.facade;
 
 import java.util.Arrays;
+import java.util.Properties;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -452,7 +453,9 @@ public class DAOFacadeTest {
 
     @Test
     public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() throws CountryException {
-        daoFacadeExample.setTimeoutSeconds(0);
+        TimeoutConfiguration t = new TimeoutConfiguration(0, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -479,7 +482,9 @@ public class DAOFacadeTest {
 
     @Test
     public void lightblueTakesLongToRespondOnCreate_Success() throws CountryException {
-        daoFacadeExample.setTimeoutSeconds(1);
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -506,7 +511,9 @@ public class DAOFacadeTest {
 
     @Test
     public void lightblueTakesLongToRespondOnCreate_Timeout() throws CountryException {
-        daoFacadeExample.setTimeoutSeconds(1);
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -533,7 +540,9 @@ public class DAOFacadeTest {
 
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout() throws CountryException {
-        daoFacadeExample.setTimeoutSeconds(1);
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -560,7 +569,9 @@ public class DAOFacadeTest {
 
     @Test
     public void lightblueTakesLongToRespondOnUpdate_Timeout() throws CountryException {
-        daoFacadeExample.setTimeoutSeconds(1);
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -584,6 +595,71 @@ public class DAOFacadeTest {
 
         Assert.assertEquals(pl, returnedCountry);
     }
+
+    @Test
+    public void lightblueTakesLongToRespondOnRead_Success_FromProperties_Method() throws CountryException {
+        Properties p = new Properties();
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO.getCountry", "2000");
+        TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.getCountry("PL")).thenReturn(pl);
+        Mockito.when(lightblueDAO.getCountry("PL")).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.getCountry("PL");
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnRead_Timeout_FromProperties_Bean() throws CountryException {
+        Properties p = new Properties();
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO.getCountry", "2000");
+        TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
 
     /* legacy failure tests */
 
