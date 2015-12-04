@@ -674,7 +674,7 @@ public class ServiceFacadeTest {
         Mockito.when(legacyDAO.getCountry("PL")).then(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(100);
+                Thread.sleep(200);
                 throw new CountryException();
             }
         });
