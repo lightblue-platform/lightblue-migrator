@@ -52,7 +52,7 @@ public class TimeoutConfiguration {
         else
             this.properties = new Properties();
 
-        log.info("Initialized TimeoutConfiguration for "+timeoutConfigBeanPrefix);
+        log.info("Initialized TimeoutConfiguration for {}", timeoutConfigBeanPrefix);
     }
 
     public long getTimeoutMS(String methodName) {
@@ -64,7 +64,7 @@ public class TimeoutConfiguration {
 
         if (timeoutPropValue == null) {
             if (log.isDebugEnabled())
-                log.debug("Timeout config not found for method "+methodName+", trying default for this bean");
+                log.debug("Timeout config not found for method {}, trying default for this bean", methodName);
 
             timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix);
         }
@@ -72,11 +72,15 @@ public class TimeoutConfiguration {
         Long timeout;
         if (timeoutPropValue == null) {
             if (log.isDebugEnabled())
-                log.debug("Timeout config not found for bean "+beanName+", using global timeout");
+                log.debug("Timeout config not found for bean {} using global timeout", beanName);
 
             timeout = defaultTimeoutMS;
         } else {
             timeout = Long.parseLong(timeoutPropValue);
+        }
+
+        if (log.isDebugEnabled()) {
+            log.debug("Setting timeout for {}.{} to {}ms", beanName, methodName, timeout);
         }
 
         methodTimeouts.put(methodName, timeout);
