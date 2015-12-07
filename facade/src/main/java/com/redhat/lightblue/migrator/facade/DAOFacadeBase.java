@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -47,13 +48,14 @@ public class DAOFacadeBase<D> {
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
-    // default timeout is 5 seconds
-    private int timeoutSeconds = 5;
-
     private ConsistencyChecker consistencyChecker;
 
     // used to associate inconsistencies with the service in the logs
     private final String implementationName;
+
+    private Properties properties = new Properties();
+
+    private TimeoutConfiguration timeoutConfiguration;
 
     public EntityIdStore getEntityIdStore() {
         return entityIdStore;
@@ -82,11 +84,21 @@ public class DAOFacadeBase<D> {
     }
 
     public DAOFacadeBase(D legacyDAO, D lightblueDAO) {
+        this(legacyDAO, lightblueDAO, null);
+    }
+
+    public DAOFacadeBase(D legacyDAO, D lightblueDAO, Properties properties) {
         super();
         this.legacyDAO = legacyDAO;
         this.lightblueDAO = lightblueDAO;
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
         this.implementationName = this.getClass().getSimpleName();
+
+        if (properties != null)
+            this.properties = properties;
+
+        timeoutConfiguration = new TimeoutConfiguration(ServiceFacade.DEFAULT_TIMEOUT_MS, implementationName, properties);
+
         log.info("Initialized facade for "+implementationName);
     }
 
@@ -163,11 +175,11 @@ public class DAOFacadeBase<D> {
         }
     }
 
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture) throws InterruptedException, ExecutionException, TimeoutException {
-        if (timeoutSeconds <= 0) {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName) throws InterruptedException, ExecutionException, TimeoutException {
+        if (timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
             return listenableFuture.get();
         } else {
-            return listenableFuture.get(timeoutSeconds, TimeUnit.SECONDS);
+            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -221,10 +233,10 @@ public class DAOFacadeBase<D> {
             // make sure async call to lightblue has completed
             try {
                 log.debug("Calling lightblue {}.{}", implementationName, methodName);
-                lightblueEntity = getWithTimeout(listenableFuture);
+                lightblueEntity = getWithTimeout(listenableFuture, methodName);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -313,10 +325,10 @@ public class DAOFacadeBase<D> {
             // make sure asnyc call to lightblue has completed
             log.debug("Calling lightblue {}.{}", implementationName, methodName);
             try {
-                lightblueEntity = getWithTimeout(listenableFuture);
+                lightblueEntity = getWithTimeout(listenableFuture, methodName);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -411,7 +423,7 @@ public class DAOFacadeBase<D> {
             ListenableFuture<T> listenableFuture = callLightblueDAO(passIds, method, values);
 
             try {
-                lightblueEntity = getWithTimeout(listenableFuture);
+                lightblueEntity = getWithTimeout(listenableFuture, methodName);
             } catch (ExecutionException ee) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
                     EntityIdStoreException se = extractEntityIdStoreExceptionIfExists(ee);
@@ -428,7 +440,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutSeconds+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -477,12 +489,14 @@ public class DAOFacadeBase<D> {
         return callDAOCreateSingleMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 
+    @Deprecated
     public int getTimeoutSeconds() {
-        return timeoutSeconds;
+        throw new UnsupportedOperationException();
     }
 
+    @Deprecated
     public void setTimeoutSeconds(int timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
+        this.timeoutConfiguration = new TimeoutConfiguration(timeoutSeconds*1000, implementationName, properties);
     }
 
     public void setLogResponseDataEnabled(boolean logResponsesEnabled) {
@@ -495,5 +509,13 @@ public class DAOFacadeBase<D> {
 
     public D getLegacyDAO() {
         return legacyDAO;
+    }
+
+    public TimeoutConfiguration getTimeoutConfiguration() {
+        return timeoutConfiguration;
+    }
+
+    public void setTimeoutConfiguration(TimeoutConfiguration timeoutConfiguration) {
+        this.timeoutConfiguration = timeoutConfiguration;
     }
 }
