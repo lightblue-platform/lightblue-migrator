@@ -7,9 +7,9 @@ import org.junit.BeforeClass;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.redhat.lightblue.client.integration.test.AbstractLightblueClientCRUDController;
+import com.redhat.lightblue.client.integration.test.LightblueClientTestHarness;
 
-public abstract class AbstractMigratorController extends AbstractLightblueClientCRUDController {
+public abstract class AbstractMigratorController extends LightblueClientTestHarness {
 
     @BeforeClass
     public static void prepareMetadataDatasources() {
