@@ -236,7 +236,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture, methodName);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -328,7 +328,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture, methodName);
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -440,7 +440,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.", te);
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
