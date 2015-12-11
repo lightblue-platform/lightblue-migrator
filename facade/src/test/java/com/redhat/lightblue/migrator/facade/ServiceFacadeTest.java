@@ -632,8 +632,6 @@ public class ServiceFacadeTest {
             }
         });
 
-        Mockito.doThrow(new CountryException()).when(legacyDAO).getCountry("PL");
-
         try {
             countryDAOProxy.getCountry("PL");
             Assert.fail();
@@ -681,8 +679,6 @@ public class ServiceFacadeTest {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
-
-        Mockito.doThrow(new CountryException()).when(legacyDAO).createCountry(pl);
 
         Mockito.when(legacyDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
 
