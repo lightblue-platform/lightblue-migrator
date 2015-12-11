@@ -63,6 +63,34 @@ public class ServiceFacadeTest {
         Mockito.verifyZeroInteractions(lightblueDAO);
     }
 
+    public interface CountryDAOSubinterface extends CountryDAO {
+        public abstract Country getCountryFromLegacy(long id) throws CountryException;
+    }
+
+    /**
+     * Calls to non annotated facade methods are proxied directly to legacy service. This test ensures this invocation
+     * works when facade is created using an interface which extends the interface used by the service.
+     *
+     */
+    @Test
+    public void testGetCountryFromLegacy_UsingSubinterfaceToCreateProxy() throws Exception {
+        // countryDAO is daoFacade using CountryDAO interface to invoke methods
+        countryDAOProxy = FacadeProxyFactory.createFacadeProxy(daoFacade, CountryDAOSubinterface.class);
+
+        Mockito.verify((SharedStoreSetter)legacyDAO).setSharedStore((daoFacade).getSharedStore());
+        Mockito.verify((SharedStoreSetter)lightblueDAO).setSharedStore((daoFacade).getSharedStore());
+
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        countryDAOProxy.getCountryFromLegacy(1l);
+
+        Mockito.verify(legacyDAO).getCountryFromLegacy(1l);
+        // even though this is a proxy phase, never call lightblue. It's not a facade operation.
+        Mockito.verifyZeroInteractions(lightblueDAO);
+    }
+
+
+
     /* Read tests */
 
     @Test
@@ -726,8 +754,6 @@ public class ServiceFacadeTest {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
-
-        Mockito.doThrow(new CountryException()).when(legacyDAO).createCountry(pl);
 
         Mockito.when(legacyDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
 

@@ -1,6 +1,5 @@
 package com.redhat.lightblue.migrator.facade.proxy;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -79,7 +78,9 @@ public class FacadeProxyFactory {
             }
 
             log.debug("Not a facade operation, proxy passing to legacy");
-            return method.invoke(daoFacadeBase.getLegacySvc(), args);
+
+            Method legacyMethod = daoFacadeBase.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
+            return legacyMethod.invoke(daoFacadeBase.getLegacySvc(), args);
         }
 
     }
