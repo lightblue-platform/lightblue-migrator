@@ -24,4 +24,6 @@ public interface EntityIdStore {
      */
     public void copyFromThread(long sourceThreadId);
 
+    public void clear();
+
 }

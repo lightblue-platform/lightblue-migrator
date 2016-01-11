@@ -22,7 +22,7 @@ public class MethodCallStringifierTest {
         l.add(new Country(1l, "PL"));
         l.add(new Country(2l, "CA"));
 
-        Assert.assertEquals("blah([PL, CA], 12, string)",
+        Assert.assertEquals("blah([PL id=1, CA id=2], 12, string)",
                 ServiceFacade.methodCallToString("blah", new Object[]{l, 12, "string"}));
     }
 
@@ -48,7 +48,7 @@ public class MethodCallStringifierTest {
     public void testArrayOfObjects() {
         Country[] arr = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertEquals("blah([PL, CA], 12, string)",
+        Assert.assertEquals("blah([PL id=1, CA id=2], 12, string)",
                 ServiceFacade.methodCallToString("blah", new Object[]{arr, 12, "string"}));
     }
 

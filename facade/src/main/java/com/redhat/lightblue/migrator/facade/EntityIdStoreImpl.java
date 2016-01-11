@@ -54,4 +54,9 @@ public class EntityIdStoreImpl implements EntityIdStore {
         sharedStore.copyFromThread(sourceThreadId);
     }
 
+    @Override
+    public void clear() {
+        sharedStore.clear();
+    }
+
 }

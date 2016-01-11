@@ -255,6 +255,9 @@ public class ServiceFacade<D> implements SharedStoreSetter {
 
         TogglzRandomUsername.init();
 
+        if (sharedStore != null)
+            sharedStore.clear(); // make sure no data is left from previous calls
+
         if (sharedStore != null && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
             sharedStore.setDualMigrationPhase(true);
         } else if (sharedStore != null){

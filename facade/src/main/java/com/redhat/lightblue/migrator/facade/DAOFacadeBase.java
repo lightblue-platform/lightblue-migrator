@@ -386,6 +386,9 @@ public class DAOFacadeBase<D> {
             log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "serial", "WRITE");
         TogglzRandomUsername.init();
 
+        if (entityIdStore != null)
+            entityIdStore.clear();
+
         T legacyEntity = null, lightblueEntity = null;
 
         if (LightblueMigration.shouldWriteSourceEntity()) {

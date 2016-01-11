@@ -113,6 +113,26 @@ public class SharedStoreTest {
         Assert.assertFalse(store.isDualMigrationPhase());
     }
 
+    @Test
+    public void testClear() {
+        SharedStoreImpl store = new SharedStoreImpl(SharedStoreTest.class);
+        store.push(101l);
+        store.push(102l);
+        store.setDualMigrationPhase(true);
+
+        store.clear();
+
+        try {
+            store.pop();
+            Assert.fail();
+        } catch (SharedStoreException e) {}
+
+        try {
+            store.isDualMigrationPhase();
+            Assert.fail();
+        } catch (SharedStoreException e) {}
+    }
+
     class TestThread extends Thread {
 
         private SharedStore store;
