@@ -38,4 +38,10 @@ public interface SharedStore {
      */
     public void setDualMigrationPhase(boolean isDualMigrationPhase);
 
+    /**
+     * Clear data for current thread.
+     *
+     */
+    public void clear();
+
 }

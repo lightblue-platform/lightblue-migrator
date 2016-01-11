@@ -139,4 +139,13 @@ public class SharedStoreImpl implements SharedStore {
         cache.put(new Element("isDualMigrationPhase-"+threadId, isDualMigrationPhase));
     }
 
+    @Override
+    public void clear() {
+        long threadId = Thread.currentThread().getId();
+
+        log.debug("Clearing data for "+cache.getName()+" thread="+threadId);
+        cache.remove(threadId);
+        cache.remove("isDualMigrationPhase-"+threadId);
+    }
+
 }

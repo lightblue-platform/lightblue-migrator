@@ -1,5 +1,7 @@
 package com.redhat.lightblue.migrator.facade.model;
 
+import com.google.common.base.Objects;
+
 
 public class Country {
 
@@ -51,7 +53,21 @@ public class Country {
 
     @Override
     public String toString() {
-        return iso2Code;
+        return iso2Code+" id="+id;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        Country c  = (Country)obj;
+
+        if (c == null)
+            return false;
+
+        if (Objects.equal(id, c.getId()) && Objects.equal(iso2Code, c.getIso2Code()) && Objects.equal(iso3Code, c.getIso3Code())) {
+            return true;
+        }
+
+        return false;
     }
 
 }

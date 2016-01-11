@@ -747,4 +747,65 @@ public class DAOFacadeTest {
         Mockito.verify(legacyDAO).createCountry(pl);
     }
 
+    @Test
+    public void clearSharedStoreAfterFailure() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country("PL");
+        final Country ca = new Country("CA");
+
+        // legacyDAO creates CA Country with id=12
+        // legacyDAO creates PL Country with id=13
+        Mockito.when(legacyDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Country country = (Country)invocation.getArguments()[0];
+                if (country.getIso2Code().equals("CA")){
+                    // oracle service pushes id of a created object into shared store
+                    daoFacadeExample.getEntityIdStore().push(12l);
+                    return new Country(12l, "CA");
+                } else {
+                    // oracle service pushes id of a created object into shared store
+                    daoFacadeExample.getEntityIdStore().push(13l);
+                    return new Country(13l, "PL");
+                }
+            }
+
+        });
+
+        // lightblueDAO fails when creating CA Country
+        // lightblueDAO creates PL Country with id=13
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Country country = (Country)invocation.getArguments()[0];
+                if (country.getIso2Code().equals("CA")){
+                    throw new CountryException();
+                } else {
+                    return new Country(daoFacadeExample.getEntityIdStore().pop(), "PL");
+                }
+            }
+
+        });
+
+        // lightblue service operation fails and the id is not retrieved
+        facade.createCountry(ca);
+
+        // lightblue service operation succeeds, id is retrieved from shared store
+        // reusing same thread id as the previous call
+        Country returned = facade.createCountry(pl);
+
+        Assert.assertEquals((Long)13l, returned.getId());
+
+        // the id pushed into shared store during first, failed call, is cleared, expecting no inconsistency
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.eq(new Country(13l, "PL")), Mockito.eq(new Country(13l, "PL")), Mockito.anyString(), Mockito.anyString());
+
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(ca);
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(lightblueDAO).createCountry(ca);
+    }
+
 }
