@@ -1,25 +1,24 @@
 package com.redhat.lightblue.migrator;
 
 import java.io.IOException;
-
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.response.LightblueException;
-import com.redhat.lightblue.client.http.LightblueHttpClient;
-import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.LightblueException;
 import com.redhat.lightblue.client.Projection;
+import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.request.data.DataFindRequest;
 
 
 public class Controller extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Controller.class);
-    
+
     private final MainConfiguration cfg;
     private final LightblueClient lightblueClient;
     private final Map<String,MigrationProcess> migrationMap=new HashMap<>();
@@ -38,10 +37,10 @@ public class Controller extends Thread {
             this.ccc=ccc;
         }
     }
-    
+
     public Controller(MainConfiguration cfg) {
         this.cfg=cfg;
-        this.lightblueClient=getLightblueClient();
+        lightblueClient=getLightblueClient();
     }
 
     public Map<String,MigrationProcess> getMigrationProcesses() {
@@ -51,7 +50,7 @@ public class Controller extends Thread {
     public MainConfiguration getMainConfiguration() {
         return cfg;
     }
-    
+
     /**
      * Read configurations from the database whose name matches this instance name
      */
@@ -82,7 +81,7 @@ public class Controller extends Thread {
     /**
      * Load migration configuration based on its id
      */
-    public MigrationConfiguration loadMigrationConfiguration(String migrationConfigurationId) 
+    public MigrationConfiguration loadMigrationConfiguration(String migrationConfigurationId)
         throws IOException, LightblueException {
         DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
         findRequest.where(Query.withValue("_id",Query.eq,migrationConfigurationId));
@@ -90,7 +89,7 @@ public class Controller extends Thread {
         LOGGER.debug("Loading configuration");
         return lightblueClient.data(findRequest, MigrationConfiguration.class);
     }
-    
+
     public LightblueClient getLightblueClient() {
         LightblueHttpClient httpClient;
         LOGGER.debug("Getting client, config={}",cfg.getClientConfig());
@@ -121,17 +120,20 @@ public class Controller extends Thread {
                 if(cfg.getPeriod()!=null&&
                    cfg.getPeriod().length()>0) {
                     if(cfg.getConsistencyCheckerControllerClass()!=null&&
-                       cfg.getConsistencyCheckerControllerClass().length()>0)
+                       cfg.getConsistencyCheckerControllerClass().length()>0) {
                         ccc=(AbstractController)Class.forName(cfg.getConsistencyCheckerControllerClass()).
                             getConstructor(Controller.class,MigrationConfiguration.class).newInstance(this,cfg);
-                    else
+                    } else {
                         ccc=new ConsistencyCheckerController(this,cfg);
-                } else
+                    }
+                } else {
                     ccc=null;
+                }
                 migrationMap.put(cfg.get_id(),new MigrationProcess(cfg,c,ccc));
                 c.start();
-                if(ccc!=null)
+                if(ccc!=null) {
                     ccc.start();
+                }
             }
         }
     }
@@ -163,8 +165,9 @@ public class Controller extends Thread {
         }
         for(MigrationProcess p:migrationMap.values()) {
             p.mig.interrupt();
-            if(p.ccc!=null)
+            if(p.ccc!=null) {
                 p.ccc.interrupt();
+            }
         }
         Breakpoint.checkpoint("Controller:end");
     }

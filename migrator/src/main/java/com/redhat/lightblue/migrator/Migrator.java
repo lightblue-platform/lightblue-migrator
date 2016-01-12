@@ -3,32 +3,29 @@ package com.redhat.lightblue.migrator;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Date;
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Map;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import org.apache.commons.lang.StringUtils;
-
 import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.LightblueException;
+import com.redhat.lightblue.client.Literal;
+import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Update;
-import com.redhat.lightblue.client.Projection;
-import com.redhat.lightblue.client.Literal;
-import com.redhat.lightblue.client.response.LightblueResponse;
-import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
+import com.redhat.lightblue.client.response.LightblueResponse;
 
 public abstract class Migrator extends Thread {
 
@@ -65,9 +62,9 @@ public abstract class Migrator extends Thread {
     public Set<Identity> getRewriteDocs() {
         return rewriteDocs;
     }
-    
+
     public void setController(AbstractController c) {
-        this.controller=c;
+        controller=c;
     }
 
     public AbstractController getController() {
@@ -106,7 +103,7 @@ public abstract class Migrator extends Thread {
     public List<String> getIdentityFields() {
         return getMigrationConfiguration().getDestinationIdentityFields();
     }
-    
+
     public void migrate(MigrationJobExecution execution) {
         try {
             initMigrator();
@@ -120,12 +117,14 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
 
             insertDocs=new HashSet<>();
-            for(Identity id:sourceDocs.keySet())
-                if(!destDocs.containsKey(id))
+            for(Identity id:sourceDocs.keySet()) {
+                if(!destDocs.containsKey(id)) {
                     insertDocs.add(id);
+                }
+            }
             Breakpoint.checkpoint("Migrator:insertDocs");
             LOGGER.debug("There are {} docs to insert",insertDocs.size());
-            
+
             LOGGER.debug("Comparing source and destination docs");
             rewriteDocs=new HashSet<>();
             for(Map.Entry<Identity,JsonNode> sourceEntry:sourceDocs.entrySet()) {
@@ -164,13 +163,14 @@ public abstract class Migrator extends Thread {
             for(Identity id:rewriteDocs) {
                 JsonNode sourceDoc=sourceDocs.get(id);
                 JsonNode destDoc=destDocs.get(id);
-                if(destDoc!=null)
+                if(destDoc!=null) {
                     ((ObjectNode)sourceDoc).set("_id",((ObjectNode)destDoc).get("_id"));
+                }
                 saveDocsList.add(sourceDoc);
             }
-            
+
             execution.setProcessedDocumentCount(sourceDocs.size());
-            
+
             LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
             try {
                 List<LightblueResponse> responses=save(saveDocsList);
@@ -212,14 +212,14 @@ public abstract class Migrator extends Thread {
     public abstract List<JsonNode> getDestinationDocuments(Collection<Identity> docs);
 
     public abstract List<LightblueResponse> save(List<JsonNode> docs) throws LightblueException;
-    
+
     public abstract String createRangeQuery(Date startDate,Date endDate);
-    
-    
+
+
     @Override
     public final void run() {
         LOGGER=LoggerFactory.getLogger(Migrator.class.getName()+"."+getMigrationConfiguration().getConfigurationName());
-        
+
         // First update the migration job, mark its status as being
         // processed, so it doesn't show up in other controllers'
         // tasks lists
@@ -263,10 +263,11 @@ public abstract class Migrator extends Thread {
             updateRequest=new DataUpdateRequest("migrationJob",null);
             updateRequest.where(Query.withValue("_id",Query.eq,migrationJob.get_id()));
             updateRequest.returns(Projection.includeField("_id"));
-            if(execution.getErrorMsg()!=null)
+            if(execution.getErrorMsg()!=null) {
                 execution.setStatus(MigrationJob.STATE_FAILED);
-            else
+            } else {
                 execution.setStatus(MigrationJob.STATE_COMPLETED);
+            }
             updateRequest.updates(Update.update(Update.set("status",execution.getStatus()),
                                                 Update.forEach("jobExecutions",
                                                                Query.withValue("activeExecutionId",Query.eq,activeExecution.get_id()),
