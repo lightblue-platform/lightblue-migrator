@@ -1,34 +1,23 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.Random;
-import java.util.Date;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import java.io.IOException;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.Query;
-import com.redhat.lightblue.client.Update;
-import com.redhat.lightblue.client.Sort;
+import com.redhat.lightblue.client.LightblueException;
 import com.redhat.lightblue.client.Projection;
-import com.redhat.lightblue.client.response.LightblueResponse;
-import com.redhat.lightblue.client.response.LightblueException;
+import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.request.data.DataInsertRequest;
-import com.redhat.lightblue.client.request.data.DataDeleteRequest;
-import com.redhat.lightblue.client.request.data.DataUpdateRequest;
-import com.redhat.lightblue.client.util.ClientConstants;
 
 public class MigratorController extends AbstractController {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(MigratorController.class);
-   
+
     private final Random rnd=new Random();
 
     public static final int JOB_FETCH_BATCH_SIZE=64;
@@ -42,7 +31,7 @@ public class MigratorController extends AbstractController {
             this.ae=ae;
         }
     }
-            
+
     public MigratorController(Controller controller,MigrationConfiguration migrationConfiguration) {
         super(controller,migrationConfiguration,"Migrators:"+migrationConfiguration.getConfigurationName());
     }
@@ -50,10 +39,11 @@ public class MigratorController extends AbstractController {
     private LockRecord lock(MigrationJob mj)
         throws Exception {
         ActiveExecution ae=lock(mj.get_id());
-        if(ae!=null)
+        if(ae!=null) {
             return new LockRecord(mj,ae);
-        else
+        } else {
             return null;
+        }
     }
 
     /**
@@ -62,26 +52,26 @@ public class MigratorController extends AbstractController {
     public MigrationJob[] retrieveJobs(int batchSize,int startIndex)
         throws IOException, LightblueException {
         LOGGER.debug("Retrieving jobs: batchSize={}, startIndex={}",batchSize,startIndex);
-        
+
         DataFindRequest findRequest = new DataFindRequest("migrationJob",null);
-        
+
         findRequest.where(
-                                    
+
                           Query.and(
                               // get jobs for this configuration
                                     Query.withValue("configurationName",Query.eq,migrationConfiguration.getConfigurationName()),
                                     // get jobs whose state ara available
                                     Query.withValue("status",Query.eq,"available"),
-                                    // only get jobs that are 
+                                    // only get jobs that are
                                     Query.withValue("scheduledDate",Query.lte,new Date())
                                     )
                           );
         findRequest.select(Projection.includeField("*"));
-                
+
         findRequest.range(startIndex, startIndex+batchSize-1);
-        
+
         LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
-        
+
         return lbClient.data(findRequest, MigrationJob[].class);
     }
 
@@ -104,13 +94,15 @@ public class MigratorController extends AbstractController {
                 more=true;
                 MigrationJob[] jobs=retrieveJobs(JOB_FETCH_BATCH_SIZE,startIndex);
                 if(jobs!=null&&jobs.length>0) {
-                    if(jobs.length<JOB_FETCH_BATCH_SIZE)
+                    if(jobs.length<JOB_FETCH_BATCH_SIZE) {
                         more=false;
-                    
+                    }
+
                     List<MigrationJob> jobList=new LinkedList<>();
-                    for(MigrationJob x:jobs)
+                    for(MigrationJob x:jobs) {
                         jobList.add(x);
-                    
+                    }
+
                     do {
                         // Pick a job at random
                         int jobIndex=rnd.nextInt(jobList.size());
@@ -125,9 +117,10 @@ public class MigratorController extends AbstractController {
                             jobList.remove(jobIndex);
                         }
                     } while(!jobList.isEmpty()&&!isInterrupted());
-                    
-                } else
+
+                } else {
                     more=false;
+                }
             } while(more&&!isInterrupted());
         } catch (Exception e) {
             LOGGER.error("Exception in findAndLockMigrationJob:"+e,e);

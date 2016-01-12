@@ -1,28 +1,26 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.StringTokenizer;
 import java.util.Date;
-
+import java.util.List;
+import java.util.StringTokenizer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ContainerNode;
-
 import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.LightblueException;
 import com.redhat.lightblue.client.Projection;
-import com.redhat.lightblue.client.util.JSON;
+import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.request.data.DataSaveRequest;
-import com.redhat.lightblue.client.response.LightblueException;
 import com.redhat.lightblue.client.response.LightblueResponse;
 import com.redhat.lightblue.client.response.LightblueResponseException;
+import com.redhat.lightblue.client.util.JSON;
 
 public class DefaultMigrator extends Migrator {
 
@@ -39,8 +37,9 @@ public class DefaultMigrator extends Migrator {
 
     private LightblueClient getSourceCli() {
         try {
-            if(sourceCli==null)
+            if(sourceCli==null) {
                 sourceCli=getLightblueClient(getMigrationConfiguration().getSourceConfigPath());
+            }
             return sourceCli;
         } catch (Exception e) {
             LOGGER.error("Cannot get source cli:{}",e);
@@ -50,15 +49,16 @@ public class DefaultMigrator extends Migrator {
 
     private LightblueClient getDestCli() {
         try {
-            if(destCli==null)
+            if(destCli==null) {
                 destCli=getLightblueClient(getMigrationConfiguration().getDestinationConfigPath());
+            }
             return destCli;
         } catch (Exception e) {
             LOGGER.error("Cannot get dest cli:{}",e);
             throw new RuntimeException("Cannot get dest client:"+e);
         }
     }
-    
+
     @Override
     public List<JsonNode> getSourceDocuments() {
         LOGGER.debug("Retrieving source docs");
@@ -76,7 +76,7 @@ public class DefaultMigrator extends Migrator {
             throw new RuntimeException("Cannot retrieve source documents:"+e);
         }
     }
-  
+
     @Override
     public List<JsonNode> getDestinationDocuments(Collection<Identity> ids) {
         try {
@@ -85,7 +85,7 @@ public class DefaultMigrator extends Migrator {
                 LOGGER.debug("Unable to fetch any destination documents as there are no source documents");
                 return destinationDocuments;
             }
-            
+
             List<Identity> batch=new ArrayList<>();
             for(Identity id:ids) {
                 batch.add(id);
@@ -94,7 +94,7 @@ public class DefaultMigrator extends Migrator {
                     batch.clear();
                 }
             }
-            
+
             if(!batch.isEmpty()) {
                 doDestinationDocumentFetch(batch,destinationDocuments);
             }
@@ -126,11 +126,12 @@ public class DefaultMigrator extends Migrator {
             destinationRequest.select(Projection.includeFieldRecursively("*"), Projection.excludeField("objectType"));
             LOGGER.debug("Fetching destination docs {}",destinationRequest.getBody());
             JsonNode[] nodes=getDestCli().data(destinationRequest, JsonNode[].class);
-            
+
             if(nodes!=null) {
                 LOGGER.debug("There are {} destination docs",nodes.length);
-                for(JsonNode node:nodes)
+                for(JsonNode node:nodes) {
                     dest.add(node);
+                }
             }
         }
     }
@@ -139,7 +140,7 @@ public class DefaultMigrator extends Migrator {
     public List<LightblueResponse> save(List<JsonNode> docs) throws LightblueException {
         List<LightblueResponse> responses = new ArrayList<>();
         StringBuilder errorMessage = new StringBuilder();
-        
+
         List<JsonNode> batch=new ArrayList<>();
         for(JsonNode doc:docs) {
             batch.add(doc);
@@ -159,14 +160,14 @@ public class DefaultMigrator extends Migrator {
                 errorMessage.append(ex.getLightblueResponse().getText());
             }
         }
-        
+
         if (errorMessage.length() > 0) {
             throw new LightblueException("Failed saving docs: " + errorMessage);
         }
-        
+
         return responses;
     }
-                
+
     @Override
     public String createRangeQuery(Date startDate,Date endDate) {
         StringTokenizer tkz=new StringTokenizer(getMigrationConfiguration().getTimestampFieldName(),", ");
@@ -176,13 +177,14 @@ public class DefaultMigrator extends Migrator {
             ql.add(Query.and(Query.withValue(tok,Query.gte,startDate),
                              Query.withValue(tok,Query.lt,endDate)));
         }
-        if(ql.size()==1)
+        if(ql.size()==1) {
             return ql.get(0).toString();
-        else
+        } else {
             return Query.or(ql).toString();
+        }
     }
-    
-    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) throws LightblueResponseException {        
+
+    private LightblueResponse saveBatch(List<JsonNode> documentsToOverwrite) throws LightblueResponseException {
         // LightblueClient - save & overwrite documents
         DataSaveRequest saveRequest = new DataSaveRequest(getMigrationConfiguration().getDestinationEntityName(),
                                                           getMigrationConfiguration().getDestinationEntityVersion());
