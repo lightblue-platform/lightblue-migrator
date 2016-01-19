@@ -190,8 +190,20 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         }
     }
 
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName) throws InterruptedException, ExecutionException, TimeoutException {
-        if (timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
+    /**
+     * Call destination (lightblue) using a timeout in dual read/write phases. Do not use facade
+     * timeout during lightblue proxy phase.
+     *
+     * @param listenableFuture
+     * @param methodName method name is used to read method specific timeout configuration
+     * @param shouldSource true if source operation is supposed to be performed for this call (i.e. this is a dual phase)
+     * @return
+     * @throws InterruptedException
+     * @throws ExecutionException
+     * @throws TimeoutException
+     */
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
+        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
             return listenableFuture.get();
         } else {
             return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName), TimeUnit.MILLISECONDS);
@@ -295,12 +307,12 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             try {
                 if (callInParallel) {
                     // lightblue was called before source/legacy, now just getting results
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, shouldSource(facadeOperation));
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
                     listenableFuture = callLightblueSvc(true, method, values);
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {

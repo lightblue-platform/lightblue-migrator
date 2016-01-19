@@ -175,8 +175,8 @@ public class DAOFacadeBase<D> {
         }
     }
 
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName) throws InterruptedException, ExecutionException, TimeoutException {
-        if (timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
+        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
             return listenableFuture.get();
         } else {
             return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName), TimeUnit.MILLISECONDS);
@@ -233,7 +233,7 @@ public class DAOFacadeBase<D> {
             // make sure async call to lightblue has completed
             try {
                 log.debug("Calling lightblue {}.{}", implementationName, methodName);
-                lightblueEntity = getWithTimeout(listenableFuture, methodName);
+                lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldReadSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
                     log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
@@ -325,7 +325,7 @@ public class DAOFacadeBase<D> {
             // make sure asnyc call to lightblue has completed
             log.debug("Calling lightblue {}.{}", implementationName, methodName);
             try {
-                lightblueEntity = getWithTimeout(listenableFuture, methodName);
+                lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldWriteSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
                     log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
@@ -426,7 +426,7 @@ public class DAOFacadeBase<D> {
             ListenableFuture<T> listenableFuture = callLightblueDAO(passIds, method, values);
 
             try {
-                lightblueEntity = getWithTimeout(listenableFuture, methodName);
+                lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldWriteSourceEntity());
             } catch (ExecutionException ee) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
                     EntityIdStoreException se = extractEntityIdStoreExceptionIfExists(ee);
