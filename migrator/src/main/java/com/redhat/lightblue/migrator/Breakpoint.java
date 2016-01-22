@@ -51,8 +51,10 @@ public class Breakpoint {
     public void resume() {
         if(stopped) {
             synchronized(this) {
-                stopped=false;
-                notify();
+                if (stopped) {
+                    stopped=false;
+                    notify();
+                }
             }
         }
     }
@@ -86,8 +88,10 @@ public class Breakpoint {
         } else {
             if(waiting) {
                 synchronized(this) {
-                    ran=true;
-                    notify();
+                    if (waiting) {
+                        ran = true;
+                        notify();
+                    }
                 }
             }
         }

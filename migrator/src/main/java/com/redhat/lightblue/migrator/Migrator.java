@@ -281,7 +281,7 @@ public abstract class Migrator extends Thread {
 
             response=lbClient.data(updateRequest);
         } catch (Exception e) {
-            LOGGER.error("Cannot update job {}, {} response:{}",migrationJob.get_id(),e,response.getJson());
+            LOGGER.error("Cannot update job {}, {} response:{}",migrationJob.get_id(),e,(response == null?"null":response.getJson()));
         }
         controller.unlock(activeExecution.get_id());
     }
