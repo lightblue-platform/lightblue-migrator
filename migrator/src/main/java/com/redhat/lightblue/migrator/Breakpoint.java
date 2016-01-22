@@ -3,8 +3,6 @@ package com.redhat.lightblue.migrator;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Works like a breakpoint in a debugger. If stop is called, execution
@@ -26,7 +24,7 @@ public class Breakpoint {
     /**
      * true if waitUntil() is called
      */
-    private boolean waiting=false;
+    private volatile boolean waiting=false;
     private final String name;
 
     private static final Map<String,Breakpoint> bps=new HashMap<>();
@@ -51,8 +49,10 @@ public class Breakpoint {
     public void resume() {
         if(stopped) {
             synchronized(this) {
-                stopped=false;
-                notify();
+                if (stopped) {
+                    stopped=false;
+                    notify();
+                }
             }
         }
     }

@@ -41,10 +41,10 @@ public class LightblueMigrationStateRepositoryProvider {
     @Inject
     public LightblueMigrationStateRepositoryProvider(@Named("lightblueMigrationConfigurationFileName") String configFileName) throws IOException {
         logger.debug("Initialing LightblueMigrationStateRepositoryProvider from property file: "+configFileName);
-        InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("./"+configFileName);
-
         Properties props = new Properties();
-        props.load(in);
+        try (InputStream in = Thread.currentThread().getContextClassLoader().getResourceAsStream("./"+configFileName)) {
+            props.load(in);
+        }
 
         this.dataSourceJndi = props.getProperty("datasourceJndi");
         this.tableName = props.getProperty("tableName");
