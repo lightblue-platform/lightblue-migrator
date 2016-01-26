@@ -140,7 +140,7 @@ public class ConsistencyChecker {
                 logInconsistency(callToLogInCaseOfInconsistency, legacyJson, lightblueJson, null);
             }
         } catch (JsonProcessingException e) {
-            log.error("Consistency check failed! Invalid JSON. ", e);
+            log.error("Consistency check failed in "+implementationName+"."+callToLogInCaseOfInconsistency+"! Invalid JSON: legacyJson="+legacyJson+", lightblueJson="+lightblueJson, e);
         }
         return false;
     }
