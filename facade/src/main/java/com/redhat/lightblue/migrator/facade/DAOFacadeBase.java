@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.redhat.lightblue.migrator.facade.methodcallstringifier.EagerMethodCallStringifier;
 import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
@@ -114,44 +115,6 @@ public class DAOFacadeBase<D> {
         return classes.toArray(new Class[]{});
     }
 
-    static String methodCallToString(String methodName, Object[] values) {
-        try {
-            StringBuilder str = new StringBuilder();
-            str.append(methodName).append("(");
-            Iterator<Object> it = Arrays.asList(values).iterator();
-            while(it.hasNext()) {
-                Object value = it.next();
-                if (value != null && value.getClass().isArray())
-                    if (value.getClass().getComponentType().isPrimitive()) {
-                        // this is an array of primitives, convert to a meaningful string using reflection
-                        String primitiveArrayType = value.getClass().getComponentType().getName();
-
-                        StringBuilder pStr = new StringBuilder();
-                        for (int i = 0; i < Array.getLength(value); i ++) {
-                            pStr.append(Array.get(value, i));
-                            if (i != Array.getLength(value)-1) {
-                                pStr.append(", ");
-                            }
-                        }
-                        str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
-                    }
-                    else {
-                        str.append(Arrays.deepToString((Object[])value));
-                    }
-                else
-                    str.append(value);
-                if (it.hasNext()) {
-                    str.append(", ");
-                }
-            }
-            str.append(")");
-            return str.toString();
-        } catch (Exception e) {
-            log.error("Creating method call string failed", e);
-            return "<creating method call string failed>";
-        }
-    }
-
     private <T> ListenableFuture<T> callLightblueDAO(final boolean passIds, final Method method, final Object[] values) {
         ListeningExecutorService executor = createExecutor();
         try {
@@ -204,7 +167,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "parallel", "READ");
+            log.debug("Calling {}.{} ({} {})", implementationName, EagerMethodCallStringifier.stringifyMethodCall(methodName, values), "parallel", "READ");
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -236,7 +199,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldReadSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -254,7 +217,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new EagerMethodCallStringifier(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -296,7 +259,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "parallel", "WRITE");
+            log.debug("Calling {}.{} ({} {})", implementationName, EagerMethodCallStringifier.stringifyMethodCall(methodName, values), "parallel", "WRITE");
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -328,7 +291,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldWriteSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -346,7 +309,7 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
             log.debug("."+methodName+" checking returned entity's consistency");
-            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new EagerMethodCallStringifier(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
@@ -383,7 +346,7 @@ public class DAOFacadeBase<D> {
      */
     public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
         if (log.isDebugEnabled())
-            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), "serial", "WRITE");
+            log.debug("Calling {}.{} ({} {})", implementationName, EagerMethodCallStringifier.stringifyMethodCall(methodName, values), "serial", "WRITE");
         TogglzRandomUsername.init();
 
         if (entityIdStore != null)
@@ -432,7 +395,7 @@ public class DAOFacadeBase<D> {
                     EntityIdStoreException se = extractEntityIdStoreExceptionIfExists(ee);
                     if (se != null && !passIds) {
                         log.warn("Possible data inconsistency in a create-if-not-exists scenario (entity exists in legacy, but does not in lightblue). Method called: "
-                                + methodCallToString(methodName, values), se);
+                                + EagerMethodCallStringifier.stringifyMethodCall(methodName, values), se);
                         return legacyEntity;
                     }
 
@@ -443,7 +406,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -464,7 +427,7 @@ public class DAOFacadeBase<D> {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new EagerMethodCallStringifier(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {

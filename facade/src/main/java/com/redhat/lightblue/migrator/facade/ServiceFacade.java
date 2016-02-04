@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.redhat.lightblue.migrator.facade.methodcallstringifier.LazyMethodCallStringifier;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStore;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreException;
@@ -121,65 +122,6 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             classes.add(o.getClass());
         }
         return classes.toArray(new Class[]{});
-    }
-
-    /**
-     * Return a pretty printed method call.
-     *
-     * @param methodName
-     * @param values
-     * @return
-     */
-    static String methodCallToString(Method method, Object[] values) {
-        try {
-            StringBuilder str = new StringBuilder();
-            str.append(method.getName()).append("(");
-            Iterator<Object> it = Arrays.asList(values).iterator();
-            Iterator<Annotation[]> annotations = Arrays.asList(method.getParameterAnnotations()).iterator();
-            while(it.hasNext()) {
-                Object value = it.next();
-                boolean isSecret = false;
-                for (Annotation a: annotations.next()) {
-                    if (a instanceof Secret) {
-                        isSecret=true;
-                        break;
-                    }
-                }
-
-                if (isSecret) {
-                    str.append("****");
-                } else {
-                    if (value != null && value.getClass().isArray())
-                        if (value.getClass().getComponentType().isPrimitive()) {
-                            // this is an array of primitives, convert to a meaningful string using reflection
-                            String primitiveArrayType = value.getClass().getComponentType().getName();
-
-                            StringBuilder pStr = new StringBuilder();
-                            for (int i = 0; i < Array.getLength(value); i ++) {
-                                pStr.append(Array.get(value, i));
-                                if (i != Array.getLength(value)-1) {
-                                    pStr.append(", ");
-                                }
-                            }
-                            str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
-                        }
-                        else {
-                            str.append(Arrays.deepToString((Object[])value));
-                        }
-                    else
-                        str.append(value);
-                }
-
-                if (it.hasNext()) {
-                    str.append(", ");
-                }
-            }
-            str.append(")");
-            return str.toString();
-        } catch (Exception e) {
-            log.error("Creating method call string failed", e);
-            return "<creating method call string failed>";
-        }
     }
 
     private <T> ListenableFuture<T> callLightblueSvc(final boolean passIds, final Method method, final Object[] values) {
@@ -282,7 +224,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         final Class[] types = methodCalled.getParameterTypes();
 
         if (log.isDebugEnabled()) {
-            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodCalled, values), callInParallel ? "parallel": "serial", facadeOperation);
+            log.debug("Calling {}.{} ({} {})", implementationName, LazyMethodCallStringifier.stringifyMethodCall(methodCalled, values), callInParallel ? "parallel": "serial", facadeOperation);
         }
 
         TogglzRandomUsername.init();
@@ -336,7 +278,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodCalled, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+LazyMethodCallStringifier.stringifyMethodCall(methodCalled, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -356,7 +298,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodCalled, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new LazyMethodCallStringifier(methodCalled, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
