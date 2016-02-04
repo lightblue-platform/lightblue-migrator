@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.ReadOperation;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.WriteOperation;
 
 public interface CountryDAO {
@@ -27,5 +28,12 @@ public interface CountryDAO {
 
     @WriteOperation
     public abstract Country createGeneratedCountry() throws CountryException;
+
+    /**
+     * Shows how to avoid logging sensitive information passed as parameters.
+     *
+     */
+    @WriteOperation
+    public abstract Country secureCountry(long id, @Secret String password) throws CountryException;
 
 }
