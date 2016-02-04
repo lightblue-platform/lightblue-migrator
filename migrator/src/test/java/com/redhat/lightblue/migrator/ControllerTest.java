@@ -4,26 +4,16 @@ import java.util.Map;
 
 import org.junit.Test;
 import org.junit.Assert;
-import org.junit.Before;
-import org.junit.After;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import com.redhat.lightblue.client.*;
-import com.redhat.lightblue.client.request.*;
-import com.redhat.lightblue.client.response.*;
-import com.redhat.lightblue.client.http.*;
-import com.redhat.lightblue.client.request.data.*;
-import com.redhat.lightblue.client.expression.query.*;
-import com.redhat.lightblue.client.enums.*;
-import com.redhat.lightblue.client.projection.*;
-
+import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.Query;
+import com.redhat.lightblue.client.http.LightblueHttpClient;
+import com.redhat.lightblue.client.request.data.DataDeleteRequest;
 
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class ControllerTest extends AbstractMigratorController {
 
@@ -59,19 +49,20 @@ public class ControllerTest extends AbstractMigratorController {
     public void clearData() throws Exception {
         LightblueClient cli = new LightblueHttpClient();
         DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"activeExecution"));
+        req.where(Query.withValue("objectType", Query.BinOp.eq, "activeExecution"));
         cli.data(req);
         req=new DataDeleteRequest("migrationJob",null);
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"migrationJob"));
+        req.where(Query.withValue("objectType", Query.BinOp.eq, "migrationJob"));
         cli.data(req);
         req=new DataDeleteRequest("migrationConfiguration",null);
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"migrationConfiguration"));
+        req.where(Query.withValue("objectType", Query.BinOp.eq, "migrationConfiguration"));
         cli.data(req);
     }
 
     @Test
     public void controllerTest() throws Exception {
         clearData();
+        Breakpoint.clearAll();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-testmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
         
@@ -120,15 +111,17 @@ public class ControllerTest extends AbstractMigratorController {
 
         Breakpoint.waitUntil("MigratorController:process");
         System.out.println("Processing");
-        TestMigrator.count=0;
+        FakeMigrator.count=0;
         Breakpoint.resume("MigratorController:process");
 
         Breakpoint.waitUntil("MigratorController:unlock");
         // At this point, there must be one TestMigrator instance running
-        Assert.assertEquals(1,TestMigrator.count);
+        Assert.assertEquals(1,FakeMigrator.count);
         Breakpoint.resume("MigratorController:unlock");
 
+        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
         controller.interrupt();
+        Thread.sleep(100);
     }
 }
 

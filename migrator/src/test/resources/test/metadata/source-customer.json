@@ -26,7 +26,8 @@
             "_id": {"type": "integer"},
             "firstName": {"type": "string"},
             "lastName": {"type": "string"},
-            "creationDate": {"type": "date"}
+            "creationDate": {"type": "date"},
+            "updateDate":{"type":"date"}
         }
     }
 }

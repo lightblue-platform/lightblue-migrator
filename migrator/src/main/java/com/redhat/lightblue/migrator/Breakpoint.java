@@ -3,8 +3,6 @@ package com.redhat.lightblue.migrator;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Works like a breakpoint in a debugger. If stop is called, execution
@@ -13,11 +11,20 @@ import org.slf4j.LoggerFactory;
  */
 public class Breakpoint {
 
-    private static final Logger LOGGER=LoggerFactory.getLogger(Breakpoint.class);
-
+    /**
+     * true is the breakpoint will stop execution
+     */
     private volatile boolean stopped=false;
+
+    /**
+     * This is set to true at checkpoint()
+     */
     private volatile boolean ran=false;
-    private boolean waiting=false;
+
+    /**
+     * true if waitUntil() is called
+     */
+    private volatile boolean waiting=false;
     private final String name;
 
     private static final Map<String,Breakpoint> bps=new HashMap<>();
@@ -36,13 +43,16 @@ public class Breakpoint {
     
     public void stop() {
         stopped=true;
+        ran=false;
     }
 
     public void resume() {
         if(stopped) {
             synchronized(this) {
-                stopped=false;
-                notify();
+                if (stopped) {
+                    stopped=false;
+                    notify();
+                }
             }
         }
     }
@@ -66,18 +76,10 @@ public class Breakpoint {
         if(stopped) {
             synchronized(this) {
                 if(stopped) {
-                    if(name!=null)
-                        LOGGER.debug("Waiting: {}",name);
-                    else
-                        LOGGER.debug("Waiting...");
                     ran=true;
                     notify();
                     try {
                         wait();
-                        if(name!=null)
-                            LOGGER.debug("Resumed: {}",name);
-                        else
-                            LOGGER.debug("Resumed");
                     } catch (Exception e) {}
                 } 
             }
@@ -105,6 +107,10 @@ public class Breakpoint {
 
     public static void checkpoint(String bp) {
         get(bp).checkpoint();
+    }
+
+    public static void clearAll() {
+        bps.clear();
     }
 
     private static Breakpoint get(String bp) {

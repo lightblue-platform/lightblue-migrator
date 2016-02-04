@@ -16,13 +16,6 @@ import org.apache.commons.daemon.Daemon;
 import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonInitException;
 
-import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.http.LightblueHttpClient;
-import com.redhat.lightblue.client.hystrix.LightblueHystrixClient;
-
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class Main implements Daemon {
 

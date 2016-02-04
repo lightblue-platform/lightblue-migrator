@@ -2,6 +2,7 @@ package com.redhat.lightblue.migrator;
 
 import java.util.List;
 import java.util.Collection;
+import java.util.Date;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -29,6 +30,10 @@ public class FailMigrator extends  Migrator {
     }
 
     public List<LightblueResponse> save(List<JsonNode> docs) {
+        return null;
+    }
+
+    public String createRangeQuery(Date d,Date e) {
         return null;
     }
 }

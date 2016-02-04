@@ -1,10 +1,10 @@
 package com.redhat.lightblue.migrator.facade;
 
-import com.redhat.lightblue.migrator.facade.DAOFacadeBase;
-import com.redhat.lightblue.migrator.facade.EntityIdExtractor;
+import java.util.List;
 
+import com.redhat.lightblue.migrator.facade.model.Country;
 
-
+@Deprecated
 public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements CountryDAO {
 
     public final EntityIdExtractor<Country> entityIdExtractor = new EntityIdExtractor<Country>() {
@@ -19,40 +19,69 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
     }
 
     @Override
-    public Country createCountry(Country country) {
+    public Country createCountry(Country country) throws CountryException {
         try {
-            return callDAOCreateSingleMethod(true, entityIdExtractor, Country.class, "createCountry", country);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return callDAOCreateSingleMethod(entityIdExtractor, Country.class, "createCountry", country);
+        } catch (CountryException ce) {
+            throw ce;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
     }
 
     @Override
-    public Country createCountryIfNotExists(Country country) {
+    public Country createCountryIfNotExists(Country country) throws CountryException {
         try {
-            return callDAOCreateSingleMethod(false, entityIdExtractor, Country.class, "createCountryIfNotExists", country);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+            return callDAOCreateSingleMethod(entityIdExtractor, Country.class, "createCountryIfNotExists", country);
+        } catch (CountryException ce) {
+            throw ce;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
     }
 
     @Override
-    public Country updateCountry(Country country) {
+    public Country updateCountry(Country country) throws CountryException {
         try {
             return callDAOUpdateMethod(Country.class, "updateCountry", country);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (CountryException ce) {
+            throw ce;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
 
     }
 
     @Override
-    public Country getCountry(String iso2Code) {
+    public Country getCountry(String iso2Code) throws CountryException {
         try {
             return callDAOReadMethod(Country.class, "getCountry", iso2Code);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (CountryException ce) {
+            throw ce;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
         }
+    }
+
+    @Override
+    public List<Country> getCountries(long[] ids) throws CountryException {
+        try {
+            return callDAOReadMethod(List.class, "getCountries", ids);
+        } catch (CountryException ce) {
+            throw ce;
+        } catch (Throwable t) {
+            throw new RuntimeException(t);
+        }
+    }
+
+    @Override
+    public Country getCountryFromLegacy(long id) throws CountryException {
+        return legacyDAO.getCountryFromLegacy(id);
+    }
+
+    @Override
+    public Country createGeneratedCountry() {
+        throw new UnsupportedOperationException("Unsupported in legacy facade");
     }
 
 }

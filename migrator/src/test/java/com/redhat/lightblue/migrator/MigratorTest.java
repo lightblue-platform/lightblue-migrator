@@ -15,15 +15,9 @@ import com.redhat.lightblue.client.request.*;
 import com.redhat.lightblue.client.response.*;
 import com.redhat.lightblue.client.http.*;
 import com.redhat.lightblue.client.request.data.*;
-import com.redhat.lightblue.client.expression.query.*;
-import com.redhat.lightblue.client.enums.*;
-import com.redhat.lightblue.client.projection.*;
-
 
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
 
 public class MigratorTest extends AbstractMigratorController {
 
@@ -59,13 +53,13 @@ public class MigratorTest extends AbstractMigratorController {
     public void clearData() throws Exception {
         LightblueClient cli = new LightblueHttpClient();
         DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"activeExecution"));
+        req.where(Query.withValue("objectType",Query.eq,"activeExecution"));
         cli.data(req);
         req=new DataDeleteRequest("migrationJob",null);
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"migrationJob"));
+        req.where(Query.withValue("objectType",Query.eq,"migrationJob"));
         cli.data(req);
         req=new DataDeleteRequest("migrationConfiguration",null);
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"migrationConfiguration"));
+        req.where(Query.withValue("objectType",Query.eq,"migrationConfiguration"));
         cli.data(req);
     }
 
@@ -73,6 +67,7 @@ public class MigratorTest extends AbstractMigratorController {
     @Test
     public void migrateTest() throws Exception {
         clearData();
+        Breakpoint.clearAll();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
         loadData("sourceCustomer", versionSourceCustomer, "./test/data/load-source-customers.json");
@@ -96,39 +91,30 @@ public class MigratorTest extends AbstractMigratorController {
         Migrator m=(Migrator)threads[0];
         Assert.assertEquals(5,m.getSourceDocs().size());
 
-        Breakpoint.stop("Migrator:destDocs");
+        Breakpoint.stop("Migrator:complete");
         Breakpoint.resume("Migrator:sourceDocs");
 
-        Breakpoint.waitUntil("Migrator:destDocs");
-        Assert.assertEquals(0,m.getDestDocs().size());
-                
-        Breakpoint.stop("Migrator:insertDocs");
-        Breakpoint.resume("Migrator:destDocs");
-
-        Breakpoint.waitUntil("Migrator:insertDocs");
-        Assert.assertEquals(5,m.getInsertDocs().size());
-
-        Breakpoint.stop("Migrator:rewriteDocs");
-        Breakpoint.resume("Migrator:insertDocs");
-
-        Breakpoint.waitUntil("Migrator:rewriteDocs");
-        Assert.assertEquals(0,m.getRewriteDocs().size());
-
-        Breakpoint.stop("Migrator:complete");
-        Breakpoint.resume("Migrator:rewriteDocs");
-
+        System.out.println("Waiting for completion");
         Breakpoint.waitUntil("Migrator:complete");
 
         LightblueClient cli = new LightblueHttpClient();
         DataFindRequest req=new DataFindRequest("destCustomer","1.0.0");
-        req.select(new FieldProjection("*",true,true));
-        req.where(new ValueQuery("objectType",ExpressionOperation.EQ,"destCustomer"));
-        req.sort(new SortCondition("_id",SortDirection.ASC));
+        req.select(Projection.includeFieldRecursively("*"));
+        req.where(Query.withValue("objectType",Query.eq,"destCustomer"));
+        req.sort(Sort.asc("_id"));
         JsonNode[] ret=cli.data(req,JsonNode[].class);
         
+        System.out.println("Complete");
         Breakpoint.resume("Migrator:complete");
 
         Assert.assertEquals(5,ret.length);
+        
+        System.out.println("Interrupt controller");
+        System.out.println("Interrupting "+controller.getMigrationProcesses().get("customerMigration_0").mig.getName());
+        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
+        controller.interrupt();
+        System.out.println("Test ends");
+        Thread.sleep(1000);
     }
          
 }

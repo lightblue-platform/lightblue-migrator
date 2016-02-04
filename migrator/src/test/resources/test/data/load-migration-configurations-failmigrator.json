@@ -2,23 +2,16 @@
     "data":[
         {
             "_id": "customerMigration_0", 
-            "authorizedHostnames": [
-                "localhost"
-            ], 
             "comparisonExclusionPaths": [
                 "creationDate"
             ], 
             "configurationName": "customers", 
             "consistencyCheckerName": "continuum", 
-            "createdBy": "lingram", 
-            "creationDate": "20150111T12:00:00.000+0000", 
             "destinationEntityName": "destCustomer", 
             "destinationEntityVersion": "1.0.0", 
             "destinationIdentityFields": [
                 "_id"
             ], 
-            "lastUpdateDate": "20150111T12:00:00.000+0000", 
-            "lastUpdatedBy": "lingram", 
             "objectType": "migrationConfiguration", 
             "overwriteDestinationDocuments": true, 
             "sourceEntityName": "sourceCustomer", 

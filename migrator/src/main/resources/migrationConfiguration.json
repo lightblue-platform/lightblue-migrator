@@ -5,7 +5,7 @@
             "collection": "migrationConfig",
             "datasource": "mongodata"
         },
-        "defaultVersion" : "2.0.0",
+        "defaultVersion" : "2.0.1",
         "indexes": [
             {
                 "fields": [
@@ -82,18 +82,6 @@
                 },
                 "description": "Name of the consistency checker responsible for this configuration"
             },
-            "authorizedHostnames": { 
-                "type": "array",
-                "items": {
-                    "type": "string"
-                },
-                "minItems": 1,
-                "uniqueItems": true,
-                "constraints": {
-                    "required": true
-                },
-                "description": "hosts authorized to run this migration"
-            },
             "threadCount": {
                 "type": "integer",
                 "constraints": {
@@ -105,9 +93,9 @@
                 "type":"string",
                 "description": "Class name of the migrator. If null, DefaultMigrator is used"
             },
-            "consistencyCheckerClass" : {
-                "type" : "string",
-                "description": "Class name of the consistency checker. If null, DefaultConsistencyChecker is used"
+            "consistencyCheckerControllerClass":{
+                "type":"string",
+                "description":"Set this to the class name of a class extending AbstractController. If not set, ConsistencyCheckerController is used"
             },
             "overwriteDestinationDocuments": {
                 "type": "boolean",
@@ -126,9 +114,6 @@
                 "description": "Optional paths to exclude comparisons of source and destination documents.  Fields including arrays will apply to all elements in the array even if specific indexes are included."
             },
             "destinationConfigPath": {
-                "type":"string"
-            },
-            "sourceConfigPath": {
                 "type":"string"
             },
             "destinationServiceURI": {
@@ -161,6 +146,9 @@
                 },
                 "description": "identity fields in the destination entity."
             },
+            "sourceConfigPath": {
+                "type":"string"
+            },
             "sourceServiceURI": {
                 "type": "string",
                 "description": "REST service URI for instance housing source data"
@@ -179,30 +167,26 @@
                 },
                 "description": "source Entity Version for data being migrated"
             },
-            "creationDate": {
-                "type": "date",
-                "description": "Creation date of the configuration"
-            },
-            "createdBy": {
+            "timestampFieldName": {
                 "type": "string",
-                "description": "User id of the configuration creator"
+                "description": "Name of the timestamp field(s), for consistency checker. Can be comma separated list."
             },
-            "lastUpdateDate": {
+            "timestampInitialValue": {
                 "type": "date",
-                "description": "Last updated date of the configuration"
+                "description": "Consistency checking will run for timestamps greater or equal to this date. This gets updated every time consistency checker runs"
             },
-            "lastUpdatedBy": {
-                "type": "string",
-                "description": "User id of the configuration creator"
-            }
+            "period" : {
+                "type":"string",
+                "description":"Period in which consistency checker runs. Must be nonempty for the consistency checker to run. something like 6 hours, 1 day, 1 seconds, etc. Units are millisecond, second, minute, hour, day"
+            }            
         },
         "name": "migrationConfiguration",
         "status": {
             "value": "active"
         },
         "version": {
-            "changelog": "Initial release",
-            "value": "2.0.0"
+            "changelog": "Consistency checker changes",
+            "value": "2.0.1"
         }
     }
 }

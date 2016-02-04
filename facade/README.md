@@ -3,6 +3,7 @@
 The facade helps with migrating a service to lightblue by offering following features:
 * phased migration using feature flag support (Togglz - see LightblueMigrationFeatures),
 * parallel processing (when possible),
+* error handling and timeouts (destination too slow to respond) transparent to the service client,
 * handling identifiers and
 * checking for data integrity across source and destination (Lightblue) entities.
 
@@ -32,9 +33,15 @@ Compare returned entities. If differences are found, return source entity and lo
 
 Will call lightblue in dual write phase and beyond.
 
-### create with read
+## Initializing dynamic proxy for the facade
+```java
+CountryDAO countryDAOFacade = FacadeProxyFactory.createFacadeProxy(legacyCountryDAO, lightblueCountryDAO, CountryDAO.class);
+```
 
-Same as create, except it will call lightblue in dual read phase and beyond.
+The dynamic proxy directs DAO interface api calls to correct DAOFacadeBase methods based on annotations on the DAO interface apis. See [CountryDAO](src/test/java/com/redhat/lightblue/migrator/facade/CountryDAO.java) and [FacadeProxyFactory](src/main/java/com/redhat/lightblue/migrator/facade/proxy/FacadeProxyFactory.java) for more information on how to use the annotations.
+
+
+## [How to configure togglz for migration to lightblue?](TOGGLZ.md)
 
 ## Notes
 

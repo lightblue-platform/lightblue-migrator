@@ -1,0 +1,30 @@
+{
+    "data":[
+        {
+            "_id": "customerMigration_0", 
+            "comparisonExclusionPaths": [
+                "creationDate"
+            ], 
+            "configurationName": "customers", 
+            "consistencyCheckerName": "continuum",
+            "consistencyCheckerControllerClass":"com.redhat.lightblue.migrator.CCC",
+            "destinationEntityName": "destCustomer", 
+            "destinationEntityVersion": "1.0.0", 
+            "destinationIdentityFields": [
+                "_id"
+            ], 
+            "destinationServiceURI": "https://localhost/rest/data", 
+            "objectType": "migrationConfiguration", 
+            "overwriteDestinationDocuments": true, 
+            "sourceEntityName": "sourceCustomer", 
+            "sourceEntityVersion": "1.0.0", 
+            "sourceServiceURI": "https://localhost/rest/data", 
+            "migratorClass": "com.redhat.lightblue.migrator.FakeMigrator", 
+            "threadCount": 1,
+            "timestampFieldName":"updateDate,creationDate",
+            "timestampInitialValue":"20000101T00:00:00.000+0000",
+            "period":"1 second"
+
+        }
+    ]
+}

@@ -1,5 +1,8 @@
 package com.redhat.lightblue.migrator.facade;
 
+import java.util.Arrays;
+import java.util.Properties;
+
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,10 +16,12 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 import org.togglz.junit.TogglzRule;
 
+import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 import com.redhat.lightblue.migrator.test.LightblueMigrationPhase;
 
 @RunWith(MockitoJUnitRunner.class)
+@Deprecated
 public class DAOFacadeTest {
 
     @Rule
@@ -25,11 +30,16 @@ public class DAOFacadeTest {
     @Mock CountryDAO legacyDAO;
     @Mock CountryDAOLightblue lightblueDAO;
     CountryDAO facade;
+
     DAOFacadeExample daoFacadeExample;
+    ConsistencyChecker consistencyChecker;
 
     @Before
     public void setup() {
         daoFacadeExample = Mockito.spy(new DAOFacadeExample(legacyDAO, lightblueDAO));
+        consistencyChecker = Mockito.spy(new ConsistencyChecker(CountryDAO.class.getSimpleName()));
+        daoFacadeExample.setConsistencyChecker(consistencyChecker);
+
         facade = daoFacadeExample;
         Mockito.verify(lightblueDAO).setEntityIdStore((daoFacadeExample).getEntityIdStore());
     }
@@ -43,18 +53,18 @@ public class DAOFacadeTest {
     /* Read tests */
 
     @Test
-    public void initialPhaseRead() {
+    public void initialPhaseRead() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         facade.getCountry("PL");
 
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).getCountry("PL");
     }
 
     @Test
-    public void dualReadPhaseReadConsistentTest() {
+    public void dualReadPhaseReadConsistentTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country country = new Country();
@@ -64,13 +74,13 @@ public class DAOFacadeTest {
 
         facade.getCountry("PL");
 
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verify(legacyDAO).getCountry("PL");
         Mockito.verify(lightblueDAO).getCountry("PL");
     }
 
     @Test
-    public void dualReadPhaseReadInconsistentTest() {
+    public void dualReadPhaseReadInconsistentTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -81,7 +91,7 @@ public class DAOFacadeTest {
 
         Country returnedCountry = facade.getCountry("PL");
 
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verify(legacyDAO).getCountry("PL");
         Mockito.verify(lightblueDAO).getCountry("PL");
 
@@ -90,12 +100,34 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void lightblueProxyTest() {
+    public void dualReadPhaseReadInconsistentPrimitiveArrayTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country(1l, "PL");
+        Country ca = new Country(2l, "CA");
+
+        long[] ids = new long[]{1l,2l,3l};
+
+        Mockito.when(legacyDAO.getCountries(ids)).thenReturn(Arrays.asList(new Country[] {ca}));
+        Mockito.when(lightblueDAO.getCountries(ids)).thenReturn(Arrays.asList(new Country[] {pl}));
+
+        Country returnedCountry = facade.getCountries(ids).get(0);
+
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+        Mockito.verify(legacyDAO).getCountries(ids);
+        Mockito.verify(lightblueDAO).getCountries(ids);
+
+        // when there is a conflict, facade will return what legacy dao returned
+        Assert.assertEquals(ca, returnedCountry);
+    }
+
+    @Test
+    public void lightblueProxyTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         facade.getCountry("PL");
 
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).getCountry("PL");
     }
@@ -103,7 +135,7 @@ public class DAOFacadeTest {
     /* update tests */
 
     @Test
-    public void initialPhaseUpdate() {
+    public void initialPhaseUpdate() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -112,11 +144,11 @@ public class DAOFacadeTest {
 
         Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).updateCountry(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
-    public void dualWritePhaseUpdateConsistentTest() {
+    public void dualWritePhaseUpdateConsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -125,11 +157,11 @@ public class DAOFacadeTest {
 
         Mockito.verify(legacyDAO).updateCountry(pl);
         Mockito.verify(lightblueDAO).updateCountry(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
-    public void dualWritePhaseUpdateInconsistentTest() {
+    public void dualWritePhaseUpdateInconsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -142,14 +174,14 @@ public class DAOFacadeTest {
 
         Mockito.verify(legacyDAO).updateCountry(pl);
         Mockito.verify(lightblueDAO).updateCountry(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         // when there is a conflict, facade will return what legacy dao returned
         Assert.assertEquals(ca, updatedEntity);
     }
 
     @Test
-    public void ligtblueProxyPhaseUpdateTest() {
+    public void ligtblueProxyPhaseUpdateTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -158,13 +190,13 @@ public class DAOFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).updateCountry(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     /* insert tests */
 
     @Test
-    public void initialPhaseCreate() {
+    public void initialPhaseCreate() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -173,11 +205,11 @@ public class DAOFacadeTest {
 
         Mockito.verifyZeroInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
-    public void dualWritePhaseCreateConsistentTest() {
+    public void dualWritePhaseCreateConsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -186,19 +218,19 @@ public class DAOFacadeTest {
         Mockito.when(legacyDAO.createCountry(pl)).thenReturn(createdByLegacy);
 
         Country createdCountry = facade.createCountry(pl);
-        Assert.assertEquals(101l, createdCountry.getId());
+        Assert.assertEquals(new Long(101), createdCountry.getId());
 
 
         Mockito.verify(legacyDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == (Long)((DAOFacadeBase)facade).getEntityIdStore().pop());
+        Assert.assertTrue(101l == ((DAOFacadeBase)facade).getEntityIdStore().pop());
     }
 
     @Test
-    public void dualWritePhaseCreateInconsistentTest() {
+    public void dualWritePhaseCreateInconsistentTest() throws CountryException {
         LightblueMigrationPhase.dualWritePhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -211,16 +243,16 @@ public class DAOFacadeTest {
 
         Mockito.verify(legacyDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == (Long) ((DAOFacadeBase) facade).getEntityIdStore().pop());
+        Assert.assertTrue(101l == ((DAOFacadeBase) facade).getEntityIdStore().pop());
 
         Assert.assertEquals(pl.getIso2Code(), "PL");
     }
 
     @Test
-    public void ligtblueProxyPhaseCreateTest() {
+    public void ligtblueProxyPhaseCreateTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         // lightblue will handle ID generation in this phase
@@ -233,13 +265,13 @@ public class DAOFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     /* insert tests when method also does a read */
 
     @Test
-    public void initialPhaseCreateWithRead() {
+    public void initialPhaseCreateWithRead() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -248,28 +280,11 @@ public class DAOFacadeTest {
 
         Mockito.verifyZeroInteractions(lightblueDAO);
         Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     @Test
-    public void dualWritePhaseCreateWithReadTest() {
-        LightblueMigrationPhase.dualWritePhase(togglzRule);
-
-        Country pl = new Country(101l, "PL");
-
-        Mockito.when(legacyDAO.createCountryIfNotExists(pl)).thenReturn(pl);
-
-        facade.createCountryIfNotExists(pl);
-
-        Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
-
-        // not calling lightblueDAO in dual write phase, because this is also a read method
-        Mockito.verifyZeroInteractions(lightblueDAO);
-    }
-
-    @Test
-    public void dualReadPhaseCreateWithReadTest() {
+    public void dualReadPhaseCreateWithReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -278,19 +293,19 @@ public class DAOFacadeTest {
         Mockito.when(legacyDAO.createCountryIfNotExists(pl)).thenReturn(createdByLegacy);
 
         Country createdCountry = facade.createCountryIfNotExists(pl);
-        Assert.assertEquals(101l, createdCountry.getId());
+        Assert.assertEquals(new Long(101), createdCountry.getId());
 
 
         Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
         Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == (Long)((DAOFacadeBase)facade).getEntityIdStore().pop());
+        Assert.assertTrue(101l == ((DAOFacadeBase)facade).getEntityIdStore().pop());
     }
 
     @Test
-    public void ligtblueProxyPhaseCreateWithReadTest() {
+    public void ligtblueProxyPhaseCreateWithReadTest() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -299,13 +314,13 @@ public class DAOFacadeTest {
 
         Mockito.verifyZeroInteractions(legacyDAO);
         Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
     }
 
     /* lightblue failure tests */
 
     @Test
-    public void ligtblueFailureDuringReadTest() {
+    public void ligtblueFailureDuringReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -322,7 +337,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueFailureDuringUpdateTest() {
+    public void lightblueFailureDuringUpdateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country("PL");
@@ -340,7 +355,7 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueFailureDuringCreateTest() {
+    public void lightblueFailureDuringCreateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country(101l, "PL");
@@ -357,7 +372,68 @@ public class DAOFacadeTest {
     }
 
     @Test
-    public void ligtblueNullReturnedAfterCreateTest() {
+    public void ligtblueFailureDuringReadProxyPhaseTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).getCountry("PL");
+
+        try {
+            facade.getCountry("PL");
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+
+    }
+
+    @Test
+    public void ligtblueFailureDuringCreateProxyPhaseTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).createCountry(pl);
+
+        try {
+            facade.createCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+
+    }
+
+    @Test
+    public void ligtblueFailureDuringUpdateProxyPhaseTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).updateCountry(pl);
+
+        try {
+            facade.updateCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+
+    }
+
+    @Test
+    public void lightblueNullReturnedAfterCreateTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         Country pl = new Country(101l, "PL");
@@ -373,11 +449,13 @@ public class DAOFacadeTest {
         Assert.assertEquals(null, returnedCountry);
     }
 
-    /* timeout tests */
+    /* lightblue timeout tests */
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() {
-        daoFacadeExample.setTimeoutSeconds(0);
+    public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() throws CountryException {
+        TimeoutConfiguration t = new TimeoutConfiguration(0, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -397,14 +475,16 @@ public class DAOFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_Success() {
-        daoFacadeExample.setTimeoutSeconds(1);
+    public void lightblueTakesLongToRespondOnCreate_Success() throws CountryException {
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -424,14 +504,16 @@ public class DAOFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_Timeout() {
-        daoFacadeExample.setTimeoutSeconds(1);
+    public void lightblueTakesLongToRespondOnCreate_Timeout() throws CountryException {
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -451,14 +533,16 @@ public class DAOFacadeTest {
 
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(legacyDAO).createCountry(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnRead_Timeout() {
-        daoFacadeExample.setTimeoutSeconds(1);
+    public void lightblueTakesLongToRespondOnRead_Timeout() throws CountryException {
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -478,14 +562,16 @@ public class DAOFacadeTest {
 
         Mockito.verify(lightblueDAO).getCountry("PL");
         Mockito.verify(legacyDAO).getCountry("PL");
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnUpdate_Timeout() {
-        daoFacadeExample.setTimeoutSeconds(1);
+    public void lightblueTakesLongToRespondOnUpdate_Timeout() throws CountryException {
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         final Country pl = new Country(101l, "PL");
@@ -505,9 +591,304 @@ public class DAOFacadeTest {
 
         Mockito.verify(lightblueDAO).updateCountry(pl);
         Mockito.verify(legacyDAO).updateCountry(pl);
-        Mockito.verify(daoFacadeExample, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any());
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
 
         Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnRead_Success_FromProperties_Method() throws CountryException {
+        Properties p = new Properties();
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO.getCountry", "2000");
+        TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.getCountry("PL")).thenReturn(pl);
+        Mockito.when(lightblueDAO.getCountry("PL")).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.getCountry("PL");
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnRead_Timeout_FromProperties_Bean() throws CountryException {
+        Properties p = new Properties();
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.TIMEOUT_CONFIG_PREFIX+"CountryDAO.getCountry", "2000");
+        TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(1500);
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.anyString());
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnCreate_ProxyPhase() throws CountryException {
+        Properties p = new Properties();
+        TimeoutConfiguration t = new TimeoutConfiguration(100, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(200);
+                return pl;
+            }
+        });
+
+        Country returnedCountry = facade.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verifyZeroInteractions(legacyDAO);
+        Mockito.verifyZeroInteractions(consistencyChecker);
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnUpdate_ProxyPhase() throws CountryException {
+        Properties p = new Properties();
+        TimeoutConfiguration t = new TimeoutConfiguration(100, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(lightblueDAO.updateCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(200);
+                return pl;
+            }
+        });
+
+        Country returnedCountry = facade.updateCountry(pl);
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+        Mockito.verifyZeroInteractions(legacyDAO);
+        Mockito.verifyZeroInteractions(consistencyChecker);
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnRead_ProxyPhase() throws CountryException {
+        Properties p = new Properties();
+        TimeoutConfiguration t = new TimeoutConfiguration(100, CountryDAO.class.getSimpleName(), p);
+        daoFacadeExample.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(lightblueDAO.getCountry(Mockito.any(String.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(200);
+                return pl;
+            }
+        });
+
+        Country returnedCountry = facade.getCountry("PL");
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verifyZeroInteractions(legacyDAO);
+        Mockito.verifyZeroInteractions(consistencyChecker);
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    /* legacy failure tests */
+
+    @Test
+    public void legacyFailureDuringReadTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Mockito.when(legacyDAO.getCountry(Mockito.any(String.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(100);
+                throw new CountryException();
+            }
+
+        });
+
+        try {
+            facade.getCountry("PL");
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).getCountry("PL");
+        Mockito.verify(legacyDAO).getCountry("PL");
+    }
+
+    @Test
+    public void legacyFailureDuringUpdateTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        Mockito.when(legacyDAO.updateCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(100);
+                throw new CountryException();
+            }
+
+        });
+
+        try {
+            facade.updateCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(lightblueDAO).updateCountry(pl);
+        Mockito.verify(legacyDAO).updateCountry(pl);
+    }
+
+    @Test
+    public void legacyFailureDuringCreateTest() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        Country pl = new Country("PL");
+
+        Mockito.when(legacyDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(100);
+                throw new CountryException();
+            }
+
+        });
+
+        try {
+            facade.createCountry(pl);
+            Assert.fail();
+        } catch(CountryException ce) {
+
+        } catch(Exception e) {
+            Assert.fail();
+        }
+
+        Mockito.verify(legacyDAO).createCountry(pl);
+    }
+
+    @Test
+    public void clearSharedStoreAfterFailure() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country("PL");
+        final Country ca = new Country("CA");
+
+        // legacyDAO creates CA Country with id=12
+        // legacyDAO creates PL Country with id=13
+        Mockito.when(legacyDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Country country = (Country)invocation.getArguments()[0];
+                if (country.getIso2Code().equals("CA")){
+                    // oracle service pushes id of a created object into shared store
+                    daoFacadeExample.getEntityIdStore().push(12l);
+                    return new Country(12l, "CA");
+                } else {
+                    // oracle service pushes id of a created object into shared store
+                    daoFacadeExample.getEntityIdStore().push(13l);
+                    return new Country(13l, "PL");
+                }
+            }
+
+        });
+
+        // lightblueDAO fails when creating CA Country
+        // lightblueDAO creates PL Country with id=13
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Country country = (Country)invocation.getArguments()[0];
+                if (country.getIso2Code().equals("CA")){
+                    throw new CountryException();
+                } else {
+                    return new Country(daoFacadeExample.getEntityIdStore().pop(), "PL");
+                }
+            }
+
+        });
+
+        // lightblue service operation fails and the id is not retrieved
+        facade.createCountry(ca);
+
+        // lightblue service operation succeeds, id is retrieved from shared store
+        // reusing same thread id as the previous call
+        Country returned = facade.createCountry(pl);
+
+        Assert.assertEquals((Long)13l, returned.getId());
+
+        // the id pushed into shared store during first, failed call, is cleared, expecting no inconsistency
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.eq(new Country(13l, "PL")), Mockito.eq(new Country(13l, "PL")), Mockito.anyString(), Mockito.anyString());
+
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(ca);
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(lightblueDAO).createCountry(ca);
     }
 
 }

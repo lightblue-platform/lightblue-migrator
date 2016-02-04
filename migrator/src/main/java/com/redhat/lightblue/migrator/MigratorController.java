@@ -1,50 +1,24 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.Random;
-import java.util.Date;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Arrays;
-import java.util.HashMap;
-
 import java.io.IOException;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.redhat.lightblue.client.LightblueClient;
-import com.redhat.lightblue.client.enums.ExpressionOperation;
-import com.redhat.lightblue.client.enums.SortDirection;
-import com.redhat.lightblue.client.response.LightblueResponse;
-import com.redhat.lightblue.client.response.LightblueException;
-import com.redhat.lightblue.client.request.SortCondition;
+import com.redhat.lightblue.client.LightblueException;
+import com.redhat.lightblue.client.Projection;
+import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
-import com.redhat.lightblue.client.request.data.DataInsertRequest;
-import com.redhat.lightblue.client.request.data.DataDeleteRequest;
-import com.redhat.lightblue.client.request.data.DataUpdateRequest;
-import com.redhat.lightblue.client.expression.update.SetUpdate;
-import com.redhat.lightblue.client.expression.update.PathValuePair;
-import com.redhat.lightblue.client.expression.update.AppendUpdate;
-import com.redhat.lightblue.client.expression.update.LiteralRValue;
-import com.redhat.lightblue.client.expression.update.ObjectRValue;
-import com.redhat.lightblue.client.expression.update.ForeachUpdate;
-import com.redhat.lightblue.client.util.ClientConstants;
 
-import static com.redhat.lightblue.client.expression.query.ValueQuery.withValue;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeFieldRecursively;
-import static com.redhat.lightblue.client.projection.FieldProjection.includeField;
-import static com.redhat.lightblue.client.expression.query.NaryLogicalQuery.and;
-
-public class MigratorController extends Thread {
+public class MigratorController extends AbstractController {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(MigratorController.class);
-    
-    private MigrationConfiguration migrationConfiguration;
-    private final Class migratorClass;
-    private final Controller controller;
-    private final LightblueClient lbClient;
+
     private final Random rnd=new Random();
-    private final ThreadGroup migratorThreads;
 
     public static final int JOB_FETCH_BATCH_SIZE=64;
 
@@ -57,124 +31,50 @@ public class MigratorController extends Thread {
             this.ae=ae;
         }
     }
-        
-    
+
     public MigratorController(Controller controller,MigrationConfiguration migrationConfiguration) {
-        this.migrationConfiguration=migrationConfiguration;
-        this.controller=controller;
-        lbClient=controller.getLightblueClient();
-
-        if(migrationConfiguration.getMigratorClass()==null)
-            migratorClass=DefaultMigrator.class;
-        else
-            try {
-                migratorClass=Class.forName(migrationConfiguration.getMigratorClass());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        
-        migratorThreads=new ThreadGroup("Migrators:"+migrationConfiguration.getConfigurationName());
+        super(controller,migrationConfiguration,"Migrators:"+migrationConfiguration.getConfigurationName());
     }
 
-    public ThreadGroup getMigratorThreads() {
-        return migratorThreads;
-    }
-
-    public Controller getController() {
-        return controller;
-    }
-
-    public MigrationConfiguration getMigrationConfiguration() {
-        return migrationConfiguration;
-    }
-
-    public MigrationConfiguration reloadMigrationConfiguration() {
-        try {
-            LOGGER.debug("Reloading migration configuration {}",migrationConfiguration.get_id());
-            DataFindRequest findRequest = new DataFindRequest("migrationConfiguration",null);
-            findRequest.where(withValue("_id",ExpressionOperation.EQ,migrationConfiguration.get_id()));
-            findRequest.select(includeFieldRecursively("*"));
-            LOGGER.debug("Loading configuration");
-            return lbClient.data(findRequest, MigrationConfiguration.class);
-        } catch (Exception e) {
-            LOGGER.error("Cannot reload migration configuration:"+e);
+    private LockRecord lock(MigrationJob mj)
+        throws Exception {
+        ActiveExecution ae=lock(mj.get_id());
+        if(ae!=null) {
+            return new LockRecord(mj,ae);
+        } else {
+            return null;
         }
-        return null;
     }
-    
+
     /**
      * Retrieves jobs that are available, and their scheduled time has passed. Returns at most batchSize jobs starting at startIndex
      */
     public MigrationJob[] retrieveJobs(int batchSize,int startIndex)
         throws IOException, LightblueException {
         LOGGER.debug("Retrieving jobs: batchSize={}, startIndex={}",batchSize,startIndex);
-        
+
         DataFindRequest findRequest = new DataFindRequest("migrationJob",null);
-        
+
         findRequest.where(
-                          and(
+
+                          Query.and(
                               // get jobs for this configuration
-                              withValue("configurationName",ExpressionOperation.EQ,migrationConfiguration.getConfigurationName()),
-                              // get jobs whose state ara available
-                              withValue("status",ExpressionOperation.EQ,"available"),
-                              // only get jobs that are 
-                              withValue("scheduledDate",ExpressionOperation.LTE,ClientConstants.getDateFormat().format(new Date()))
-                              )
+                                    Query.withValue("configurationName",Query.eq,migrationConfiguration.getConfigurationName()),
+                                    // get jobs whose state ara available
+                                    Query.withValue("status",Query.eq,"available"),
+                                    // only get jobs that are
+                                    Query.withValue("scheduledDate",Query.lte,new Date())
+                                    )
                           );
-        findRequest.select(includeField("*"));
-        
-        // sort by scheduledDate ascending to process oldest jobs first
-        findRequest.sort(new SortCondition("scheduledDate", SortDirection.ASCENDING));
-        
+        findRequest.select(Projection.includeField("*"));
+
         findRequest.range(startIndex, startIndex+batchSize-1);
-        
+
         LOGGER.debug("Finding Jobs to execute: {}", findRequest.getBody());
-        
+
         return lbClient.data(findRequest, MigrationJob[].class);
     }
 
-    /**
-     * Attempts to lock a migration job. If successful, return the migration job and the active execution
-     */
-    private LockRecord lock(MigrationJob mj)
-        throws Exception {
-        DataInsertRequest insRequest=new DataInsertRequest("activeExecution",null);
-        ActiveExecution ae=new ActiveExecution();
-        ae.setMigrationJobId(mj.get_id());
-        ae.setStartTime(new Date());
-        
-        insRequest.create(ae);
-        insRequest.returns(includeFieldRecursively("*"));
-        LightblueResponse rsp;
-        try {
-            LOGGER.debug("Attempting to lock {}",ae.getMigrationJobId());
-            rsp=lbClient.data(insRequest);
-            LOGGER.debug("response:{}",rsp);
-            if(rsp.hasError()) {
-                LOGGER.debug("Response has error");
-                return null;
-            }
-        } catch (Exception e) {
-            LOGGER.debug("Error during insert:{}",e);
-            return null;
-        }
-        if(rsp.parseModifiedCount()==1) {
-            return new LockRecord(mj,rsp.parseProcessed(ActiveExecution.class));
-        } else
-            return null;
-    }
-
-    public void unlock(String id) {
-        DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
-        req.where(withValue("_id",ExpressionOperation.EQ,id));
-        try {
-            LightblueResponse rsp=lbClient.data(req);
-        } catch(Exception e) {
-            LOGGER.error("Cannot delete lock {}",id);
-        }
-        Breakpoint.checkpoint("MigratorController:unlock");
-    }
-    
     private LockRecord findAndLockMigrationJob()
         throws Exception {
         // We retrieve a batch of migration jobs, and try to lock
@@ -194,13 +94,15 @@ public class MigratorController extends Thread {
                 more=true;
                 MigrationJob[] jobs=retrieveJobs(JOB_FETCH_BATCH_SIZE,startIndex);
                 if(jobs!=null&&jobs.length>0) {
-                    if(jobs.length<JOB_FETCH_BATCH_SIZE)
+                    if(jobs.length<JOB_FETCH_BATCH_SIZE) {
                         more=false;
-                    
+                    }
+
                     List<MigrationJob> jobList=new LinkedList<>();
-                    for(MigrationJob x:jobs)
+                    for(MigrationJob x:jobs) {
                         jobList.add(x);
-                    
+                    }
+
                     do {
                         // Pick a job at random
                         int jobIndex=rnd.nextInt(jobList.size());
@@ -214,11 +116,12 @@ public class MigratorController extends Thread {
                             // Can't lock it. Remove from job list
                             jobList.remove(jobIndex);
                         }
-                    } while(!jobList.isEmpty());
-                    
-                } else
+                    } while(!jobList.isEmpty()&&!isInterrupted());
+
+                } else {
                     more=false;
-            } while(more);
+                }
+            } while(more&&!isInterrupted());
         } catch (Exception e) {
             LOGGER.error("Exception in findAndLockMigrationJob:"+e,e);
             throw e;
@@ -227,15 +130,6 @@ public class MigratorController extends Thread {
         return null;
     }
 
-    private void processMigrationJob(LockRecord lck)
-        throws Exception {
-        Migrator migrator=(Migrator)migratorClass.getConstructor(ThreadGroup.class).newInstance(migratorThreads);
-        migrator.setController(this);
-        migrator.setMigrationJob(lck.mj);
-        migrator.setActiveExecution(lck.ae);
-        migrator.start();
-    }
-            
     @Override
     public void run() {
         LOGGER.debug("Starting controller thread");
@@ -243,6 +137,7 @@ public class MigratorController extends Thread {
         // This thread never stops
         Breakpoint.checkpoint("MigratorController:start");
         while(!interrupted) {
+
             interrupted=isInterrupted();
             if(!interrupted) {
                 // All active threads will notify on migratorThreads when they finish
@@ -278,7 +173,7 @@ public class MigratorController extends Thread {
                     if(lockedJob!=null) {
                         LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
                         Breakpoint.checkpoint("MigratorController:process");
-                        processMigrationJob(lockedJob);
+                        createMigrator(lockedJob.mj,lockedJob.ae).start();
                     } else {
                         // No jobs are available, wait a bit (10sec-30sec), and retry
                         LOGGER.debug("Waiting");
