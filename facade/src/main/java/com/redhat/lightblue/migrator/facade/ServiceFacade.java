@@ -1,11 +1,11 @@
 package com.redhat.lightblue.migrator.facade;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStore;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreException;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreImpl;
@@ -129,32 +130,46 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      * @param values
      * @return
      */
-    static String methodCallToString(String methodName, Object[] values) {
+    static String methodCallToString(Method method, Object[] values) {
         try {
             StringBuilder str = new StringBuilder();
-            str.append(methodName).append("(");
+            str.append(method.getName()).append("(");
             Iterator<Object> it = Arrays.asList(values).iterator();
+            Iterator<Annotation[]> annotations = Arrays.asList(method.getParameterAnnotations()).iterator();
             while(it.hasNext()) {
                 Object value = it.next();
-                if (value != null && value.getClass().isArray())
-                    if (value.getClass().getComponentType().isPrimitive()) {
-                        // this is an array of primitives, convert to a meaningful string using reflection
-                        String primitiveArrayType = value.getClass().getComponentType().getName();
+                boolean isSecret = false;
+                for (Annotation a: annotations.next()) {
+                    if (a instanceof Secret) {
+                        isSecret=true;
+                        break;
+                    }
+                }
 
-                        StringBuilder pStr = new StringBuilder();
-                        for (int i = 0; i < Array.getLength(value); i ++) {
-                            pStr.append(Array.get(value, i));
-                            if (i != Array.getLength(value)-1) {
-                                pStr.append(", ");
+                if (isSecret) {
+                    str.append("****");
+                } else {
+                    if (value != null && value.getClass().isArray())
+                        if (value.getClass().getComponentType().isPrimitive()) {
+                            // this is an array of primitives, convert to a meaningful string using reflection
+                            String primitiveArrayType = value.getClass().getComponentType().getName();
+
+                            StringBuilder pStr = new StringBuilder();
+                            for (int i = 0; i < Array.getLength(value); i ++) {
+                                pStr.append(Array.get(value, i));
+                                if (i != Array.getLength(value)-1) {
+                                    pStr.append(", ");
+                                }
                             }
+                            str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
                         }
-                        str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
-                    }
-                    else {
-                        str.append(Arrays.deepToString((Object[])value));
-                    }
-                else
-                    str.append(value);
+                        else {
+                            str.append(Arrays.deepToString((Object[])value));
+                        }
+                    else
+                        str.append(value);
+                }
+
                 if (it.hasNext()) {
                     str.append(", ");
                 }
@@ -260,9 +275,14 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callSvcMethod(final FacadeOperation facadeOperation, final boolean callInParallel, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
+    public <T> T callSvcMethod(final FacadeOperation facadeOperation, final boolean callInParallel, final Method methodCalled, final Object ... values) throws Throwable {
+
+        final Class<T> returnedType = (Class<T>) methodCalled.getReturnType();
+        final String methodName = methodCalled.getName();
+        final Class[] types = methodCalled.getParameterTypes();
+
         if (log.isDebugEnabled()) {
-            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodName, values), callInParallel ? "parallel": "serial", facadeOperation);
+            log.debug("Calling {}.{} ({} {})", implementationName, methodCallToString(methodCalled, values), callInParallel ? "parallel": "serial", facadeOperation);
         }
 
         TogglzRandomUsername.init();
@@ -316,7 +336,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+methodCallToString(methodCalled, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -336,7 +356,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodName, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, methodCallToString(methodCalled, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {

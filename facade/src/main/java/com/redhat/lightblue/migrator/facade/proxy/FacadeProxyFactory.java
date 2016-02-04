@@ -53,6 +53,17 @@ public class FacadeProxyFactory {
         boolean parallel() default false;
     }
 
+    /**
+     * Secret parameters are logged as ****.
+     *
+     * @author mpatercz
+     *
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.PARAMETER)
+    public static @interface Secret {
+    }
+
     private static class FacadeInvocationHandler<D> implements InvocationHandler {
 
         private static final Logger log = LoggerFactory.getLogger(FacadeInvocationHandler.class);
@@ -68,13 +79,13 @@ public class FacadeProxyFactory {
             if (method.isAnnotationPresent(ReadOperation.class)) {
                 ReadOperation ro = method.getAnnotation(ReadOperation.class);
                 log.debug("Performing parallel="+ro.parallel()+" "+FacadeOperation.READ+" operation");
-                return daoFacadeBase.callSvcMethod(FacadeOperation.READ, ro.parallel(), method.getReturnType(), method.getName(), method.getParameterTypes(), args);
+                return daoFacadeBase.callSvcMethod(FacadeOperation.READ, ro.parallel(), method, args);
             }
 
             if (method.isAnnotationPresent(WriteOperation.class)) {
                 WriteOperation wo = method.getAnnotation(WriteOperation.class);
                 log.debug("Performing parallel="+wo.parallel()+" "+FacadeOperation.WRITE+" operation");
-                return daoFacadeBase.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method.getReturnType(), method.getName(), method.getParameterTypes(), args);
+                return daoFacadeBase.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method, args);
             }
 
             log.debug("Not a facade operation, proxy passing to legacy");

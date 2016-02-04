@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.facade;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,13 +8,32 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
 
 public class MethodCallStringifierTest {
 
+    interface Foo {
+        public void foo(int x, String y);
+        public void foo(Country[] c, int x, String y);
+        public void foo(long[] l, int x, String y);
+        public void foo(List<Country> c, int x, String y);
+        public void foo2(List<Long> l, int x, String y);
+        public void foo(String login, @Secret String password);
+    }
+
+
+    private Method getMethod(String name, Class<?> ... types) {
+        try {
+            return Foo.class.getMethod(name, types);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     @Test
     public void testSimple() {
-        Assert.assertEquals("blah(12, string)",
-                ServiceFacade.methodCallToString("blah", new Object[]{12, "string"}));
+        Assert.assertEquals("foo(12, string)",
+                ServiceFacade.methodCallToString(getMethod("foo", int.class, String.class), new Object[]{12, "string"}));
     }
 
     @Test
@@ -22,8 +42,8 @@ public class MethodCallStringifierTest {
         l.add(new Country(1l, "PL"));
         l.add(new Country(2l, "CA"));
 
-        Assert.assertEquals("blah([PL id=1, CA id=2], 12, string)",
-                ServiceFacade.methodCallToString("blah", new Object[]{l, 12, "string"}));
+        Assert.assertEquals("foo([PL id=1, CA id=2], 12, string)",
+                ServiceFacade.methodCallToString(getMethod("foo", List.class, int.class, String.class), new Object[]{l, 12, "string"}));
     }
 
     @Test
@@ -32,24 +52,30 @@ public class MethodCallStringifierTest {
         l.add(1l);
         l.add(2l);
 
-        Assert.assertEquals("blah([1, 2], 12, string)",
-                ServiceFacade.methodCallToString("blah", new Object[]{l, 12, "string"}));
+        Assert.assertEquals("foo2([1, 2], 12, string)",
+                ServiceFacade.methodCallToString(getMethod("foo2", List.class, int.class, String.class), new Object[]{l, 12, "string"}));
     }
 
     @Test
     public void testArrayOfPrimitives() {
         Long[] arr = new Long[]{1l, 2l};
 
-        Assert.assertEquals("blah([1, 2], 12, string)",
-                ServiceFacade.methodCallToString("blah", new Object[]{arr, 12, "string"}));
+        Assert.assertEquals("foo([1, 2], 12, string)",
+                ServiceFacade.methodCallToString(getMethod("foo", long[].class, int.class, String.class), new Object[]{arr, 12, "string"}));
     }
 
     @Test
     public void testArrayOfObjects() {
         Country[] arr = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
 
-        Assert.assertEquals("blah([PL id=1, CA id=2], 12, string)",
-                ServiceFacade.methodCallToString("blah", new Object[]{arr, 12, "string"}));
+        Assert.assertEquals("foo([PL id=1, CA id=2], 12, string)",
+                ServiceFacade.methodCallToString(getMethod("foo", Country[].class, int.class, String.class), new Object[]{arr, 12, "string"}));
+    }
+
+    @Test
+    public void testSecret() {
+        Assert.assertEquals("foo(login, ****)",
+                ServiceFacade.methodCallToString(getMethod("foo", String.class, String.class), new Object[]{"login", "password"}));
     }
 
 }
