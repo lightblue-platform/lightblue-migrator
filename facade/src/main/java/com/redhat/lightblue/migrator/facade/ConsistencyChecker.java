@@ -28,8 +28,8 @@ import com.redhat.lightblue.migrator.facade.methodcallstringifier.MethodCallStri
 public class ConsistencyChecker {
 
     // using non-static slf4j loggers for easy unit testing
-    private Logger log = LoggerFactory.getLogger(this.getClass());
-    private Logger inconsistencyLog = LoggerFactory.getLogger("Inconsistency");
+    private Logger inconsistencyLog = LoggerFactory.getLogger(this.getClass());
+    private Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass()+"Huge");
 
     private final String implementationName;
     protected int maxInconsistencyLogLength = 65536; // 64KB
@@ -79,22 +79,22 @@ public class ConsistencyChecker {
         String logMessage = String.format("Inconsistency found in %s.%s - diff: %s - legacyJson: %s, lightblueJson: %s", implementationName, callToLogInCaseOfInconsistency, diff, legacyJson, lightblueJson);
         if (logResponseDataEnabled) {
             if (logMessage.length()<=maxInconsistencyLogLength) {
-                log.warn(logMessage);
+                inconsistencyLog.warn(logMessage);
             } else if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
-                log.warn(String.format("Inconsistency found in %s.%s - diff: %s", implementationName, callToLogInCaseOfInconsistency, diff));
-                inconsistencyLog.debug(logMessage);
+                inconsistencyLog.warn(String.format("Inconsistency found in %s.%s - diff: %s", implementationName, callToLogInCaseOfInconsistency, diff));
+                hugeInconsistencyLog.debug(logMessage);
             } else {
-                log.warn(String.format("Inconsistency found in %s.%s - payload and diff is greater than %d bytes!", implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
-                inconsistencyLog.debug(logMessage);
+                inconsistencyLog.warn(String.format("Inconsistency found in %s.%s - payload and diff is greater than %d bytes!", implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
+                hugeInconsistencyLog.debug(logMessage);
             }
         } else {
             if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
-                log.warn(String.format("Inconsistency found in %s.%s - diff: %s", implementationName, callToLogInCaseOfInconsistency, diff));
+                inconsistencyLog.warn(String.format("Inconsistency found in %s.%s - diff: %s", implementationName, callToLogInCaseOfInconsistency, diff));
             } else {
-                log.warn(String.format("Inconsistency found in %s.%s - diff is greater than %d bytes!", implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
+                inconsistencyLog.warn(String.format("Inconsistency found in %s.%s - diff is greater than %d bytes!", implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
             }
             // logData is turned off, log in inconsistency.log for debugging
-            inconsistencyLog.debug(logMessage);
+            hugeInconsistencyLog.debug(logMessage);
         }
     }
 
@@ -131,9 +131,9 @@ public class ConsistencyChecker {
             JSONCompareResult result = JSONCompare.compareJSON(legacyJson, lightblueJson, JSONCompareMode.LENIENT);
             long t2 = System.currentTimeMillis();
 
-            if (log.isDebugEnabled()) {
-                log.debug("Consistency check took: " + (t2-t1)+" ms");
-                log.debug("Consistency check passed: "+ result.passed());
+            if (inconsistencyLog.isDebugEnabled()) {
+                inconsistencyLog.debug("Consistency check took: " + (t2-t1)+" ms");
+                inconsistencyLog.debug("Consistency check passed: "+ result.passed());
             }
             if (!result.passed()) {
                 logInconsistency(callToLogInCaseOfInconsistency.toString(), legacyJson, lightblueJson, result.getMessage().replaceAll("\n", ","));
@@ -146,7 +146,7 @@ public class ConsistencyChecker {
                 logInconsistency(callToLogInCaseOfInconsistency.toString(), legacyJson, lightblueJson, null);
             }
         } catch (JsonProcessingException e) {
-            log.error("Consistency check failed in "+implementationName+"."+callToLogInCaseOfInconsistency+"! Invalid JSON: legacyJson="+legacyJson+", lightblueJson="+lightblueJson, e);
+            inconsistencyLog.error("Consistency check failed in "+implementationName+"."+callToLogInCaseOfInconsistency+"! Invalid JSON: legacyJson="+legacyJson+", lightblueJson="+lightblueJson, e);
         }
         return false;
     }
