@@ -16,6 +16,8 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.redhat.lightblue.migrator.facade.methodcallstringifier.LazyMethodCallStringifier;
+import com.redhat.lightblue.migrator.facade.methodcallstringifier.MethodCallStringifier;
 
 /**
  * This class checks for data inconsistencies and handles logging.
@@ -110,13 +112,17 @@ public class ConsistencyChecker {
      * @param callToLogInCaseOfInconsistency  the call including parameters
      * @return
      */
-    protected boolean checkConsistency(final Object legacyEntity, final Object lightblueEntity, String methodName, String callToLogInCaseOfInconsistency) {
+    protected boolean checkConsistency(final Object legacyEntity, final Object lightblueEntity, String methodName, MethodCallStringifier callToLogInCaseOfInconsistency) {
         if (legacyEntity==null&&lightblueEntity==null) {
             return true;
         }
 
         String legacyJson=null;
         String lightblueJson=null;
+
+        if (callToLogInCaseOfInconsistency == null)
+            callToLogInCaseOfInconsistency = new LazyMethodCallStringifier();
+
         try {
             long t1 = System.currentTimeMillis();
             legacyJson = getObjectWriter(methodName).writeValueAsString(legacyEntity);
@@ -130,14 +136,14 @@ public class ConsistencyChecker {
                 log.debug("Consistency check passed: "+ result.passed());
             }
             if (!result.passed()) {
-                logInconsistency(callToLogInCaseOfInconsistency, legacyJson, lightblueJson, result.getMessage().replaceAll("\n", ","));
+                logInconsistency(callToLogInCaseOfInconsistency.toString(), legacyJson, lightblueJson, result.getMessage().replaceAll("\n", ","));
             }
             return result.passed();
         } catch (JSONException e) {
             if (legacyEntity!=null&&legacyEntity.equals(lightblueEntity)) {
                 return true;
             } else {
-                logInconsistency(callToLogInCaseOfInconsistency, legacyJson, lightblueJson, null);
+                logInconsistency(callToLogInCaseOfInconsistency.toString(), legacyJson, lightblueJson, null);
             }
         } catch (JsonProcessingException e) {
             log.error("Consistency check failed in "+implementationName+"."+callToLogInCaseOfInconsistency+"! Invalid JSON: legacyJson="+legacyJson+", lightblueJson="+lightblueJson, e);
