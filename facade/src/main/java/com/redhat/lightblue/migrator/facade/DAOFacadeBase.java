@@ -42,7 +42,6 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 public class DAOFacadeBase<D> {
 
     private static final Logger log = LoggerFactory.getLogger(DAOFacadeBase.class);
-    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacyDAO, lightblueDAO;
 

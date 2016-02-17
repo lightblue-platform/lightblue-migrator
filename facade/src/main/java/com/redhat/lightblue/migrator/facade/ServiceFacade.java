@@ -42,7 +42,6 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 public class ServiceFacade<D> implements SharedStoreSetter {
 
     private static final Logger log = LoggerFactory.getLogger(ServiceFacade.class);
-    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacySvc, lightblueSvc;
 
