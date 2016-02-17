@@ -42,7 +42,6 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 public class ServiceFacade<D> implements SharedStoreSetter {
 
     private static final Logger log = LoggerFactory.getLogger(ServiceFacade.class);
-    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacySvc, lightblueSvc;
 
@@ -159,11 +158,11 @@ public class ServiceFacade<D> implements SharedStoreSetter {
      * @throws ExecutionException
      * @throws TimeoutException
      */
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
-        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, FacadeOperation facadeOperation, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
+        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName, facadeOperation) <= 0) {
             return listenableFuture.get();
         } else {
-            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName), TimeUnit.MILLISECONDS);
+            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName, facadeOperation), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -269,16 +268,16 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             try {
                 if (callInParallel) {
                     // lightblue was called before source/legacy, now just getting results
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName, shouldSource(facadeOperation));
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
                     listenableFuture = callLightblueSvc(true, method, values);
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName, shouldSource(facadeOperation));
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call "+implementationName+"."+LazyMethodCallStringifier.stringifyMethodCall(methodCalled, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+LazyMethodCallStringifier.stringifyMethodCall(methodCalled, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, facadeOperation)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;

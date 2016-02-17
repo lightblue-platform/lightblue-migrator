@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
 import com.redhat.lightblue.migrator.facade.methodcallstringifier.EagerMethodCallStringifier;
 import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
@@ -41,7 +42,6 @@ import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 public class DAOFacadeBase<D> {
 
     private static final Logger log = LoggerFactory.getLogger(DAOFacadeBase.class);
-    private static final Logger logInconsisteny = LoggerFactory.getLogger("Inconsistency");
 
     protected final D legacyDAO, lightblueDAO;
 
@@ -138,11 +138,11 @@ public class DAOFacadeBase<D> {
         }
     }
 
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
-        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName) <= 0) {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, FacadeOperation op, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
+        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName, op) <= 0) {
             return listenableFuture.get();
         } else {
-            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName), TimeUnit.MILLISECONDS);
+            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName, op), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -196,10 +196,10 @@ public class DAOFacadeBase<D> {
             // make sure async call to lightblue has completed
             try {
                 log.debug("Calling lightblue {}.{}", implementationName, methodName);
-                lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldReadSourceEntity());
+                lightblueEntity = getWithTimeout(listenableFuture, methodName, FacadeOperation.READ, LightblueMigration.shouldReadSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.READ)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -288,10 +288,10 @@ public class DAOFacadeBase<D> {
             // make sure asnyc call to lightblue has completed
             log.debug("Calling lightblue {}.{}", implementationName, methodName);
             try {
-                lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldWriteSourceEntity());
+                lightblueEntity = getWithTimeout(listenableFuture, methodName, FacadeOperation.WRITE, LightblueMigration.shouldWriteSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.WRITE)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -389,7 +389,7 @@ public class DAOFacadeBase<D> {
             ListenableFuture<T> listenableFuture = callLightblueDAO(passIds, method, values);
 
             try {
-                lightblueEntity = getWithTimeout(listenableFuture, methodName, LightblueMigration.shouldWriteSourceEntity());
+                lightblueEntity = getWithTimeout(listenableFuture, methodName, FacadeOperation.WRITE, LightblueMigration.shouldWriteSourceEntity());
             } catch (ExecutionException ee) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
                     EntityIdStoreException se = extractEntityIdStoreExceptionIfExists(ee);
@@ -406,7 +406,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.WRITE)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;

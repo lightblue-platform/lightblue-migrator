@@ -6,6 +6,8 @@ import java.util.Properties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
+
 /**
  * <p>Provides means to access timeout configuration defined in a {@link Properties} object.</p>
  *
@@ -55,16 +57,35 @@ public class TimeoutConfiguration {
         log.info("Initialized TimeoutConfiguration for {}", timeoutConfigBeanPrefix);
     }
 
-    public long getTimeoutMS(String methodName) {
+    /**
+     * Return timeout for this particular method. First checks if timeout was configured for that method
+     * explicitly. If not, looks for timeout defined for operation type (read/write). If not, looks for a
+     * timeout defined for entire bean. If that is not set, takes a default global timeout.
+     *
+     * @param methodName to lookup timeout configuration by name
+     * @param op to lookup timeout configuration by operation
+     * @return
+     */
+    public long getTimeoutMS(String methodName, FacadeOperation op) {
         if (methodTimeouts.containsKey(methodName)) {
             return methodTimeouts.get(methodName);
         }
 
         String timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix+"."+methodName);
 
+        if (timeoutPropValue == null && op != null) {
+            if (log.isDebugEnabled()) {
+                log.debug("Timeout config not found for method {}, trying default for {} operations for this bean", methodName, op);
+            }
+
+            timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix+"."+op);
+        }
+
+
         if (timeoutPropValue == null) {
-            if (log.isDebugEnabled())
+            if (log.isDebugEnabled()) {
                 log.debug("Timeout config not found for method {}, trying default for this bean", methodName);
+            }
 
             timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix);
         }
