@@ -20,7 +20,7 @@ public class LazyMethodCallStringifier implements MethodCallStringifier {
 
     private final Method method;
     private final Object[] values;
-    private final String stringifiedMethodCall;
+    private String stringifiedMethodCall;
 
     public LazyMethodCallStringifier(Method method, Object[] values) {
         this.method = method;
@@ -91,7 +91,9 @@ public class LazyMethodCallStringifier implements MethodCallStringifier {
                 }
             }
             str.append(")");
-            return str.toString();
+            stringifiedMethodCall = str.toString();
+
+            return stringifiedMethodCall;
         } catch (Exception e) {
             log.error("Creating method call string failed", e);
             return "<creating method call string failed>";

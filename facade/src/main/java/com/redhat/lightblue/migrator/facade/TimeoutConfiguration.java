@@ -30,8 +30,11 @@ public class TimeoutConfiguration {
 
     private static final Logger log = LoggerFactory.getLogger(TimeoutConfiguration.class);
 
-    public static final String TIMEOUT_CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.timeout.";
-    private final String timeoutConfigBeanPrefix;
+    public enum Type {
+        timeout, slowwarning;
+    }
+
+    public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
 
     private long defaultTimeoutMS;
     private String beanName;
@@ -48,52 +51,56 @@ public class TimeoutConfiguration {
     public TimeoutConfiguration(long defaultTimeoutMS, String beanName, Properties properties) {
         this.defaultTimeoutMS = defaultTimeoutMS;
         this.beanName = beanName;
-        this.timeoutConfigBeanPrefix = TIMEOUT_CONFIG_PREFIX+beanName;
         if (properties != null)
             this.properties = properties;
         else
             this.properties = new Properties();
 
-        log.info("Initialized TimeoutConfiguration for {}", timeoutConfigBeanPrefix);
+        log.info("Initialized TimeoutConfiguration for {}", beanName);
     }
 
     /**
-     * Return timeout for this particular method. First checks if timeout was configured for that method
+     * Return timeout or slowwarning value. First checks if timeout was configured for that method
      * explicitly. If not, looks for timeout defined for operation type (read/write). If not, looks for a
      * timeout defined for entire bean. If that is not set, takes a default global timeout.
      *
      * @param methodName to lookup timeout configuration by name
      * @param op to lookup timeout configuration by operation
+     * @param type to lookup timeout configuration by type
      * @return
      */
-    public long getTimeoutMS(String methodName, FacadeOperation op) {
-        if (methodTimeouts.containsKey(methodName)) {
-            return methodTimeouts.get(methodName);
+    public long getMS(String methodName, FacadeOperation op, Type type) {
+        String cacheKey = type+"-"+methodName;
+
+        if (methodTimeouts.containsKey(cacheKey)) {
+            return methodTimeouts.get(cacheKey);
         }
 
-        String timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix+"."+methodName);
+        String configurationKeyPrefix = CONFIG_PREFIX+type+"."+beanName;
+
+        String timeoutPropValue = properties.getProperty(configurationKeyPrefix+"."+methodName);
 
         if (timeoutPropValue == null && op != null) {
             if (log.isDebugEnabled()) {
-                log.debug("Timeout config not found for method {}, trying default for {} operations for this bean", methodName, op);
+                log.debug("{} config not found for method {}, trying default for {} operations for this bean", type, methodName, op);
             }
 
-            timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix+"."+op);
+            timeoutPropValue = properties.getProperty(configurationKeyPrefix+"."+op);
         }
 
 
         if (timeoutPropValue == null) {
             if (log.isDebugEnabled()) {
-                log.debug("Timeout config not found for method {}, trying default for this bean", methodName);
+                log.debug("{} config not found for method {}, trying default for this bean", type, methodName);
             }
 
-            timeoutPropValue = properties.getProperty(timeoutConfigBeanPrefix);
+            timeoutPropValue = properties.getProperty(configurationKeyPrefix);
         }
 
         Long timeout;
         if (timeoutPropValue == null) {
             if (log.isDebugEnabled())
-                log.debug("Timeout config not found for bean {} using global timeout", beanName);
+                log.debug("{} config not found for bean {} using global timeout", type, beanName);
 
             timeout = defaultTimeoutMS;
         } else {
@@ -101,12 +108,34 @@ public class TimeoutConfiguration {
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("Setting timeout for {}.{} to {}ms", beanName, methodName, timeout);
+            log.debug("Setting {} for {}.{} to {}ms", type, beanName, methodName, timeout);
         }
 
-        methodTimeouts.put(methodName, timeout);
+        methodTimeouts.put(cacheKey, timeout);
 
         return timeout;
+    }
+
+    /**
+     * See ${link {@link TimeoutConfiguration#getMS(String, FacadeOperation, Type)}
+     *
+     * @param methodName
+     * @param op
+     * @return
+     */
+    public long getTimeoutMS(String methodName, FacadeOperation op) {
+        return getMS(methodName, op, Type.timeout);
+    }
+
+    /**
+     * See ${link {@link TimeoutConfiguration#getMS(String, FacadeOperation, Type)}
+     *
+     * @param methodName
+     * @param op
+     * @return
+     */
+    public long getSlowWarningMS(String methodName, FacadeOperation op) {
+        return getMS(methodName, op, Type.slowwarning);
     }
 
 }

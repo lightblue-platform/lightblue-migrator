@@ -1,12 +1,8 @@
 package com.redhat.lightblue.migrator.facade;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Array;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -23,7 +19,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.redhat.lightblue.migrator.facade.methodcallstringifier.LazyMethodCallStringifier;
-import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
+import com.redhat.lightblue.migrator.facade.methodcallstringifier.MethodCallStringifier;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStore;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreException;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreImpl;
@@ -102,8 +98,6 @@ public class ServiceFacade<D> implements SharedStoreSetter {
     }
 
     private long getLightblueExecutionTimeout(String methodName) {
-
-
         String timeout = properties.getProperty("com.redhat.lightblue.migrator.facade.timeout."+implementationName+"."+methodName);
         if (timeout == null)
             timeout = properties.getProperty("com.redhat.lightblue.migrator.facade.timeout."+implementationName, ""+DEFAULT_TIMEOUT_MS);
@@ -123,7 +117,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         return classes.toArray(new Class[]{});
     }
 
-    private <T> ListenableFuture<T> callLightblueSvc(final boolean passIds, final Method method, final Object[] values) {
+    private <T> ListenableFuture<T> callLightblueSvc(final boolean passIds, final Method method, final Object[] values, final FacadeOperation op, final MethodCallStringifier callStringifier) {
         ListeningExecutorService executor = createExecutor();
         try {
         // fetch from lightblue using future (asynchronously)
@@ -137,7 +131,14 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 try {
                     return (T) method.invoke(lightblueSvc, values);
                 } finally {
-                    dest.complete();
+                    long callTook = dest.complete();
+                    long timeout = timeoutConfiguration.getTimeoutMS(method.getName(), op);
+                    long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
+
+                    if (callTook >= slowWarning && callTook < timeout) {
+                        // call is slow but not slow enough to trigger timeout
+                        log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
+                    }
                 }
             }
         });
@@ -222,8 +223,10 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         final String methodName = methodCalled.getName();
         final Class[] types = methodCalled.getParameterTypes();
 
+        LazyMethodCallStringifier callStringifier = new LazyMethodCallStringifier(methodCalled, values);
+
         if (log.isDebugEnabled()) {
-            log.debug("Calling {}.{} ({} {})", implementationName, LazyMethodCallStringifier.stringifyMethodCall(methodCalled, values), callInParallel ? "parallel": "serial", facadeOperation);
+            log.debug("Calling {}.{} ({} {})", implementationName, callStringifier, callInParallel ? "parallel": "serial", facadeOperation);
         }
 
         TogglzRandomUsername.init();
@@ -244,7 +247,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         if (callInParallel) {
             if (shouldDestination(facadeOperation)) {
                 Method method = lightblueSvc.getClass().getMethod(methodName, types);
-                listenableFuture = callLightblueSvc(false, method, values);
+                listenableFuture = callLightblueSvc(false, method, values, facadeOperation, callStringifier);
             }
         }
 
@@ -272,12 +275,12 @@ public class ServiceFacade<D> implements SharedStoreSetter {
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
-                    listenableFuture = callLightblueSvc(true, method, values);
+                    listenableFuture = callLightblueSvc(true, method, values, facadeOperation, callStringifier);
                     lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Lightblue call "+implementationName+"."+LazyMethodCallStringifier.stringifyMethodCall(methodCalled, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, facadeOperation)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call "+implementationName+"."+callStringifier+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, facadeOperation)+"s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -297,7 +300,7 @@ public class ServiceFacade<D> implements SharedStoreSetter {
             log.debug("."+methodName+" checking returned entity's consistency");
 
             // check if entities match
-            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new LazyMethodCallStringifier(methodCalled, values))) {
+            if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, callStringifier)) {
                 // return lightblue data if they are
                 return lightblueEntity;
             } else {
