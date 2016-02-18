@@ -22,14 +22,18 @@ public class Timer {
     public Timer(String method) {
         super();
         this.method = method;
-        this.start = log.isDebugEnabled() ? new Date(): null;
+        this.start = new Date();
     }
 
-    public void complete() {
+    public long complete() {
+        Date end = new Date();
+        long callTookMS = end.getTime()-start.getTime();
+
         if (log.isDebugEnabled()) {
-            Date end = new Date();
-            log.debug(method+" call took "+ (end.getTime()-start.getTime())+"ms");
+            log.debug(method+" call took "+ callTookMS + "ms");
         }
+
+        return callTookMS;
     }
 
 }
