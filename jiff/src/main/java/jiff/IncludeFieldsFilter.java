@@ -1,26 +1,23 @@
 package jiff;
 
-import java.util.Set;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.List;
+import java.util.ArrayList;
 
 
-public class IncludeFieldsFilter extends AbstractFieldFilter {
+public class IncludeFieldsFilter extends AbstractFieldListFilter {
 
-    private Set<String> fields;
-    
-    public IncludeFieldsFilter(Set<String> fields) {
-        this.fields=fields;
+    public IncludeFieldsFilter(Collection<String> fields) {
+        super(fields);
     }
 
     public IncludeFieldsFilter(String...fields) {
-        this.fields=new HashSet<>();
-        for(String x:fields)
-            this.fields.add(x);
+        super(fields);
     }
 
     @Override
-    public boolean includeField(String fieldName) {
-        for(String pattern:fields)
+    public boolean includeField(List<String> fieldName) {
+        for(List<String> pattern:fields)
             if(matches(pattern,fieldName))
                 return true;
         return false;
