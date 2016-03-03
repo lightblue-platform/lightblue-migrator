@@ -28,11 +28,7 @@ public class JsonDiffTest {
         JsonDiff diff=new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
-        diff.setFilter(new AbstractFieldFilter() {
-                public boolean includeField(String fieldName) {
-                    return !fieldName.equals("x");
-                }
-            });                 
+        diff.setFilter(new ExcludeFieldsFilter("x"));
         List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'x':1}"),
                                               esc("{'b':'x','a':1,'c':[2,3,1]}"));
         Assert.assertEquals(0,list.size());
@@ -148,8 +144,12 @@ public class JsonDiffTest {
         JsonDiff diff=new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
         diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
-        List<JsonDelta> list=diff.computeDiff(esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2},{'a':1} ] }"),
-                                              esc("{'b':null,'a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1} ] }"));
+        String s1=esc("{'a':1,'b':'x','c':[1,2,3],'d':[ {'a':1},{'b':2},{'a':1} ] }");
+        String s2=esc("{'b':null,'a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1} ] }");
+        List<JsonDelta> list=diff.computeDiff(s1,s2);
+        System.out.println(s1);
+        System.out.println(s2);
+        System.out.println(list);
         Assert.assertEquals(2,list.size());
     }
 

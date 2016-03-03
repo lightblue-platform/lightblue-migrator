@@ -1,58 +1,28 @@
 package jiff;
 
+import java.util.List;
+import java.util.ArrayList;
+import java.util.StringTokenizer;
+
 public abstract class AbstractFieldFilter implements Filter {
+    public static List<String> parse(String field) {
+        ArrayList<String> list=new ArrayList<>(32);
+        StringTokenizer tok=new StringTokenizer(field,". ");
+        while(tok.hasMoreTokens())
+            list.add(tok.nextToken());
+        return list;
+    }
 
-    public static boolean matches(String pattern,String field) {
-        int p=pattern.length();
-        int f=field.length();
-        if(p<=f) {
-            int state=0; // 0: begin, 1: index, 2: field
-            int ixp=0;
-            int ixf=0;
-            for(;ixp<p&&ixf<f;) {
-                char pc=pattern.charAt(ixp);
-                char fc=field.charAt(ixf);
-                switch(state) {
-                case 0: // begin
-                    if(pc=='*') {
-                        state=1;
-                    } else {
-                        state=2;
-                    }
-                    break;
-
-                case 1: // index
-                    if(Character.isDigit(fc)) {
-                        // ok
-                        ixf++;
-                    } else if(fc=='.') {
-                        ixf++;
-                        ixp++;
-                        if(ixp<p&&pattern.charAt(ixp)=='.') {
-                        	ixp++;
-                            state=0;
-                        } else
-                            return false;
-                    } else
-                        return false;
-                    break;
-
-                case 2: // field
-                    if(fc==pc) {
-                        ixf++;
-                        ixp++;
-                        if(fc=='.')
-                            state=0;
-                    } else {
-                        return false;
-                    }
-                    break;
-                }
+    public static boolean matches(List<String> pattern,List<String> field) {
+        int n=pattern.size();
+        if(n==field.size()) {
+            for(int i=0;i<n;i++) {
+                String p=pattern.get(i);
+                String f=field.get(i);
+                if(!(p.equals(f)||p.equals("*")))
+                    return false;
             }
-            if(ixp<p&&state==1)
-            	ixp++;
-            return ixp==p&&ixf==f;
-        } else
-            return false;
+        }
+        return true;
     }
 }

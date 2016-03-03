@@ -31,11 +31,15 @@ import jiff.JsonDiff;
 import jiff.JsonDelta;
 import jiff.AbstractFieldFilter;
 
+import jcmp.DocCompare;
+import jcmp.JsonCompare;
+
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueClientConfiguration;
 import com.redhat.lightblue.client.PropertiesLightblueClientConfiguration;
 import com.redhat.lightblue.client.util.ClientConstants;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
+
 
 public class Utils {
 
@@ -89,14 +93,50 @@ public class Utils {
      * @return list of inconsistent paths
      */
     public static List<Inconsistency> compareDocs(JsonNode sourceDocument, JsonNode destinationDocument,List<String> exclusionPaths) {
-        List<Inconsistency> inconsistencies = new ArrayList<>();
+        List<Inconsistency> ret=new ArrayList<>();
+        if(fastCompareDocs(sourceDocument,destinationDocument,exclusionPaths)) {
+            JsonCompare cmp=new JsonCompare();
+            try {
+                DocCompare.Difference<JsonNode> diff=cmp.compareNodes(sourceDocument,destinationDocument);
+                for(DocCompare.Delta<JsonNode> delta:diff.getDelta()) {
+                    String field=delta.getField();
+                    if(!field.endsWith("#")&&!isExcluded(exclusionPaths,field)) {
+                        if(!(delta instanceof DocCompare.Move) ) {
+                            if(delta instanceof DocCompare.Addition) {
+                                ret.add(new Inconsistency(delta.getField(),null,((DocCompare.Addition)delta).getAddedNode().toString()));
+                            } else if(delta instanceof DocCompare.Removal) {
+                                ret.add(new Inconsistency(delta.getField(),((DocCompare.Removal)delta).getRemovedNode().toString(),null));
+                            } else {
+                                JsonNode n1=((DocCompare.Modification<JsonNode>)delta).getUnmodifiedNode();
+                                JsonNode n2=((DocCompare.Modification<JsonNode>)delta).getModifiedNode();
+                                if(reallyDifferent(n1,n2)) 
+                                    ret.add(new Inconsistency(delta.getField(),n1.toString(),n2.toString()));
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Cannot compare docs:"+e);
+                throw new RuntimeException(e);
+            }
+        }
+        return ret;
+    }
+
+
+    /**
+     * Compare two docs fast if they are the same, excluding exclusions
+     *
+     * @return true if documents are different
+     */
+    public static boolean fastCompareDocs(JsonNode sourceDocument, JsonNode destinationDocument,List<String> exclusionPaths) {
         try {
             JsonDiff diff=new JsonDiff();
             diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
             diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
             diff.setFilter(new AbstractFieldFilter() {
-                    public boolean includeField(String fieldName) {
-                        return !fieldName.endsWith("#");
+                    public boolean includeField(List<String> fieldName) {
+                        return !fieldName.get(fieldName.size()-1).endsWith("#");
                     }
                 });
             List<JsonDelta> list=diff.computeDiff(sourceDocument,destinationDocument);
@@ -104,14 +144,14 @@ public class Utils {
                 String field=x.getField();
                 if(!isExcluded(exclusionPaths,field)) {
                     if(reallyDifferent(x.getNode1(),x.getNode2())) {
-                        inconsistencies.add(new Inconsistency(field,x.getNode1(),x.getNode2()));
+                        return true;
                     }
                 }
             }
         } catch (Exception e) {
             LOGGER.error("Cannot compare docs:{}",e,e);
         }
-        return inconsistencies;
+        return false;
     }
 
     /**

@@ -19,5 +19,5 @@ public interface JsonComparator {
      * @param node1 First node
      * @param node2 Second node
      */
-    boolean compare(List<JsonDelta> delta,String context,JsonNode node1,JsonNode node2);
+    boolean compare(List<JsonDelta> delta,List<String> context,JsonNode node1,JsonNode node2);
 }
