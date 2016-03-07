@@ -62,7 +62,7 @@ public class FacadeProxyFactory {
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.METHOD)
-    public static @interface Direct {
+    public static @interface DirectOperation {
         enum Target {
             LEGACY, LIGHTBLUE;
         }
@@ -92,8 +92,8 @@ public class FacadeProxyFactory {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            if (method.isAnnotationPresent(Direct.class)) {
-                Direct.Target t = method.getAnnotation(Direct.class).target();
+            if (method.isAnnotationPresent(DirectOperation.class)) {
+                DirectOperation.Target t = method.getAnnotation(DirectOperation.class).target();
 
                 switch (t) {
                     case LEGACY: {

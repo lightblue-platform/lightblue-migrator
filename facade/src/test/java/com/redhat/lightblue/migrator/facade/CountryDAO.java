@@ -5,11 +5,11 @@ import java.util.List;
 import javax.validation.constraints.Digits;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
-import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Direct;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.DirectOperation;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.ReadOperation;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.WriteOperation;
-import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Direct.Target;
+import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.DirectOperation.Target;
 
 public interface CountryDAO {
 
@@ -30,10 +30,10 @@ public interface CountryDAO {
 
     public abstract Country getCountryFromLegacy(long id) throws CountryException;
 
-    @Direct(target=Target.LEGACY)
+    @DirectOperation(target=Target.LEGACY)
     public abstract Country getCountryFromLegacy2(long id) throws CountryException;
 
-    @Direct(target=Target.LIGHTBLUE)
+    @DirectOperation(target=Target.LIGHTBLUE)
     public abstract Country getCountryFromLightblue(long id) throws CountryException;
 
     @WriteOperation
