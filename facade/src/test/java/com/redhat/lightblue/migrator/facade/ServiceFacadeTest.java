@@ -54,7 +54,7 @@ public class ServiceFacadeTest {
     }
 
     @Test
-    public void testGetCountryFromLegacy() throws CountryException {
+    public void testGetCountryFromLegacy_Implicit() throws CountryException {
         LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
 
         countryDAOProxy.getCountryFromLegacy(1l);
@@ -62,6 +62,28 @@ public class ServiceFacadeTest {
         Mockito.verify(legacyDAO).getCountryFromLegacy(1l);
         // even though this is a proxy phase, never call lightblue. It's not a facade operation.
         Mockito.verifyZeroInteractions(lightblueDAO);
+    }
+
+    @Test
+    public void testGetCountryFromLegacy_Explicit() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        countryDAOProxy.getCountryFromLegacy2(1l);
+
+        Mockito.verify(legacyDAO).getCountryFromLegacy2(1l);
+        // even though this is a proxy phase, never call lightblue. It's not a facade operation.
+        Mockito.verifyZeroInteractions(lightblueDAO);
+    }
+
+    @Test
+    public void testGetCountryFromLightblue() throws CountryException {
+        LightblueMigrationPhase.initialPhase(togglzRule);
+
+        countryDAOProxy.getCountryFromLightblue(1l);
+
+        Mockito.verify(lightblueDAO).getCountryFromLightblue(1l);
+        // even though this is an initial phase, never call legacy. It's not a facade operation.
+        Mockito.verifyZeroInteractions(legacyDAO);
     }
 
     public interface CountryDAOSubinterface extends CountryDAO {

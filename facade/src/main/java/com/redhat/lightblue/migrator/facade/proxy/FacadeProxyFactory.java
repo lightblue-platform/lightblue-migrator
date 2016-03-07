@@ -54,6 +54,22 @@ public class FacadeProxyFactory {
     }
 
     /**
+     * Pass the call directly to destination or source service. Ignores migration phases (togglz).
+     * Note that @Direct(target=SOURCE) is the same as no annotation.
+     *
+     * @author mpatercz
+     *
+     */
+    @Retention(RetentionPolicy.RUNTIME)
+    @Target(ElementType.METHOD)
+    public static @interface Direct {
+        enum Target {
+            LEGACY, LIGHTBLUE;
+        }
+        Target target();
+    }
+
+    /**
      * Secret parameters are logged as ****.
      *
      * @author mpatercz
@@ -68,30 +84,47 @@ public class FacadeProxyFactory {
 
         private static final Logger log = LoggerFactory.getLogger(FacadeInvocationHandler.class);
 
-        private ServiceFacade<D> daoFacadeBase;
+        private ServiceFacade<D> svcFacade;
 
-        public FacadeInvocationHandler(ServiceFacade<D> daoFacadeBase) {
-            this.daoFacadeBase = daoFacadeBase;
+        public FacadeInvocationHandler(ServiceFacade<D> svcFacade) {
+            this.svcFacade = svcFacade;
         }
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            if (method.isAnnotationPresent(Direct.class)) {
+                Direct.Target t = method.getAnnotation(Direct.class).target();
+
+                switch (t) {
+                    case LEGACY: {
+                        log.debug("Not a facade operation, proxy passing to legacy");
+                        Method legacyMethod = svcFacade.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
+                        return legacyMethod.invoke(svcFacade.getLegacySvc(), args);
+                    }
+                    case LIGHTBLUE: {
+                        log.debug("Not a facade operation, proxy passing to lightblue");
+                        Method destinationMethod = svcFacade.getLightblueSvc().getClass().getMethod(method.getName(), method.getParameterTypes());
+                        return destinationMethod.invoke(svcFacade.getLightblueSvc(), args);
+                    }
+                }
+            }
+
             if (method.isAnnotationPresent(ReadOperation.class)) {
                 ReadOperation ro = method.getAnnotation(ReadOperation.class);
                 log.debug("Performing parallel="+ro.parallel()+" "+FacadeOperation.READ+" operation");
-                return daoFacadeBase.callSvcMethod(FacadeOperation.READ, ro.parallel(), method, args);
+                return svcFacade.callSvcMethod(FacadeOperation.READ, ro.parallel(), method, args);
             }
 
             if (method.isAnnotationPresent(WriteOperation.class)) {
                 WriteOperation wo = method.getAnnotation(WriteOperation.class);
                 log.debug("Performing parallel="+wo.parallel()+" "+FacadeOperation.WRITE+" operation");
-                return daoFacadeBase.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method, args);
+                return svcFacade.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method, args);
             }
 
             log.debug("Not a facade operation, proxy passing to legacy");
 
-            Method legacyMethod = daoFacadeBase.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
-            return legacyMethod.invoke(daoFacadeBase.getLegacySvc(), args);
+            Method legacyMethod = svcFacade.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
+            return legacyMethod.invoke(svcFacade.getLegacySvc(), args);
         }
 
     }
