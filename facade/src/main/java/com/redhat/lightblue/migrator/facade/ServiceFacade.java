@@ -350,6 +350,10 @@ public class ServiceFacade<D> implements SharedStoreSetter {
         return legacySvc;
     }
 
+    public D getLightblueSvc() {
+        return lightblueSvc;
+    }
+
     public TimeoutConfiguration getTimeoutConfiguration() {
         return timeoutConfiguration;
     }

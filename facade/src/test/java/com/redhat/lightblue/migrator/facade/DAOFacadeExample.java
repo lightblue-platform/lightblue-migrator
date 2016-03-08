@@ -89,4 +89,14 @@ public class DAOFacadeExample extends DAOFacadeBase<CountryDAO> implements Count
         throw new UnsupportedOperationException("Unsupported in legacy facade");
     }
 
+    @Override
+    public Country getCountryFromLegacy2(long id) throws CountryException {
+        return legacyDAO.getCountryFromLegacy(id);
+    }
+
+    @Override
+    public Country getCountryFromLightblue(long id) throws CountryException {
+        return lightblueDAO.getCountryFromLegacy(id);
+    }
+
 }
