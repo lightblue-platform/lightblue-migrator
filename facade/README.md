@@ -11,6 +11,8 @@ The facade helps with migrating a service to lightblue by offering following fea
 The facade stands in front of the source and destination services, directing traffic as needed. It supports Read and Write operations controlled independently (e.g. 100% writes go to Lightblue but only 25% reads).
 
 ## Initializing dynamic proxy for the facade
+A DAO class is used as an example, but you can use the facade at the service/bean level as well. For performance reasons, it is recommended to implement lightblue services, not lightblue DAOs.
+
 ```java
 CountryDAO countryDAOFacade = FacadeProxyFactory.createFacadeProxy(legacyCountryDAO, lightblueCountryDAO, CountryDAO.class);
 ```
