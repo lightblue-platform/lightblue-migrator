@@ -111,6 +111,9 @@
           <excludes>
             <exclude>**/ConsistencyCheckPerforformanceTest.java</exclude>
           </excludes>
+          <systemPropertyVariables>
+            <lightblue.facade.consistencyChecker.blocking>true</lightblue.facade.consistencyChecker.blocking>
+          </systemPropertyVariables>
         </configuration>
       </plugin>
     </plugins>
