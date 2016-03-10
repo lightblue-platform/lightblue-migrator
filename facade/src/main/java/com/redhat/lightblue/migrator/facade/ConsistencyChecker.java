@@ -61,12 +61,7 @@ public class ConsistencyChecker {
     private ObjectMapper createObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         for (Map.Entry<Class<?>, ModelMixIn> entry : findModelMixInMappings().entrySet()) {
-            if (entry.getValue().includeMethods().length>0) {
-                inconsistencyLog.warn(entry.getKey()+" has a deprecated \"includeMethods\" parameter in @ModelMixIn. It's ignored.");
-            }
-
             mapper.addMixIn(entry.getValue().clazz(), entry.getKey());
-
         }
         return mapper;
     }
