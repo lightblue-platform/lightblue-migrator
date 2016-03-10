@@ -93,6 +93,12 @@ public class ConsistencyCheckPerforformanceTest {
         log.info("Jiff consistency check took "+tookMs+"ms");
     }
 
+    /**
+     * On my machine: JSONCompare consistency check took 370ms.
+     *
+     * @throws IOException
+     * @throws JSONException
+     */
     @Test
     public void testJSONComparePerformance() throws IOException, JSONException {
 

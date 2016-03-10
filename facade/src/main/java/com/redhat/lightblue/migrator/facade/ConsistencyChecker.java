@@ -39,12 +39,15 @@ public class ConsistencyChecker {
     protected int maxInconsistencyLogLength = 65536; // 64KB
     protected boolean logResponseDataEnabled = true;
     private Map<Class<?>,ModelMixIn> modelMixIns;
+    private ObjectMapper objectMapper = null;
 
     private JsonDiff jiff = new JsonDiff();
 
     public ConsistencyChecker(String implementationName) {
         this.implementationName = implementationName;
         jiff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
+
+        this.objectMapper = createObjectMapper();
     }
 
     private Map<Class<?>,ModelMixIn> findModelMixInMappings() {
@@ -59,22 +62,15 @@ public class ConsistencyChecker {
         return modelMixIns;
     }
 
-    private ObjectWriter getObjectWriter(String methodName) {
+    private ObjectMapper createObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         for (Map.Entry<Class<?>, ModelMixIn> entry : findModelMixInMappings().entrySet()) {
-            if (methodName==null || entry.getValue().includeMethods().length==0 || Arrays.asList(entry.getValue().includeMethods()).contains(methodName)) {
-                mapper.addMixInAnnotations(entry.getValue().clazz(), entry.getKey());
+            if (entry.getValue().includeMethods().length>0) {
+                inconsistencyLog.warn(entry.getKey()+" has a deprecated \"includeMethods\" parameter in @ModelMixIn. It's ignored.");
             }
-        }
-        return mapper.writer();
-    }
 
-    private ObjectMapper getObjectMapper(String methodName) {
-        ObjectMapper mapper = new ObjectMapper();
-        for (Map.Entry<Class<?>, ModelMixIn> entry : findModelMixInMappings().entrySet()) {
-            if (methodName==null || entry.getValue().includeMethods().length==0 || Arrays.asList(entry.getValue().includeMethods()).contains(methodName)) {
-                mapper.addMixInAnnotations(entry.getValue().clazz(), entry.getKey());
-            }
+            mapper.addMixIn(entry.getValue().clazz(), entry.getKey());
+
         }
         return mapper;
     }
@@ -172,12 +168,7 @@ public class ConsistencyChecker {
             callToLogInCaseOfInconsistency = new LazyMethodCallStringifier();
         }
 
-        // TODO: field ignore rules can be disabled for a method
-        // if we don't need that (?), we can avoid building the mapper each time
-        final ObjectMapper objectMapper = getObjectMapper(methodName);
-        ti.complete();
-
-        Timer p2j = new Timer("pojo2json");
+        Timer p2j = new Timer("ConsistencyChecker's pojo2json conversion");
         final JsonNode legacyJson = objectMapper.valueToTree(legacyEntity);
         final JsonNode lightblueJson = objectMapper.valueToTree(lightblueEntity);
         p2j.complete();

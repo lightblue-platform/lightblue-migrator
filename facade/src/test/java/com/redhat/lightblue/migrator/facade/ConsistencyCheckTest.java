@@ -198,18 +198,19 @@ public class ConsistencyCheckTest {
         Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
     }
 
-    @Test
-    public void testWithMethodInclusion() {
-        Person p1 = new Person("John", "Doe", 35, "British");
-        Person p2 = new Person("John", "Doe", 35, "German");
-        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
-        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
-
-        p1 = new Person("John", "Doe", 35, "British");
-        p2 = new Person("John", "Doe", 30, "British");
-        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
-        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
-    }
+    // removed method inclusion implementation, it was slow
+//    @Test
+//    public void testWithMethodInclusion() {
+//        Person p1 = new Person("John", "Doe", 35, "British");
+//        Person p2 = new Person("John", "Doe", 35, "German");
+//        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
+//        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
+//
+//        p1 = new Person("John", "Doe", 35, "British");
+//        p2 = new Person("John", "Doe", 30, "British");
+//        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
+//        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
+//    }
 
     @Test
     public void testWithSimpleObjects() throws InterruptedException {
