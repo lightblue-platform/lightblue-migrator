@@ -89,8 +89,8 @@
         <groupId>com.redhat.lightblue.migrator</groupId>
         <artifactId>jiff</artifactId>
         <version>2.17.0-SNAPSHOT</version>
+        <scope>test</scope>
     </dependency>
-
 
   </dependencies>
   <build>
