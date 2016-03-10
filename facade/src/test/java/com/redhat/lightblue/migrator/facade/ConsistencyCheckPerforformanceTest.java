@@ -63,7 +63,8 @@ public class ConsistencyCheckPerforformanceTest {
     public void testConsistencyCheckerPerformance() {
         ConsistencyChecker c = new ConsistencyChecker("Bar");
         Timer t = new Timer("checkConsistency");
-        Assert.assertTrue(c.checkConsistency(fooList, fooList));
+        //Assert.assertTrue(c.checkConsistency(fooList, fooList));
+        Assert.assertTrue(c.checkConsistency("foo", "foo"));
         long tookMs = t.complete();
         log.info("Total consistency check (including conversion to json) took "+tookMs+"ms");
     }

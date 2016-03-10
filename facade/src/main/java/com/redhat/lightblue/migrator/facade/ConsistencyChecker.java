@@ -161,9 +161,12 @@ public class ConsistencyChecker {
      * @return
      */
     public boolean checkConsistency(final Object legacyEntity, final Object lightblueEntity, final String methodName, MethodCallStringifier callToLogInCaseOfInconsistency) {
+
+        Timer ti = new Timer("initial");
         if (legacyEntity==null&&lightblueEntity==null) {
             return true;
         }
+
 
         if (callToLogInCaseOfInconsistency == null) {
             callToLogInCaseOfInconsistency = new LazyMethodCallStringifier();
@@ -172,9 +175,12 @@ public class ConsistencyChecker {
         // TODO: field ignore rules can be disabled for a method
         // if we don't need that (?), we can avoid building the mapper each time
         final ObjectMapper objectMapper = getObjectMapper(methodName);
+        ti.complete();
 
+        Timer p2j = new Timer("pojo2json");
         final JsonNode legacyJson = objectMapper.valueToTree(legacyEntity);
         final JsonNode lightblueJson = objectMapper.valueToTree(lightblueEntity);
+        p2j.complete();
 
         try {
             Timer t = new Timer("checkConsistency (jiff)");
