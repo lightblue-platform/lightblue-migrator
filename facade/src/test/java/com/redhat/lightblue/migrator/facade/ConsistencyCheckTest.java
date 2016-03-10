@@ -126,7 +126,8 @@ public class ConsistencyCheckTest {
         Assert.assertTrue(consistencyChecker.checkConsistency(pl1, pl2));
     }
 
-    @Test
+    // NOT using Lenient
+    /*@Test
     public void testTypeMismatch() {
         Country pl1 = new ExtendedCountry(1l, "PL");
         Country pl2 = new Country(1l, "PL");
@@ -135,7 +136,7 @@ public class ConsistencyCheckTest {
 
         // We are using compare mode = Lenient, which means object 2 can have additional data
         Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
-    }
+    }*/
 
     @Test
     public void testInaccessibleReqField_IsIgnored() {
