@@ -7,12 +7,14 @@ import java.lang.annotation.Target;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.Properties;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.migrator.facade.ServiceFacade;
 import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
+import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreSetter;
 
 /**
  * Creates a dynamic proxy implementing given interface. The calls to the interface apis will be directed
@@ -80,7 +82,7 @@ public class FacadeProxyFactory {
     public static @interface Secret {
     }
 
-    private static class FacadeInvocationHandler<D> implements InvocationHandler {
+    private static class FacadeInvocationHandler<D extends SharedStoreSetter> implements InvocationHandler {
 
         private static final Logger log = LoggerFactory.getLogger(FacadeInvocationHandler.class);
 
@@ -130,12 +132,12 @@ public class FacadeProxyFactory {
     }
 
     @SuppressWarnings("unchecked")
-    public static <D> D createFacadeProxy(ServiceFacade<D> svcFacade, Class<? extends D> svcClass) throws InstantiationException, IllegalAccessException {
-        return (D) Proxy.newProxyInstance(svcClass.getClassLoader(), new Class[] {svcClass}, new FacadeInvocationHandler<D>(svcFacade));
+    public static <T,D extends SharedStoreSetter> T createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> svcClass) throws InstantiationException, IllegalAccessException {
+        return (T) Proxy.newProxyInstance(svcClass.getClassLoader(), new Class[] {svcClass}, new FacadeInvocationHandler<D>(svcFacade));
     }
 
-    public static <D> D createFacadeProxy(D legacySvc, D lightblueSvc, Class<? extends D> svcClass) throws InstantiationException, IllegalAccessException {
-        return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, svcClass), svcClass);
+    public static <T,D extends SharedStoreSetter> T createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> svcClass, Properties properties) throws InstantiationException, IllegalAccessException {
+        return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, svcClass, properties), svcClass);
     }
 
 }

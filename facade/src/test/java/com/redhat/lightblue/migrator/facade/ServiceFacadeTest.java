@@ -29,22 +29,22 @@ public class ServiceFacadeTest {
     @Rule
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
 
-    CountryDAO legacyDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
-    CountryDAO lightblueDAO = Mockito.mock(CountryDAO.class, Mockito.withSettings().extraInterfaces(SharedStoreSetter.class));
+    CountryDAOFacadable legacyDAO = Mockito.mock(CountryDAOFacadable.class);
+    CountryDAOFacadable lightblueDAO = Mockito.mock(CountryDAOFacadable.class);
     CountryDAO countryDAOProxy;
 
-    @Spy ServiceFacade<CountryDAO> daoFacade = new ServiceFacade<CountryDAO>(legacyDAO, lightblueDAO, CountryDAO.class);
+    @Spy ServiceFacade<CountryDAOFacadable> daoFacade = new ServiceFacade<CountryDAOFacadable>(legacyDAO, lightblueDAO, CountryDAO.class);
     @Spy ConsistencyChecker consistencyChecker = new ConsistencyChecker(CountryDAO.class.getSimpleName());
 
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
         daoFacade.setConsistencyChecker(consistencyChecker);
 
-        // countryDAO is daoFacade using CountryDAO interface to invoke methods
-        countryDAOProxy = FacadeProxyFactory.createFacadeProxy(daoFacade, CountryDAO.class);
+        // countryDAOProxy is daoFacade using CountryDAO interface to invoke methods
+        countryDAOProxy = FacadeProxyFactory.createFacadeProxy(daoFacade, CountryDAOFacadable.class);
 
-        Mockito.verify((SharedStoreSetter)legacyDAO).setSharedStore((daoFacade).getSharedStore());
-        Mockito.verify((SharedStoreSetter)lightblueDAO).setSharedStore((daoFacade).getSharedStore());
+        Mockito.verify(legacyDAO).setSharedStore((daoFacade).getSharedStore());
+        Mockito.verify(lightblueDAO).setSharedStore((daoFacade).getSharedStore());
     }
 
     @After
