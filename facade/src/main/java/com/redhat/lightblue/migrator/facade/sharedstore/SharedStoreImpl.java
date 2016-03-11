@@ -26,20 +26,20 @@ public class SharedStoreImpl implements SharedStore {
     private CacheManager cacheManager;
     private Cache cache;
 
-    public SharedStoreImpl(Class<?> daoClass) {
-        this(daoClass, null);
+    public SharedStoreImpl(String implementationName) {
+        this(implementationName, null);
     }
 
-    public SharedStoreImpl(Class<?> daoClass, URL ehcacheConfigFile) {
-        log.debug("Initializing id cache for "+daoClass.getCanonicalName());
+    public SharedStoreImpl(String implementationName, URL ehcacheConfigFile) {
+        log.debug("Initializing id cache for "+implementationName);
 
         if (ehcacheConfigFile == null)
             cacheManager = CacheManager.create(SharedStoreImpl.class.getResourceAsStream("/ehcache.xml"));
         else
             cacheManager = CacheManager.create(ehcacheConfigFile);
 
-        cacheManager.addCacheIfAbsent(daoClass.getCanonicalName());
-        cache = cacheManager.getCache(daoClass.getCanonicalName());
+        cacheManager.addCacheIfAbsent(implementationName);
+        cache = cacheManager.getCache(implementationName);
     }
 
     @Override

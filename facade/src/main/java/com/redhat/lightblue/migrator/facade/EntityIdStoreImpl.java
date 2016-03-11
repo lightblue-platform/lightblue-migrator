@@ -24,11 +24,11 @@ public class EntityIdStoreImpl implements EntityIdStore {
     private SharedStore sharedStore;
 
     public EntityIdStoreImpl(Class<?> daoClass) {
-        sharedStore = new SharedStoreImpl(daoClass);
+        sharedStore = new SharedStoreImpl(daoClass.getCanonicalName());
     }
 
     public EntityIdStoreImpl(Class<?> daoClass, URL ehcacheConfigFile) {
-        sharedStore = new SharedStoreImpl(daoClass, ehcacheConfigFile);
+        sharedStore = new SharedStoreImpl(daoClass.getCanonicalName(), ehcacheConfigFile);
     }
 
     @Override

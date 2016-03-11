@@ -33,7 +33,7 @@ public class ServiceFacadeTest {
     CountryDAOFacadable lightblueDAO = Mockito.mock(CountryDAOFacadable.class);
     CountryDAO countryDAOProxy;
 
-    @Spy ServiceFacade<CountryDAOFacadable> daoFacade = new ServiceFacade<CountryDAOFacadable>(legacyDAO, lightblueDAO, CountryDAO.class);
+    @Spy ServiceFacade<CountryDAOFacadable> daoFacade = new ServiceFacade<CountryDAOFacadable>(legacyDAO, lightblueDAO, "CountryDAOFacade");
     @Spy ConsistencyChecker consistencyChecker = new ConsistencyChecker(CountryDAO.class.getSimpleName());
 
     @Before
