@@ -20,10 +20,4 @@ public @interface ModelMixIn {
      * @return
      */
     Class clazz();
-
-    /**
-     * Optional attribute allows us to restrict an override to the given method names only.
-     * Otherwise it will be applied to all methods.
-     */
-    String[] includeMethods() default {};
 }

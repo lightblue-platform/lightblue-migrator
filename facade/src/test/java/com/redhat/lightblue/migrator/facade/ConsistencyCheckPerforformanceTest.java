@@ -6,8 +6,12 @@ import java.util.List;
 import java.util.Random;
 import java.util.UUID;
 
+import org.json.JSONException;
 import org.junit.Assert;
 import org.junit.Test;
+import org.skyscreamer.jsonassert.JSONCompare;
+import org.skyscreamer.jsonassert.JSONCompareMode;
+import org.skyscreamer.jsonassert.comparator.JSONComparator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,7 +66,7 @@ public class ConsistencyCheckPerforformanceTest {
     @Test
     public void testConsistencyCheckerPerformance() {
         ConsistencyChecker c = new ConsistencyChecker("Bar");
-        Timer t = new Timer("checkConsistency");
+        Timer t = new Timer("ConsistencyChecker.checkConsistency");
         Assert.assertTrue(c.checkConsistency(fooList, fooList));
         long tookMs = t.complete();
         log.info("Total consistency check (including conversion to json) took "+tookMs+"ms");
@@ -83,10 +87,29 @@ public class ConsistencyCheckPerforformanceTest {
         JsonDiff diff=new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
 
-        Timer t = new Timer("computeDiff");
+        Timer t = new Timer("Jiff.computeDiff");
         Assert.assertTrue(diff.computeDiff(jsonStr, jsonStr).isEmpty());
         long tookMs = t.complete();
         log.info("Jiff consistency check took "+tookMs+"ms");
+    }
+
+    /**
+     * On my machine: JSONCompare consistency check took 370ms.
+     *
+     * @throws IOException
+     * @throws JSONException
+     */
+    @Test
+    public void testJSONComparePerformance() throws IOException, JSONException {
+
+        String jsonStr = new ObjectMapper().writeValueAsString(fooList);
+
+        log.info("Json str size: "+jsonStr.length()/1024+"kB");
+
+        Timer t = new Timer("JSONCompare.compareJSON");
+        Assert.assertTrue(JSONCompare.compareJSON(jsonStr, jsonStr, JSONCompareMode.LENIENT).passed());
+        long tookMs = t.complete();
+        log.info("JSONCompare consistency check took "+tookMs+"ms");
     }
 
 }
