@@ -79,16 +79,16 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         this.consistencyChecker = consistencyChecker;
     }
 
-    public ServiceFacade(D legacySvc, D lightblueSvc, Class serviceClass) {
-        this(legacySvc, lightblueSvc, serviceClass, null);
+    public ServiceFacade(D legacySvc, D lightblueSvc, String implementationName) {
+        this(legacySvc, lightblueSvc, implementationName, null);
     }
 
-    public ServiceFacade(D legacySvc, D lightblueSvc, Class serviceClass, Properties properties) {
+    public ServiceFacade(D legacySvc, D lightblueSvc, String implementationName, Properties properties) {
         super();
         this.legacySvc = legacySvc;
         this.lightblueSvc = lightblueSvc;
-        setSharedStore(new SharedStoreImpl(serviceClass));
-        this.implementationName = serviceClass.getSimpleName();
+        setSharedStore(new SharedStoreImpl(implementationName));
+        this.implementationName = implementationName;
         if (properties != null)
             this.properties = properties;
 

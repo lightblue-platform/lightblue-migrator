@@ -14,7 +14,7 @@ public class SharedStoreTest {
 
     @Test
     public void testSingle() {
-        SharedStore store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStore store = new SharedStoreImpl("implementation name");
 
         store.push(101l);
         Assert.assertEquals((Long)101l, store.pop());
@@ -22,7 +22,7 @@ public class SharedStoreTest {
 
     @Test
     public void testList() {
-        SharedStore store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStore store = new SharedStoreImpl("implementation name");
 
         store.push(101l);
         store.push(102l);
@@ -34,8 +34,8 @@ public class SharedStoreTest {
 
     @Test
     public void testDifferentCaches() {
-        SharedStore store1 = new SharedStoreImpl(SharedStoreTest.class);
-        SharedStore store2 = new SharedStoreImpl(Country.class);
+        SharedStore store1 = new SharedStoreImpl("implementation name");
+        SharedStore store2 = new SharedStoreImpl("Country");
 
         store1.push(101l);
         store1.push(102l);
@@ -49,13 +49,13 @@ public class SharedStoreTest {
 
     @Test(expected=RuntimeException.class)
     public void noId() {
-        SharedStore store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStore store = new SharedStoreImpl("implementation name");
         store.pop();
     }
 
     @Test(expected=RuntimeException.class)
     public void noId2() {
-        SharedStore store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStore store = new SharedStoreImpl("implementation name");
         store.push(1l);
         store.pop();
         store.pop();
@@ -63,7 +63,7 @@ public class SharedStoreTest {
 
     @Test
     public void testCopy() {
-        SharedStore store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStore store = new SharedStoreImpl("implementation name");
 
         store.push(101l);
         store.push(102l);
@@ -85,7 +85,7 @@ public class SharedStoreTest {
 
     @Test
     public void testObject() {
-        SharedStore store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStore store = new SharedStoreImpl("implementation name");
 
         store.push("foo");
         store.push("bar");
@@ -98,7 +98,7 @@ public class SharedStoreTest {
 
     @Test
     public void testIsDualMigrationPhase() {
-        SharedStoreImpl store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStoreImpl store = new SharedStoreImpl("implementation name");
 
         try {
             store.isDualMigrationPhase();
@@ -115,7 +115,7 @@ public class SharedStoreTest {
 
     @Test
     public void testClear() {
-        SharedStoreImpl store = new SharedStoreImpl(SharedStoreTest.class);
+        SharedStoreImpl store = new SharedStoreImpl("implementation name");
         store.push(101l);
         store.push(102l);
         store.setDualMigrationPhase(true);

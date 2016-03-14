@@ -132,12 +132,12 @@ public class FacadeProxyFactory {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T,D extends SharedStoreSetter> T createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> svcClass) throws InstantiationException, IllegalAccessException {
-        return (T) Proxy.newProxyInstance(svcClass.getClassLoader(), new Class[] {svcClass}, new FacadeInvocationHandler<D>(svcFacade));
+    public static <T,D extends SharedStoreSetter> T createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> facadeInterface) throws InstantiationException, IllegalAccessException {
+        return (T) Proxy.newProxyInstance(facadeInterface.getClassLoader(), new Class[] {facadeInterface}, new FacadeInvocationHandler<D>(svcFacade));
     }
 
-    public static <T,D extends SharedStoreSetter> T createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> svcClass, Properties properties) throws InstantiationException, IllegalAccessException {
-        return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, svcClass, properties), svcClass);
+    public static <T,D extends SharedStoreSetter> T createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> facadeInterface, Properties properties) throws InstantiationException, IllegalAccessException {
+        return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, facadeInterface.getCanonicalName(), properties), facadeInterface);
     }
 
 }
