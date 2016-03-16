@@ -86,7 +86,7 @@ public class ServiceFacadeTest {
         Mockito.verifyZeroInteractions(legacyDAO);
     }
 
-    public interface CountryDAOSubinterface extends CountryDAO {
+    public interface CountryDAOSubinterface extends CountryDAOFacadable {
         public abstract Country getCountryFromLegacy(long id) throws CountryException;
     }
 
