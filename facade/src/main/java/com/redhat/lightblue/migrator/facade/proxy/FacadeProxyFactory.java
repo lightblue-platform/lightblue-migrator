@@ -131,12 +131,42 @@ public class FacadeProxyFactory {
 
     }
 
+    /**
+     * Create facade proxy from {@link ServiceFacade}.
+     *
+     * Java does not allow typed argument with both typed and static bounds, i.e. <D extends SharedStoreSetter & T> does not compile.
+     * To work around this limitation and to ensure that facaded services implement both the facade interface and {@link SharedStoreSetter},
+     * I'm using <T extends D,D extends SharedStoreSetter>. This makes the facade interface - T - require to implement
+     * {@link SharedStoreSetter}. It does not logically belong to the facade interface, but I guess I can live with that.
+     *
+     * @param svcFacade initialized with services implementing the facadeInterface
+     * @param facadeInterface has to implement {@link SharedStoreSetter}
+     * @return facaded service proxy
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     */
     @SuppressWarnings("unchecked")
-    public static <T,D extends SharedStoreSetter> T createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> facadeInterface) throws InstantiationException, IllegalAccessException {
-        return (T) Proxy.newProxyInstance(facadeInterface.getClassLoader(), new Class[] {facadeInterface}, new FacadeInvocationHandler<D>(svcFacade));
+    public static <T extends D,D extends SharedStoreSetter> D createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> facadeInterface) throws InstantiationException, IllegalAccessException {
+        return (D) Proxy.newProxyInstance(facadeInterface.getClassLoader(), new Class[] {facadeInterface}, new FacadeInvocationHandler<D>(svcFacade));
     }
 
-    public static <T,D extends SharedStoreSetter> T createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> facadeInterface, Properties properties) throws InstantiationException, IllegalAccessException {
+    /**
+     * Create a facade proxy.
+     *
+     * Java does not allow typed argument with both typed and static bounds, i.e. <D extends SharedStoreSetter & T> does not compile.
+     * To work around this limitation and to ensure that facaded services implement both the facade interface and {@link SharedStoreSetter},
+     * I'm using <T extends D,D extends SharedStoreSetter>. This makes the facade interface - T - require to implement
+     * {@link SharedStoreSetter}. It does not logically belong to the facade interface, but I guess I can live with that.
+     *
+     * @param legacySvc has to implement facadeInterface
+     * @param lightblueSvc has to implement facadeInterface
+     * @param facadeInterface has to implement {@link SharedStoreSetter}
+     * @param properties
+     * @return facaded service proxy
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     */
+    public static <T extends D,D extends SharedStoreSetter> D createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> facadeInterface, Properties properties) throws InstantiationException, IllegalAccessException {
         return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, facadeInterface.getCanonicalName(), properties), facadeInterface);
     }
 
