@@ -167,7 +167,7 @@ public class FacadeProxyFactory {
      * @throws IllegalAccessException
      */
     public static <T extends D,D extends SharedStoreSetter> D createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> facadeInterface, Properties properties) throws InstantiationException, IllegalAccessException {
-        return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, facadeInterface.getCanonicalName(), properties), facadeInterface);
+        return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, facadeInterface.getSimpleName(), properties), facadeInterface);
     }
 
 }
