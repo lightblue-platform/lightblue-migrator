@@ -5,13 +5,16 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.Date;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.slf4j.Logger;
 import org.togglz.junit.TogglzRule;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
@@ -19,13 +22,15 @@ import com.redhat.lightblue.migrator.facade.model.CountryInCountry;
 import com.redhat.lightblue.migrator.facade.model.CountryWithBigDecimal;
 import com.redhat.lightblue.migrator.facade.model.CountryWithDate;
 import com.redhat.lightblue.migrator.facade.model.ExtendedCountry;
-import com.redhat.lightblue.migrator.facade.model.Person;
 import com.redhat.lightblue.migrator.facade.model.VeryExtendedCountry;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreSetter;
 import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ConsistencyCheckTest {
+
+    @Mock
+    private Logger inconsistencyLog;
 
     @Rule
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
@@ -37,6 +42,13 @@ public class ConsistencyCheckTest {
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
         consistencyChecker = new ConsistencyChecker(CountryDAO.class.getSimpleName());
+        consistencyChecker.setInconsistencyLog(inconsistencyLog);
+    }
+
+    @After
+    public void after() {
+        // no errors logged to inconsistency log
+        Mockito.verify(inconsistencyLog, Mockito.never()).error(Mockito.anyString());
     }
 
     @Test
@@ -52,9 +64,10 @@ public class ConsistencyCheckTest {
 
     @Test
     public void testConsistencyWithNull() {
-        Assert.assertTrue(consistencyChecker.checkConsistency(null, null));
+        Assert.assertTrue(consistencyChecker.checkConsistency(null, null)); // no log
         Assert.assertFalse(consistencyChecker.checkConsistency(null, new Country()));
         Assert.assertFalse(consistencyChecker.checkConsistency(new Country(), null));
+        Mockito.verify(inconsistencyLog, Mockito.times(2)).warn(Mockito.anyString());
 
         Country c1 = new Country(1l, null);
         Country c2 = new Country(1l, null);
@@ -64,6 +77,9 @@ public class ConsistencyCheckTest {
         Assert.assertTrue(consistencyChecker.checkConsistency(null, null));
         Assert.assertFalse(consistencyChecker.checkConsistency(c1, null));
         Assert.assertFalse(consistencyChecker.checkConsistency(null, c1));
+
+        // 4 inconsistencies means 4 warnings
+        Mockito.verify(inconsistencyLog, Mockito.times(4)).warn(Mockito.anyString());
     }
 
     @Test

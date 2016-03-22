@@ -11,6 +11,7 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 
@@ -28,7 +30,7 @@ import com.redhat.lightblue.migrator.facade.methodcallstringifier.LazyMethodCall
 public class ConsistencyLoggerTest {
 
     @Mock
-    private Logger inconsitencyLog;
+    private Logger inconsistencyLog;
 
     @Mock
     private Logger hugeInconsistencyLog;
@@ -45,6 +47,12 @@ public class ConsistencyLoggerTest {
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
         initMocks(this);
+    }
+
+    @After
+    public void after() {
+        // no errors logged to inconsistency log
+        Mockito.verify(inconsistencyLog, Mockito.never()).error(Mockito.anyString());
     }
 
     private List<String> getDummyMessage(String prefix, int maxBytes) throws JsonProcessingException {
@@ -72,7 +80,7 @@ public class ConsistencyLoggerTest {
         List<String> lightblue = getDummyMessage("Test", 12);
         boolean result = consistencyChecker.checkConsistency(legacy, lightblue, "testMethod", new LazyMethodCallStringifier("testMethod(param1, param2)"));
         assertFalse(result);
-        verify(inconsitencyLog).warn(logStmt.capture());
+        verify(inconsistencyLog).warn(logStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - diff: []: Expected 2 values but got 1 - legacyJson: [\"Test10000\",\"Test10001\"], lightblueJson: [\"Test10000\"]", logStmt.getValue());
         verify(hugeInconsistencyLog, never()).debug(anyString());
     }
@@ -90,7 +98,7 @@ public class ConsistencyLoggerTest {
         List<String> lightblue = getDummyMessage("Test", 24);
         boolean result = consistencyChecker.checkConsistency(legacy, lightblue, "testMethod", new LazyMethodCallStringifier("testMethod(param1, param2)"));
         assertFalse(result);
-        verify(inconsitencyLog).warn(logStmt.capture());
+        verify(inconsistencyLog).warn(logStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - diff: []: Expected 3 values but got 2", logStmt.getValue());
         verify(hugeInconsistencyLog).debug(inconsistencyLogStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - diff: []: Expected 3 values but got 2 - legacyJson: [\"Test10000\",\"Test10001\",\"Test10002\"], lightblueJson: [\"Test10000\",\"Test10001\"]", inconsistencyLogStmt.getValue());
@@ -109,7 +117,7 @@ public class ConsistencyLoggerTest {
         List<String> lightblue = getDummyMessage("Fooo", 40);
         boolean result = consistencyChecker.checkConsistency(legacy, lightblue, "testMethod", new LazyMethodCallStringifier("testMethod(param1, param2)"));
         assertFalse(result);
-        verify(inconsitencyLog).warn(logStmt.capture());
+        verify(inconsistencyLog).warn(logStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - payload and diff is greater than 177 bytes!", logStmt.getValue());
         verify(hugeInconsistencyLog).debug(inconsistencyLogStmt.capture());
         assertTrue(inconsistencyLogStmt.getValue().contains("diff"));
@@ -130,7 +138,7 @@ public class ConsistencyLoggerTest {
         List<String> lightblue = getDummyMessage("Test", 12);
         boolean result = consistencyChecker.checkConsistency(legacy, lightblue, "testMethod", new LazyMethodCallStringifier("testMethod(param1, param2)"));
         assertFalse(result);
-        verify(inconsitencyLog).warn(logStmt.capture());
+        verify(inconsistencyLog).warn(logStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - diff: []: Expected 2 values but got 1", logStmt.getValue());
         verify(hugeInconsistencyLog).debug(inconsistencyLogStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - diff: []: Expected 2 values but got 1 - legacyJson: [\"Test10000\",\"Test10001\"], lightblueJson: [\"Test10000\"]", inconsistencyLogStmt.getValue());
@@ -149,7 +157,7 @@ public class ConsistencyLoggerTest {
         List<String> lightblue = getDummyMessage("Fooo", 40);
         boolean result = consistencyChecker.checkConsistency(legacy, lightblue, "testMethod", new LazyMethodCallStringifier("testMethod(param1, param2)"));
         assertFalse(result);
-        verify(inconsitencyLog).warn(logStmt.capture());
+        verify(inconsistencyLog).warn(logStmt.capture());
         assertEquals("[main] Inconsistency found in CountryDAO.testMethod(param1, param2) - diff is greater than 177 bytes!", logStmt.getValue());
         verify(hugeInconsistencyLog).debug(inconsistencyLogStmt.capture());
         assertTrue(inconsistencyLogStmt.getValue().contains("diff"));
