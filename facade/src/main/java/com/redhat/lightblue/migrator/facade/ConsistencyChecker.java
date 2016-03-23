@@ -160,7 +160,6 @@ public class ConsistencyChecker {
      */
     public boolean checkConsistency(final Object legacyEntity, final Object lightblueEntity, final String methodName, MethodCallStringifier callToLogInCaseOfInconsistency) {
 
-        Timer ti = new Timer("initial");
         if (legacyEntity==null&&lightblueEntity==null) {
             return true;
         }
@@ -194,7 +193,12 @@ public class ConsistencyChecker {
             // it's slow, but produces nice diffs
             String legacyJsonStr =  objectMapper.writeValueAsString(legacyEntity);
             String lightblueJsonStr =  objectMapper.writeValueAsString(lightblueEntity);
-            logInconsistencyUsingJSONCompare(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
+
+            if ("null".equals(legacyJsonStr) || "null".equals(lightblueJsonStr)) {
+                logInconsistency(Thread.currentThread().getName(), callToLogInCaseOfInconsistency.toString(), legacyJsonStr, lightblueJsonStr, "One object is null and the other isn't");
+            } else {
+                logInconsistencyUsingJSONCompare(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
+            }
 
             // inconsistent
             return false;
@@ -211,5 +215,9 @@ public class ConsistencyChecker {
 
     public void setLogResponseDataEnabled(boolean logResponseDataEnabled) {
         this.logResponseDataEnabled = logResponseDataEnabled;
+    }
+
+    void setInconsistencyLog(Logger inconsistencyLog) {
+        this.inconsistencyLog = inconsistencyLog;
     }
 }
