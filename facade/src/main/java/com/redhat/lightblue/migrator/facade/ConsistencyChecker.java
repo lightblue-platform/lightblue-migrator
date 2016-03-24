@@ -29,7 +29,7 @@ public class ConsistencyChecker {
 
     // using non-static slf4j loggers for easy unit testing
     private Logger inconsistencyLog = LoggerFactory.getLogger(this.getClass());
-    private Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass()+"Huge");
+    private Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass().getName()+"Huge");
 
     private final String implementationName;
     protected int maxInconsistencyLogLength = 65536; // 64KB
@@ -112,7 +112,7 @@ public class ConsistencyChecker {
             long jiffConsistencyCheckTook = t.complete();
 
             if (inconsistencyLog.isDebugEnabled()) {
-                inconsistencyLog.debug(String.format("[%s] SONCompare consistency check took: %dms", parentThreadName, jiffConsistencyCheckTook));
+                inconsistencyLog.debug(String.format("[%s] JSONCompare consistency check took: %dms", parentThreadName, jiffConsistencyCheckTook));
                 inconsistencyLog.debug(String.format("[%s] JSONCompare consistency check passed: true", parentThreadName));
             }
 
