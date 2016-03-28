@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -163,5 +164,17 @@ public class ConsistencyLoggerTest {
         assertTrue(inconsistencyLogStmt.getValue().contains("diff"));
         assertTrue(inconsistencyLogStmt.getValue().contains("legacyJson"));
         assertTrue(inconsistencyLogStmt.getValue().contains("lightblueJson"));
+    }
+
+    /**
+     * Changing logging category can break logging if relevant log4j configs on the application side
+     * are not updated as well. This regression test ensures that logging category is not accidently changed.
+     *
+     */
+    @Test
+    public void testLoggerName() {
+        ConsistencyChecker c = new ConsistencyChecker("implName");
+        Assert.assertEquals("com.redhat.lightblue.migrator.facade.ConsistencyChecker", c.inconsistencyLog.getName());
+        Assert.assertEquals("com.redhat.lightblue.migrator.facade.ConsistencyCheckerHuge", c.hugeInconsistencyLog.getName());
     }
 }
