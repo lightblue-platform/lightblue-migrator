@@ -28,8 +28,8 @@ import jiff.JsonDiff;
 public class ConsistencyChecker {
 
     // using non-static slf4j loggers for easy unit testing
-    private Logger inconsistencyLog = LoggerFactory.getLogger(this.getClass());
-    private Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass().getName()+"Huge");
+    Logger inconsistencyLog = LoggerFactory.getLogger(this.getClass());
+    Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass().getName()+"Huge");
 
     private final String implementationName;
     protected int maxInconsistencyLogLength = 65536; // 64KB
