@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.togglz.junit.TogglzRule;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
@@ -29,8 +30,7 @@ import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 @RunWith(MockitoJUnitRunner.class)
 public class ConsistencyCheckTest {
 
-    @Mock
-    private Logger inconsistencyLog;
+    private Logger inconsistencyLog = Mockito.spy(LoggerFactory.getLogger(ConsistencyChecker.class));
 
     @Rule
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
