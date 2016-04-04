@@ -194,6 +194,12 @@ public class ConsistencyChecker {
             String legacyJsonStr =  objectMapper.writeValueAsString(legacyEntity);
             String lightblueJsonStr =  objectMapper.writeValueAsString(lightblueEntity);
 
+            // JSONCompare fails when comparing booleans, convert them to strings
+            if ("true".equals(legacyJsonStr) || "false".equals(legacyJsonStr))
+                legacyJsonStr = "\""+legacyJsonStr+"\"";
+            if ("true".equals(lightblueJsonStr) || "false".equals(lightblueJsonStr))
+                lightblueJsonStr = "\""+lightblueJsonStr+"\"";
+
             if ("null".equals(legacyJsonStr) || "null".equals(lightblueJsonStr)) {
                 logInconsistency(Thread.currentThread().getName(), callToLogInCaseOfInconsistency.toString(), legacyJsonStr, lightblueJsonStr, "One object is null and the other isn't");
             } else {
