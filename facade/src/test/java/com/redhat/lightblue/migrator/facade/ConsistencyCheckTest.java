@@ -15,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.togglz.junit.TogglzRule;
 
 import com.redhat.lightblue.migrator.facade.model.Country;
@@ -29,8 +30,7 @@ import com.redhat.lightblue.migrator.features.LightblueMigrationFeatures;
 @RunWith(MockitoJUnitRunner.class)
 public class ConsistencyCheckTest {
 
-    @Mock
-    private Logger inconsistencyLog;
+    private Logger inconsistencyLog = Mockito.spy(LoggerFactory.getLogger(ConsistencyChecker.class));
 
     @Rule
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
@@ -67,7 +67,6 @@ public class ConsistencyCheckTest {
         Assert.assertTrue(consistencyChecker.checkConsistency(null, null)); // no log
         Assert.assertFalse(consistencyChecker.checkConsistency(null, new Country()));
         Assert.assertFalse(consistencyChecker.checkConsistency(new Country(), null));
-        Mockito.verify(inconsistencyLog, Mockito.times(2)).warn(Mockito.anyString());
 
         Country c1 = new Country(1l, null);
         Country c2 = new Country(1l, null);
@@ -80,6 +79,32 @@ public class ConsistencyCheckTest {
 
         // 4 inconsistencies means 4 warnings
         Mockito.verify(inconsistencyLog, Mockito.times(4)).warn(Mockito.anyString());
+    }
+
+    @Test
+    public void testConsistencyWithPrimitives() {
+        Assert.assertTrue(consistencyChecker.checkConsistency("string", "string")); // no log
+        Assert.assertTrue(consistencyChecker.checkConsistency(12, 12)); // no log
+        Assert.assertTrue(consistencyChecker.checkConsistency(12.0d, 12.0d)); // no log
+        Assert.assertTrue(consistencyChecker.checkConsistency(12l, 12l)); // no log
+        Assert.assertTrue(consistencyChecker.checkConsistency(true, true));
+        Assert.assertTrue(consistencyChecker.checkConsistency(false, false));
+        // In some cases, this is not a type safe check. That's fine.
+        Assert.assertTrue(consistencyChecker.checkConsistency(12, 12l));
+        Assert.assertTrue(consistencyChecker.checkConsistency(new Integer(12), 12));
+        Assert.assertTrue(consistencyChecker.checkConsistency(new Boolean(false), false));
+
+        // inconsistencies
+        Assert.assertFalse(consistencyChecker.checkConsistency("foo", "bar"));
+        Assert.assertFalse(consistencyChecker.checkConsistency(true, false));
+        Assert.assertFalse(consistencyChecker.checkConsistency(false, true));
+        Assert.assertFalse(consistencyChecker.checkConsistency(true, null));
+        Assert.assertFalse(consistencyChecker.checkConsistency(null, false));
+        Assert.assertFalse(consistencyChecker.checkConsistency(12, 13));
+        Assert.assertFalse(consistencyChecker.checkConsistency(new Boolean(true), null));
+
+        // 7 inconsistencies means 7 warnings
+        Mockito.verify(inconsistencyLog, Mockito.times(7)).warn(Mockito.anyString());
     }
 
     @Test
