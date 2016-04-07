@@ -117,7 +117,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         return classes.toArray(new Class[]{});
     }
 
-    private <T> ListenableFuture<T> callLightblueSvc(final boolean passIds, final Method method, final Object[] values, final FacadeOperation op, final MethodCallStringifier callStringifier) {
+    private <T> ListenableFuture<T> callLightblueSvc(final Method method, final Object[] values, final FacadeOperation op, final MethodCallStringifier callStringifier) {
         ListeningExecutorService executor = createExecutor();
         try {
         // fetch from lightblue using future (asynchronously)
@@ -126,7 +126,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             @Override
             public T call() throws Exception {
                 Timer dest = new Timer("destination."+method.getName());
-                if (sharedStore != null && passIds)
+                if (sharedStore != null)
                     sharedStore.copyFromThread(parentThreadId);
                 try {
                     return (T) method.invoke(lightblueSvc, values);
@@ -247,7 +247,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         if (callInParallel) {
             if (shouldDestination(facadeOperation)) {
                 Method method = lightblueSvc.getClass().getMethod(methodName, types);
-                listenableFuture = callLightblueSvc(false, method, values, facadeOperation, callStringifier);
+                listenableFuture = callLightblueSvc(method, values, facadeOperation, callStringifier);
             }
         }
 
@@ -275,7 +275,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
-                    listenableFuture = callLightblueSvc(true, method, values, facadeOperation, callStringifier);
+                    listenableFuture = callLightblueSvc(method, values, facadeOperation, callStringifier);
                     lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
