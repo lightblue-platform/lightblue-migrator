@@ -44,8 +44,8 @@
     <sonar.host.url>http://127.0.0.1:8080</sonar.host.url>
     <sonar.projectName>lightblue-migrator</sonar.projectName>
 
-    <lightblue.core.version>1.13.0-SNAPSHOT</lightblue.core.version>
-    <lightblue.client.version>4.2.0-SNAPSHOT</lightblue.client.version>
+    <lightblue.core.version>1.11.0</lightblue.core.version>
+    <lightblue.client.version>4.0.0</lightblue.client.version>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -156,11 +156,6 @@
         <dependency>
             <groupId>com.redhat.lightblue.client</groupId>
             <artifactId>lightblue-client-http</artifactId>
-            <version>${lightblue.client.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.redhat.lightblue.client</groupId>
-            <artifactId>lightblue-client-hystrix</artifactId>
             <version>${lightblue.client.version}</version>
         </dependency>
         <dependency>
