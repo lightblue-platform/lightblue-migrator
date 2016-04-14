@@ -44,7 +44,6 @@
     <sonar.host.url>http://127.0.0.1:8080</sonar.host.url>
     <sonar.projectName>lightblue-migrator</sonar.projectName>
 
-    <lightblue.core.version>1.13.0-SNAPSHOT</lightblue.core.version>
     <lightblue.client.version>4.2.0-SNAPSHOT</lightblue.client.version>
   </properties>
   <dependencyManagement>
@@ -147,11 +146,6 @@
             <groupId>commons-beanutils</groupId>
             <artifactId>commons-beanutils</artifactId>
             <version>1.9.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.redhat.lightblue</groupId>
-            <artifactId>lightblue-core-util</artifactId>
-            <version>${lightblue.core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.redhat.lightblue.client</groupId>
