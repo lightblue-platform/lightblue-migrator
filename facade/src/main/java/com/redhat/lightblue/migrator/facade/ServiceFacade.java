@@ -324,10 +324,6 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         }
     }
 
-    public <T> T callSvcWriteMethod(boolean callInParallel, final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
-        return callSvcWriteMethod(callInParallel, returnedType, methodName, toClasses(values), values);
-    }
-
     @Deprecated
     public int getTimeoutSeconds() {
         throw new UnsupportedOperationException();
