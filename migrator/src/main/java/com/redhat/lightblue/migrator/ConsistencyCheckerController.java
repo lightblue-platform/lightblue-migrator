@@ -139,6 +139,7 @@ public class ConsistencyCheckerController extends AbstractController {
         while(!interrupted) {
             interrupted=isInterrupted();
             if(!interrupted) {
+                controller.ping();
                 Breakpoint.checkpoint("CCC:start");
                 LOGGER.debug("Consistency checker {} woke up",migrationConfiguration.getConfigurationName());
                 // Lets update our configuration first
@@ -191,6 +192,7 @@ public class ConsistencyCheckerController extends AbstractController {
                                         Breakpoint.checkpoint("CCC:beforeCreateJobs");
                                         List<MigrationJob> mjList=new ArrayList<>();
                                         do {
+                                            controller.ping();
                                             LOGGER.debug("{} will create a job for period {}-{}",migrationConfiguration.getConfigurationName(),startDate,endDate);
                                             mjList.addAll(createJobs(startDate,endDate,ae));
                                             migrationConfiguration.setTimestampInitialValue(endDate);
@@ -201,7 +203,9 @@ public class ConsistencyCheckerController extends AbstractController {
                                         interrupted=isInterrupted();
                                         if(!mjList.isEmpty()&&!interrupted) {
                                             try {
+                                                controller.ping();
                                                 update(mjList);
+                                                controller.ping();
                                             } catch (Exception e) {
                                                 LOGGER.error("Cannot create jobs:{}",e,e);
                                             }

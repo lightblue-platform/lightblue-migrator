@@ -14,7 +14,13 @@ import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 
-
+/**
+ * This is the main thread. It runs until it is
+ * interrupted. Periodically it reads migration configurations, and
+ * creates MigratorController and ConsistencyChecker threads. All
+ * those threads are derived from AbstractController, and have their
+ * own thread groups.
+ */
 public class Controller extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Controller.class);

@@ -106,13 +106,16 @@ public abstract class Migrator extends Thread {
 
     public void migrate(MigrationJobExecution execution) {
         try {
+            controller.ping();
             initMigrator();
             LOGGER.debug("Retrieving source docs");
             sourceDocs=Utils.getDocumentIdMap(getSourceDocuments(),getIdentityFields());
+            controller.ping();
             Breakpoint.checkpoint("Migrator:sourceDocs");
             LOGGER.debug("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
             LOGGER.debug("Retrieving destination docs");
             destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getIdentityFields());
+            controller.ping();
             Breakpoint.checkpoint("Migrator:destDocs");
             LOGGER.debug("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
 
@@ -148,6 +151,7 @@ public abstract class Migrator extends Thread {
                     }
                 }
             }
+            controller.ping();
             Breakpoint.checkpoint("Migrator:rewriteDocs");
             LOGGER.debug("There are {} docs to rewrite: {}",rewriteDocs.size(),migrationJob.getConfigurationName());
             execution.setInconsistentDocumentCount(rewriteDocs.size());
@@ -174,6 +178,7 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
             try {
                 List<LightblueResponse> responses=save(saveDocsList);
+                controller.ping();
                 LOGGER.info("source: {}, dest: {}, written: {}",sourceDocs.size(),destDocs.size(),saveDocsList.size());
             } catch (LightblueException ex) {
                 LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),ex.getMessage());
@@ -187,6 +192,7 @@ public abstract class Migrator extends Thread {
             e.printStackTrace(new PrintWriter(strw));
             execution.setErrorMsg(strw.toString());
         } finally {
+            controller.ping();
             cleanupMigrator();
         }
     }
@@ -255,6 +261,7 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("Req:{}",updateRequest.getBody());
 
             response = lbClient.data(updateRequest);
+            controller.ping();
             // Do the migration
             migrate(execution);
 

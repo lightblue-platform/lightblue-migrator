@@ -28,6 +28,8 @@ public abstract class AbstractController extends Thread {
     protected final Class migratorClass;
     protected final ThreadGroup migratorThreads;
     protected final HashSet<String> myLocks=new HashSet<>();
+    // Keeps the last ping timestamp for each thread
+    protected final Map<Thread,Long> pings=new HashMap<>();
 
     public AbstractController(Controller controller,MigrationConfiguration migrationConfiguration,String threadGroupName) {
         this.migrationConfiguration=migrationConfiguration;
@@ -48,6 +50,10 @@ public abstract class AbstractController extends Thread {
 
     public ThreadGroup getMigratorThreads() {
         return migratorThreads;
+    }
+
+    public synchronized void ping() {
+        pings.put(Thread.currentThread(),System.currentTimeMillis());
     }
 
     public Controller getController() {
