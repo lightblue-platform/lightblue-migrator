@@ -27,7 +27,7 @@ import com.redhat.lightblue.client.Update;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public abstract class Migrator extends Thread {
+public abstract class Migrator extends AbstractMonitoredThread {
 
     private Logger LOGGER;
 
@@ -106,16 +106,16 @@ public abstract class Migrator extends Thread {
 
     public void migrate(MigrationJobExecution execution) {
         try {
-            controller.ping();
+            ping("Starting migrate()");
             initMigrator();
             LOGGER.debug("Retrieving source docs");
             sourceDocs=Utils.getDocumentIdMap(getSourceDocuments(),getIdentityFields());
-            controller.ping();
+            ping("Retrieved source documents");
             Breakpoint.checkpoint("Migrator:sourceDocs");
             LOGGER.debug("There are {} source docs:{}",sourceDocs.size(),migrationJob.getConfigurationName());
             LOGGER.debug("Retrieving destination docs");
             destDocs=Utils.getDocumentIdMap(getDestinationDocuments(sourceDocs.keySet()),getIdentityFields());
-            controller.ping();
+            ping("Retrieved destination documents");
             Breakpoint.checkpoint("Migrator:destDocs");
             LOGGER.debug("sourceDocs={}, destDocs={}",sourceDocs.size(),destDocs.size());
 
@@ -151,7 +151,7 @@ public abstract class Migrator extends Thread {
                     }
                 }
             }
-            controller.ping();
+            ping("Checked for inconsistencies");
             Breakpoint.checkpoint("Migrator:rewriteDocs");
             LOGGER.debug("There are {} docs to rewrite: {}",rewriteDocs.size(),migrationJob.getConfigurationName());
             execution.setInconsistentDocumentCount(rewriteDocs.size());
@@ -178,7 +178,7 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("There are {} docs to save: {}",saveDocsList.size(),migrationJob.getConfigurationName());
             try {
                 List<LightblueResponse> responses=save(saveDocsList);
-                controller.ping();
+                ping("Saved documents");
                 LOGGER.info("source: {}, dest: {}, written: {}",sourceDocs.size(),destDocs.size(),saveDocsList.size());
             } catch (LightblueException ex) {
                 LOGGER.error("Error during migration of {}:{}",migrationJob.getConfigurationName(),ex.getMessage());
@@ -192,7 +192,7 @@ public abstract class Migrator extends Thread {
             e.printStackTrace(new PrintWriter(strw));
             execution.setErrorMsg(strw.toString());
         } finally {
-            controller.ping();
+            ping("Finishing up");
             cleanupMigrator();
         }
     }
@@ -261,7 +261,7 @@ public abstract class Migrator extends Thread {
             LOGGER.debug("Req:{}",updateRequest.getBody());
 
             response = lbClient.data(updateRequest);
-            controller.ping();
+            ping("Updated migration job");
             // Do the migration
             migrate(execution);
 

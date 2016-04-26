@@ -14,7 +14,7 @@ import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 
-public class MigratorController extends AbstractController {
+public class MigratorController extends AbstractController  {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(MigratorController.class);
 
@@ -130,12 +130,13 @@ public class MigratorController extends AbstractController {
         return null;
     }
 
-    @Override
+   @Override
     public void run() {
         LOGGER.debug("Starting controller thread");
         boolean interrupted=false;
         // This thread never stops
         Breakpoint.checkpoint("MigratorController:start");
+        ThreadMonitor monitor=controller.getThreadMonitor();
         while(!interrupted) {
 
             interrupted=isInterrupted();
@@ -144,7 +145,12 @@ public class MigratorController extends AbstractController {
                 synchronized(migratorThreads) {
                     int k=0;
                     // Are we already running all the threads we can?
-                    while(!interrupted&&migratorThreads.activeCount()>=migrationConfiguration.getThreadCount()) {
+                    // Don't include abandoned threads in this count
+                    int nThreads=monitor.getThreadCount(migratorThreads,
+                                                        ThreadMonitor.Status.alive,
+                                                        ThreadMonitor.Status.killed);
+                    LOGGER.debug("There are {} active threads",nThreads);
+                    while(!interrupted&&nThreads>=migrationConfiguration.getThreadCount()) {
                         // Wait until someone terminates (1 sec)
                         try {
                             migratorThreads.wait(1000);
@@ -173,7 +179,9 @@ public class MigratorController extends AbstractController {
                     if(lockedJob!=null) {
                         LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
                         Breakpoint.checkpoint("MigratorController:process");
-                        createMigrator(lockedJob.mj,lockedJob.ae).start();
+                        Migrator m=createMigrator(lockedJob.mj,lockedJob.ae);
+                        m.registerThreadMonitor(monitor);
+                        m.start();
                     } else {
                         // No jobs are available, wait a bit (10sec-30sec), and retry
                         LOGGER.debug("Waiting");

@@ -38,9 +38,11 @@ import com.redhat.lightblue.client.response.LightblueDataResponse;
  * consistency checker will miss that in the next run if the current
  * maximum was used as the starting value of the next run.
  */
-public class ConsistencyCheckerController extends AbstractController {
+public class ConsistencyCheckerController extends AbstractController implements MonitoredThread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(ConsistencyCheckerController.class);
+
+    private ThreadMonitor monitor;
 
     public ConsistencyCheckerController(Controller controller,MigrationConfiguration migrationConfiguration) {
         super(controller,migrationConfiguration,"ConsistencyChecker:"+migrationConfiguration.getConfigurationName());
@@ -55,6 +57,17 @@ public class ConsistencyCheckerController extends AbstractController {
         return p.toStandardDuration().getMillis();
     }
 
+    @Override
+    public void registerThreadMonitor(ThreadMonitor monitor) {
+        this.monitor=monitor;
+        ping(null);
+    }
+
+    @Override
+    public void ping(String msg) {
+        if(monitor!=null)
+            monitor.ping(msg);
+    }
 
 
     /**
@@ -139,7 +152,7 @@ public class ConsistencyCheckerController extends AbstractController {
         while(!interrupted) {
             interrupted=isInterrupted();
             if(!interrupted) {
-                controller.ping();
+                ping("Starting consistency checking for "+migrationConfiguration.getConfigurationName());
                 Breakpoint.checkpoint("CCC:start");
                 LOGGER.debug("Consistency checker {} woke up",migrationConfiguration.getConfigurationName());
                 // Lets update our configuration first
@@ -192,7 +205,7 @@ public class ConsistencyCheckerController extends AbstractController {
                                         Breakpoint.checkpoint("CCC:beforeCreateJobs");
                                         List<MigrationJob> mjList=new ArrayList<>();
                                         do {
-                                            controller.ping();
+                                            ping("Creating jobs");
                                             LOGGER.debug("{} will create a job for period {}-{}",migrationConfiguration.getConfigurationName(),startDate,endDate);
                                             mjList.addAll(createJobs(startDate,endDate,ae));
                                             migrationConfiguration.setTimestampInitialValue(endDate);
@@ -203,9 +216,9 @@ public class ConsistencyCheckerController extends AbstractController {
                                         interrupted=isInterrupted();
                                         if(!mjList.isEmpty()&&!interrupted) {
                                             try {
-                                                controller.ping();
+                                                ping("About to add jobs");
                                                 update(mjList);
-                                                controller.ping();
+                                                ping("Added jobs");
                                             } catch (Exception e) {
                                                 LOGGER.error("Cannot create jobs:{}",e,e);
                                             }

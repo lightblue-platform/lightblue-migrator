@@ -61,6 +61,9 @@ public class MigratorTest extends AbstractMigratorController {
         req=new DataDeleteRequest("migrationConfiguration",null);
         req.where(Query.withValue("objectType",Query.eq,"migrationConfiguration"));
         cli.data(req);
+        req=new DataDeleteRequest("sourceCustomer","1.0.0");
+        req.where(Query.withValue("objectType",Query.eq,"sourceCustomer"));
+        cli.data(req);
     }
 
 
@@ -116,6 +119,95 @@ public class MigratorTest extends AbstractMigratorController {
         System.out.println("Test ends");
         Thread.sleep(1000);
     }
-         
+
+    @Test
+    public void threadMonitoringTest_interrupt() throws Exception {
+        clearData();
+        Breakpoint.clearAll();
+        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-interruptiblemigrator.json");
+        loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
+        loadData("sourceCustomer", versionSourceCustomer, "./test/data/load-source-customers.json");
+        
+        MainConfiguration cfg=new MainConfiguration();
+        cfg.setName("continuum");
+        cfg.setHostName("hostname");
+        // 10msec thread timeout
+        cfg.setThreadTimeout(10l);
+        Controller controller=new Controller(cfg);
+        // We need this here to make sure controller has a chance to
+        // initialize the threads before we start waiting for them
+        Breakpoint.stop("Controller:createconfig");
+        Breakpoint.stop("Migrator:interrupted");
+        // This will put a breakpoint to the test class
+        Breakpoint.stop("Migrator:getSourceDocuments");
+        controller.start();
+        Breakpoint.waitUntil("Controller:createconfig");
+
+        Breakpoint.resume("Controller:createconfig");
+
+        Breakpoint.waitUntil("Migrator:getSourceDocuments");
+        Breakpoint.resume("Migrator:getSourceDocuments");
+
+        Breakpoint.stop("ThreadMonitor:check");
+        // Wait for 100 msec, the thread monitor should interrupt the thread
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {}
+        controller.getThreadMonitor().runNow();
+        System.out.println("Waiting until check wakes up");
+        Breakpoint.waitUntil("ThreadMonitor:check");
+        Breakpoint.resume("ThreadMonitor:check");
+        System.out.println("Thread monitor woke up");
+        Breakpoint.waitUntil("Migrator:interrupted");
+        Breakpoint.resume("Migrator:interrupted");
+        Assert.assertTrue(InterruptibleStuckMigrator.numInterrupted>0);
+   }
+
+    
+    @Test
+    public void threadMonitoringTest_abandon() throws Exception {
+        clearData();
+        Breakpoint.clearAll();
+        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-uninterruptiblemigrator.json");
+        loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
+        loadData("sourceCustomer", versionSourceCustomer, "./test/data/load-source-customers.json");
+        
+        MainConfiguration cfg=new MainConfiguration();
+        cfg.setName("continuum");
+        cfg.setHostName("hostname");
+        // 10msec thread timeout
+        cfg.setThreadTimeout(10l);
+        Controller controller=new Controller(cfg);
+        // We need this here to make sure controller has a chance to
+        // initialize the threads before we start waiting for them
+        Breakpoint.stop("Controller:createconfig");
+        Breakpoint.stop("Migrator:interrupted");
+        // This will put a breakpoint to the test class
+        Breakpoint.stop("Migrator:getSourceDocuments");
+        controller.start();
+        Breakpoint.waitUntil("Controller:createconfig");
+
+        Breakpoint.resume("Controller:createconfig");
+
+        Breakpoint.waitUntil("Migrator:getSourceDocuments");
+        Breakpoint.resume("Migrator:getSourceDocuments");
+
+        Breakpoint.stop("ThreadMonitor:check");
+        // Wait for 100 msec, the thread monitor should interrupt the thread
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {}
+        controller.getThreadMonitor().runNow();
+        System.out.println("Waiting until check wakes up");
+        Breakpoint.waitUntil("ThreadMonitor:check");
+        Breakpoint.resume("ThreadMonitor:check");
+        System.out.println("Thread monitor woke up");
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {}
+        controller.getThreadMonitor().runNow();
+        // Thread must be abandoned by now
+        Assert.assertEquals(1,controller.getThreadMonitor().getThreadCount(ThreadMonitor.Status.abandoned));
+    }
 }
 
