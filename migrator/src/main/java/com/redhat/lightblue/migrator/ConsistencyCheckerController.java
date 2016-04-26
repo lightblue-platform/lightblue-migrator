@@ -15,6 +15,7 @@ import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Update;
 import com.redhat.lightblue.client.Literal;
 import com.redhat.lightblue.client.Projection;
+import com.redhat.lightblue.client.util.ClientConstants;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
 import com.redhat.lightblue.client.request.data.DataUpdateRequest;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
@@ -94,6 +95,10 @@ public class ConsistencyCheckerController extends AbstractController {
         mj.setScheduledDate(getNow());
         mj.setGenerated(true);
         mj.setStatus(MigrationJob.STATE_AVAILABLE);
+        mj.setConsistencyChecker(new MigrationJob.ConsistencyChecker());
+        mj.getConsistencyChecker().setJobRangeBegin(ClientConstants.getDateFormat().format(startDate));
+        mj.getConsistencyChecker().setJobRangeEnd(ClientConstants.getDateFormat().format(endDate));
+        mj.getConsistencyChecker().setConfigurationName(mj.getConfigurationName());
         Migrator migrator=createMigrator(mj,ae);
         mj.setQuery(migrator.createRangeQuery(startDate,endDate));
         // At this point, mj.query contains the range query
@@ -102,11 +107,35 @@ public class ConsistencyCheckerController extends AbstractController {
         return ret;
     }
 
+    private void batchCreate(List<MigrationJob> mjList) {
+        final int batchSize=100;
+        List<MigrationJob> batch=new ArrayList<>(batchSize);
+        for(MigrationJob mj:mjList) {
+            batch.add(mj);
+            if(batch.size()>=batchSize) {
+                DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+                req.create(batch);
+                try {
+                    lbClient.data(req);
+                } catch (Exception e) {
+                    LOGGER.error("Exception insering a batch of jobs",e);
+                }
+                batch.clear();
+            }
+        }
+        if(batch.size()>0) {
+            DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+            req.create(batch);
+            try {
+                lbClient.data(req);
+            } catch (Exception e) {
+                LOGGER.error("Exception insering a batch of jobs",e);
+            }
+        }
+    }
+
     private void update(List<MigrationJob> mjList) throws Exception {
-        DataInsertRequest req=new DataInsertRequest("migrationJob",null);
-        LOGGER.debug("Adding {} jobs",mjList.size());
-        req.create(mjList);
-        lbClient.data(req);
+        batchCreate(mjList);
         DataUpdateRequest upd=new DataUpdateRequest("migrationConfiguration",null);
         upd.where(Query.withValue("_id",Query.eq,migrationConfiguration.get_id()));
         upd.updates(Update.set("timestampInitialValue",Literal.value(migrationConfiguration.getTimestampInitialValue())));
