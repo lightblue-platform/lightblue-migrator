@@ -129,8 +129,8 @@ public class ThreadMonitor extends Thread {
             LOGGER.debug("Status:{}",status);
             long now=System.currentTimeMillis();
             if(status.status==Status.killed) {
-                ((Thread)thread).interrupt();
-                throw new RuntimeException("Thread is killed:"+thread);
+                currentThread.interrupt();
+                throw new RuntimeException("Thread is killed:"+currentThread);
             }
             synchronized(status) {
                 if(status.timeout()||status.abandon()) {
