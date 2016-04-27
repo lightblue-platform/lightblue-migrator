@@ -5,7 +5,7 @@
             "collection": "migrationJob",
             "datasource": "mongodata"
         },
-        "defaultVersion" : "2.0.1",
+        "defaultVersion" : "2.0.2",
         "enums": [],
         "indexes": [
             {
@@ -34,6 +34,24 @@
                 ],
                 "name": "MigrationJobsToExecute",
                 "unique": false
+            },
+            {
+                "fields": [
+                    {
+                        "dir": "$asc",
+                        "field": "consistencyChecker.configurationName"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "consistencyChecker.jobRangeBegin"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "consistencyChecker.jobRangeEnd"
+                    }
+                ],
+                "name": "JobRange",
+                "unique": true
             }
         ],
         "name": "migrationJob"
@@ -100,6 +118,23 @@
                     "required":true
                 },
                 "description":"Status of the job, available, active, completed, failed"
+            },
+            "consistencyChecker": {
+                "type":"object",
+                "fields": {
+                    "jobRangeBegin" : {
+                        "type":"string",
+                        "description":"For generated jobs, the beginning of the job range. Declared as string to keep range generic, could be date, id, etc."
+                    },
+                    "jobRangeEnd" : {
+                        "type":"string",
+                        "description":"For generated jobs, the end of the job range. Declared as string to keep range generic, could be date, id, etc."
+                    },
+                    "configurationName": {
+                        "type":"string",
+                        "description":"Repeated here to make the index unique"
+                    }
+                }
             },
             "jobExecutions": {
                 "items": {
@@ -195,8 +230,8 @@
             "value": "active"
         },
         "version": {
-            "changelog": "add generated flag",
-            "value": "2.0.1"
+            "changelog": "add consistency checker job range",
+            "value": "2.0.2"
         }
     }
 }
