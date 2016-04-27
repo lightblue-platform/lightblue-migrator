@@ -1,0 +1,23 @@
+{
+    "data":[
+        {
+            "_id": "customerMigration_0", 
+            "comparisonExclusionPaths": [
+                "creationDate"
+            ], 
+            "configurationName": "customers", 
+            "consistencyCheckerName": "continuum", 
+            "destinationEntityName": "destCustomer", 
+            "destinationEntityVersion": "1.0.0", 
+            "destinationIdentityFields": [
+                "_id"
+            ], 
+            "objectType": "migrationConfiguration", 
+            "overwriteDestinationDocuments": true, 
+            "sourceEntityName": "sourceCustomer", 
+            "sourceEntityVersion": "1.0.0", 
+            "migratorClass": "com.redhat.lightblue.migrator.UninterruptibleStuckMigrator", 
+            "threadCount": 1
+        }
+    ]
+}

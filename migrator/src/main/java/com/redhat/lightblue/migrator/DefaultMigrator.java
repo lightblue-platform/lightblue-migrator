@@ -156,6 +156,7 @@ public class DefaultMigrator extends Migrator {
         if(!batch.isEmpty()) {
             try {
                 responses.add(saveBatch(batch));
+                ping("Saving a batch");
             } catch (LightblueResponseException ex) {
                 errorMessage.append(ex.getLightblueResponse().getText());
             }

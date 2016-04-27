@@ -14,7 +14,13 @@ import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 
-
+/**
+ * This is the main thread. It runs until it is
+ * interrupted. Periodically it reads migration configurations, and
+ * creates MigratorController and ConsistencyChecker threads. All
+ * those threads are derived from AbstractController, and have their
+ * own thread groups.
+ */
 public class Controller extends Thread {
 
     private static final Logger LOGGER=LoggerFactory.getLogger(Controller.class);
@@ -22,7 +28,7 @@ public class Controller extends Thread {
     private final MainConfiguration cfg;
     private final LightblueClient lightblueClient;
     private final Map<String,MigrationProcess> migrationMap=new HashMap<>();
-
+    private final ThreadMonitor threadMonitor;
 
     public static class MigrationProcess {
         public final MigrationConfiguration cfg;
@@ -41,6 +47,12 @@ public class Controller extends Thread {
     public Controller(MainConfiguration cfg) {
         this.cfg=cfg;
         lightblueClient=getLightblueClient();
+        Long tt=cfg.getThreadTimeout();
+        if(tt==null)
+            threadMonitor=new ThreadMonitor();
+        else
+            threadMonitor=new ThreadMonitor(tt);
+        threadMonitor.start();
     }
 
     public Map<String,MigrationProcess> getMigrationProcesses() {
@@ -50,6 +62,11 @@ public class Controller extends Thread {
     public MainConfiguration getMainConfiguration() {
         return cfg;
     }
+
+    public ThreadMonitor getThreadMonitor() {
+        return threadMonitor;
+    }
+
 
     /**
      * Read configurations from the database whose name matches this instance name
@@ -128,6 +145,12 @@ public class Controller extends Thread {
                     }
                 } else {
                     ccc=null;
+                }
+                if(c instanceof MonitoredThread) {
+                    ((MonitoredThread)c).registerThreadMonitor(threadMonitor);
+                }
+                if(ccc instanceof MonitoredThread) {
+                    ((MonitoredThread)ccc).registerThreadMonitor(threadMonitor);
                 }
                 migrationMap.put(cfg.get_id(),new MigrationProcess(cfg,c,ccc));
                 c.start();

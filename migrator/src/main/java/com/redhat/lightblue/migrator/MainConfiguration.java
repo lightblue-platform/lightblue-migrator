@@ -17,6 +17,7 @@ public class MainConfiguration {
     private String name;
     private String hostName;
     private String clientConfig;
+    private Long threadTimeout;
 
     static {
         options = new Options();
@@ -42,6 +43,13 @@ public class MainConfiguration {
                           withDescription("Path to configuration file for migration").
                           isRequired().
                           create('c'));
+        options.addOption(OptionBuilder.
+                          withArgName("threadTimeout").
+                          withLongOpt("threadTimeout").
+                          hasArg(true).
+                          withDescription("Maximum time thread is allowed to run (msecs)").
+                          isRequired(false).
+                          create('t'));
     }
 
 
@@ -67,6 +75,19 @@ public class MainConfiguration {
 
     public void setClientConfig(String s) {
         clientConfig=s;
+    }
+
+    public void setThreadTimeout(String s) {
+        if(s!=null) 
+            setThreadTimeout(Long.valueOf(s));
+    }
+
+    public void setThreadTimeout(Long l) {
+        threadTimeout=l;
+    }
+
+    public Long getThreadTimeout() {
+        return threadTimeout;
     }
 
 
@@ -105,5 +126,8 @@ public class MainConfiguration {
         s=p.getProperty("config");
         if(s!=null)
             setClientConfig(s);
+        s=p.getProperty("threadTimeout");
+        if(s!=null)
+            setThreadTimeout(s);
     }
 }
