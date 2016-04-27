@@ -30,6 +30,7 @@ import com.redhat.lightblue.client.response.LightblueResponse;
 public abstract class Migrator extends AbstractMonitoredThread {
 
     private Logger LOGGER;
+    private Logger INCONSISTENCY_LOGGER;
 
     private AbstractController controller;
     private MigrationJob migrationJob;
@@ -139,15 +140,15 @@ public abstract class Migrator extends AbstractMonitoredThread {
                         // log as key=value to make parsing easy
                         // fields to log: config name, job id, dest entity name & version, id field names & values,
                         //list of inconsistent paths
-                        LOGGER.warn("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\" mismatchedValues=\"{}\"",
-                                     getMigrationConfiguration().getConfigurationName(),
-                                     getMigrationConfiguration().getDestinationEntityName(),
-                                     getMigrationConfiguration().getDestinationEntityVersion(),
-                                     migrationJob.get_id(),
-                                     StringUtils.join(getIdentityFields(), ","),
-                                     sourceEntry.getKey().toString(),
-                                     Inconsistency.getPathList(inconsistencies),
-                                     Inconsistency.getMismatchedValues(inconsistencies));
+                        INCONSISTENCY_LOGGER.warn("configurationName={} destinationEntityName={} destinationEntityVersion={} migrationJobId={} identityFields=\"{}\" identityFieldValues=\"{}\" inconsistentPaths=\"{}\" mismatchedValues=\"{}\"",
+                                                  getMigrationConfiguration().getConfigurationName(),
+                                                  getMigrationConfiguration().getDestinationEntityName(),
+                                                  getMigrationConfiguration().getDestinationEntityVersion(),
+                                                  migrationJob.get_id(),
+                                                  StringUtils.join(getIdentityFields(), ","),
+                                                  sourceEntry.getKey().toString(),
+                                                  Inconsistency.getPathList(inconsistencies),
+                                                  Inconsistency.getMismatchedValues(inconsistencies));
                     }
                 }
             }
@@ -225,6 +226,7 @@ public abstract class Migrator extends AbstractMonitoredThread {
     @Override
     public final void run() {
         LOGGER=LoggerFactory.getLogger(Migrator.class.getName()+"."+getMigrationConfiguration().getConfigurationName());
+        INCONSISTENCY_LOGGER=LoggerFactory.getLogger("inconsistency."+getMigrationConfiguration().getConfigurationName());
 
         // First update the migration job, mark its status as being
         // processed, so it doesn't show up in other controllers'
