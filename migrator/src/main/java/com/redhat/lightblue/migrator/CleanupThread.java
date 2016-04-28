@@ -69,7 +69,8 @@ public class CleanupThread extends Thread {
                     DataDeleteRequest del=new DataDeleteRequest("migrationJob",null);
                     del.where(Query.withValues("_id",Query.in,ids(jobs)));
                     cli.data(del);
-                }
+                } else
+                    break;
             } catch (Exception e) {
                 // Log and ignore errors
                 LOGGER.error("Error during cleanup",e);
@@ -97,7 +98,8 @@ public class CleanupThread extends Thread {
                     upd.updates(Update.set("status",MigrationJob.STATE_AVAILABLE));
                     LOGGER.debug("update:{}",upd.getBodyJson());
                     cli.data(upd);
-                }
+                } else
+                    break;
             } catch (Exception e) {
                 LOGGER.error("Error re-activating jobs",e);
             }
