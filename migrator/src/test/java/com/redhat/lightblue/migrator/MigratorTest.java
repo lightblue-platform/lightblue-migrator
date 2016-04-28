@@ -1,6 +1,6 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.Map;
+import java.util.*;
 
 import org.junit.Test;
 import org.junit.Assert;
@@ -209,5 +209,257 @@ public class MigratorTest extends AbstractMigratorController {
         // Thread must be abandoned by now
         Assert.assertEquals(1,controller.getThreadMonitor().getThreadCount(ThreadMonitor.Status.abandoned));
     }
+    
+    @Test
+    public void cleanupOldJobs() throws Exception {
+        clearData();
+        Breakpoint.clearAll();
+        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-uninterruptiblemigrator.json");
+        
+        MainConfiguration cfg=new MainConfiguration();
+        cfg.setName("continuum");
+        cfg.setHostName("hostname");
+        Controller controller=new Controller(cfg);
+
+        LightblueClient cli=controller.getLightblueClient();
+
+        Date now=new Date();
+        Date ago=new Date(System.currentTimeMillis()-30l*24l*60l*60l*1000l);
+        
+        List<MigrationJob> jobs=new ArrayList<>();
+        MigrationJob j=new MigrationJob();
+
+        j.set_id("completed_not_generated_old");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("completed");
+        j.setGenerated(false);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        MigrationJob.JobExecution je=new MigrationJob.JobExecution();
+        je.setStatus("completed");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(ago);
+        je.setActualEndDate(ago);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("completed_generated_old");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("completed");
+        j.setGenerated(true);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setStatus("completed");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(ago);
+        je.setActualEndDate(ago);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("failed_not_generated_old");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("failed");
+        j.setGenerated(false);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setStatus("failed");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(now);
+        je.setActualEndDate(now);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("failed_generated_old");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("failed");
+        j.setGenerated(true);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setStatus("failed");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(now);
+        je.setActualEndDate(now);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("completed_not_generated_new");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("completed");
+        j.setGenerated(false);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setOwnerName("name");
+        je.setStatus("completed");
+        je.setHostName("host");
+        je.setActualStartDate(now);
+        je.setActualEndDate(now);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("completed_generated_new");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("completed");
+        j.setGenerated(true);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setOwnerName("name");
+        je.setStatus("completed");
+        je.setHostName("host");
+        je.setActualStartDate(now);
+        je.setActualEndDate(now);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("available_generated_new");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("available");
+        j.setGenerated(true);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setOwnerName("name");
+        je.setStatus("available");
+        je.setHostName("host");
+        je.setActualStartDate(now);
+        je.setActualEndDate(now);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+        req.create(jobs);
+        cli.data(req);
+
+        DataFindRequest f=new DataFindRequest("migrationJob",null);
+        f.select(Projection.includeField("*"));
+        MigrationJob[] all=cli.data(f,MigrationJob[].class);
+        
+        CleanupThread t=new CleanupThread(controller);
+        t.cleanupOldJobs(cli,new Date(System.currentTimeMillis()-60000l));
+        
+        f=new DataFindRequest("migrationJob",null);
+        f.select(Projection.includeField("*"));
+        MigrationJob[] cleanedup=cli.data(f,MigrationJob[].class);
+        Assert.assertTrue(cleanedup.length<all.length&&all.length>0);
+        for(MigrationJob job:cleanedup) {
+            Assert.assertNotEquals("completed_generated_old",job.get_id());
+        }
+        for(MigrationJob l:jobs) {
+            if(!l.get_id().equals("completed_generated_old")) {
+                boolean found=false;
+                for(MigrationJob k:cleanedup) {
+                    if(k.get_id().equals(l.get_id())) {
+                        found=true;
+                        break;
+                    }
+                }
+                Assert.assertTrue(found);
+            }
+        }
+    }
+
+        @Test
+    public void enableStuckJobs() throws Exception {
+        clearData();
+        Breakpoint.clearAll();
+        loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-uninterruptiblemigrator.json");
+        
+        MainConfiguration cfg=new MainConfiguration();
+        cfg.setName("continuum");
+        cfg.setHostName("hostname");
+        Controller controller=new Controller(cfg);
+
+        LightblueClient cli=controller.getLightblueClient();
+
+        Date now=new Date();
+        Date ago=new Date(System.currentTimeMillis()-5l*60l*60l*1000l);
+        
+        List<MigrationJob> jobs=new ArrayList<>();
+        MigrationJob j=new MigrationJob();
+
+        j.set_id("completed_not_generated_old");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("completed");
+        j.setGenerated(false);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        MigrationJob.JobExecution je=new MigrationJob.JobExecution();
+        je.setStatus("completed");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(ago);
+        je.setActualEndDate(ago);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("active_old");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("active");
+        j.setGenerated(true);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setStatus("active");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(ago);
+        je.setActualEndDate(ago);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+        j=new MigrationJob();
+        j.set_id("active_new");
+        j.setConfigurationName("c");
+        j.setScheduledDate(new Date());
+        j.setStatus("active");
+        j.setGenerated(false);
+        j.setJobExecutions(new ArrayList<MigrationJob.JobExecution>());
+        je=new MigrationJob.JobExecution();
+        je.setStatus("active");
+        je.setOwnerName("name");
+        je.setHostName("host");
+        je.setActualStartDate(now);
+        je.setActualEndDate(now);
+        j.getJobExecutions().add(je);
+        jobs.add(j);
+
+
+        DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+        req.create(jobs);
+        cli.data(req);
+
+        DataFindRequest f=new DataFindRequest("migrationJob",null);
+        f.select(Projection.includeField("*"));
+        MigrationJob[] all=cli.data(f,MigrationJob[].class);
+        
+        CleanupThread t=new CleanupThread(controller);
+        t.enableStuckJobs(cli,new Date(System.currentTimeMillis()-60000l));
+        
+        f=new DataFindRequest("migrationJob",null);
+        f.select(Projection.includeField("*"));
+        MigrationJob[] enabled=cli.data(f,MigrationJob[].class);
+        Assert.assertEquals(all.length,enabled.length);
+
+        for(MigrationJob job:enabled) {
+            if(job.get_id().equals("active_old"))
+                Assert.assertEquals("available",job.getStatus());
+        }
+        
+        }
 }
 

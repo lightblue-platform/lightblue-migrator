@@ -163,9 +163,14 @@ public class Controller extends Thread {
 
     @Override
     public void run() {
-        LOGGER.debug("Starting controller");
+        LOGGER.debug("Starting controller");        
         boolean interrupted=false;
         Breakpoint.checkpoint("Controller:start");
+        CleanupThread cleanup=new CleanupThread(this);
+        if(cfg.getThreadTimeout()!=null) {
+            cleanup.setPeriod(cfg.getThreadTimeout()*4);
+        }
+        cleanup.start();
         while(!interrupted) {
             interrupted=isInterrupted();
             if(!interrupted) {
@@ -193,5 +198,6 @@ public class Controller extends Thread {
             }
         }
         Breakpoint.checkpoint("Controller:end");
+        cleanup.interrupt();
     }
 }
