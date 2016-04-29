@@ -58,14 +58,14 @@ public abstract class AbstractController extends Thread {
         return migrationConfiguration;
     }
 
-    public MigrationConfiguration reloadMigrationConfiguration() {
+    public MigrationConfiguration reloadMigrationConfiguration() throws Exception {
         try {
             LOGGER.debug("Reloading migration configuration {}",migrationConfiguration.get_id());
             return controller.loadMigrationConfiguration(migrationConfiguration.get_id());
         } catch (Exception e) {
             LOGGER.error("Cannot reload migration configuration:"+e);
+            throw e;
         }
-        return null;
     }
 
     /**

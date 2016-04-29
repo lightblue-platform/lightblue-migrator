@@ -159,13 +159,17 @@ public class MigratorController extends AbstractController  {
                         }
                         if(k++%10==0) {
                             // refresh configuration every 10 iteration
-                            MigrationConfiguration x=reloadMigrationConfiguration();
-                            if(x==null) {
-                                // Terminate
-                                LOGGER.debug("Controller terminating");
-                                interrupted=true;
-                            } else {
-                                migrationConfiguration=x;
+                            try {
+                                MigrationConfiguration x=reloadMigrationConfiguration();
+                                if(x==null) {
+                                    // Terminate
+                                    LOGGER.debug("Controller terminating");
+                                    interrupted=true;
+                                } else {
+                                    migrationConfiguration=x;
+                                }
+                            } catch(Exception e) {
+                                LOGGER.error("Cannot refresh configuration",e);
                             }
                         }
                     }

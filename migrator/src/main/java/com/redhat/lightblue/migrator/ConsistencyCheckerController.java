@@ -172,7 +172,13 @@ public class ConsistencyCheckerController extends AbstractController  {
                 Breakpoint.checkpoint("CCC:start");
                 LOGGER.debug("Consistency checker {} woke up",migrationConfiguration.getConfigurationName());
                 // Lets update our configuration first
-                MigrationConfiguration newCfg=reloadMigrationConfiguration();
+                
+                MigrationConfiguration newCfg=migrationConfiguration;
+                try {
+                    newCfg=reloadMigrationConfiguration();
+                } catch (Exception e) {
+                    LOGGER.error("Cannot load configuration",e);
+                }
                 if(newCfg==null) {
                     interrupted=true;
                     LOGGER.debug("Consistency checker {} configuration is no longer available",migrationConfiguration.getConfigurationName());
