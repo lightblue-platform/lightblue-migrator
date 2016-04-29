@@ -197,12 +197,14 @@ public class Utils {
     }
 
     private static boolean isExcluded(List<String> exclusions,String path) {
-        if(!exclusions.contains(path)) {
-            for(String x:exclusions)
-                if(matches(path,x))
-                    return true;
-        } else
-            return true;
+        if(exclusions!=null) {
+            if(!exclusions.contains(path)) {
+                for(String x:exclusions)
+                    if(matches(path,x))
+                        return true;
+            } else
+                return true;
+        }
         return false;
     }
 
