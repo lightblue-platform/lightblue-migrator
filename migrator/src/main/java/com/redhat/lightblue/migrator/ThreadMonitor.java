@@ -15,6 +15,8 @@ public class ThreadMonitor extends Thread {
 
     private long threadTimeout=10l*60l*1000l; // 10 minutes timeout
 
+    private long wakeupInterval=60l*1000l; // Wake up every minute
+
     private final List<ThreadStatusListener> statusListeners=new ArrayList<>();
 
     public enum Status {alive,killed,abandoned};
@@ -240,7 +242,7 @@ public class ThreadMonitor extends Thread {
                     runNow=false;
                 } else {
                     try {
-                        waiter.wait(60l*1000l);
+                        waiter.wait(wakeupInterval);
                     } catch (Exception e) {}
                 }
             }
