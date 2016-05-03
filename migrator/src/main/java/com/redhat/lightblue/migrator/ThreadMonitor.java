@@ -141,7 +141,18 @@ public class ThreadMonitor extends Thread {
         }
     }
 
-    private void reap(Map<MonitoredThread,ThreadStatus> threads) {
+    public void endThread() {
+        Thread currentThread=Thread.currentThread();
+        LOGGER.debug("End thread {}",currentThread);
+        if(currentThread instanceof MonitoredThread) {
+            MonitoredThread t=(MonitoredThread)currentThread;
+            synchronized(this) {
+                threadMap.remove(t);
+            }
+        }
+    }
+
+    private synchronized void reap(Map<MonitoredThread,ThreadStatus> threads) {
         List<MonitoredThread> dead=new ArrayList<>();
         for(MonitoredThread t:threads.keySet()) {
             if(!((Thread)t).isAlive())
@@ -152,7 +163,7 @@ public class ThreadMonitor extends Thread {
         }
     }
 
-    public Status getStatus(MonitoredThread t) {
+    public synchronized Status getStatus(MonitoredThread t) {
         ThreadStatus s=threadMap.get(t);
         if(s!=null)
             return s.status;
@@ -229,7 +240,7 @@ public class ThreadMonitor extends Thread {
                     runNow=false;
                 } else {
                     try {
-                        waiter.wait(threadTimeout);
+                        waiter.wait(60l*1000l);
                     } catch (Exception e) {}
                 }
             }
@@ -238,11 +249,10 @@ public class ThreadMonitor extends Thread {
             // Take a snapshot
             Map<MonitoredThread,ThreadStatus> snapshot;
             synchronized(this) {
+                reap(threadMap);
                 snapshot=new HashMap<>(threadMap);
             }
             LOGGER.debug("Thread snapshot:{}",snapshot);
-            reap(snapshot);
-            LOGGER.debug("After reap: {}",snapshot);
             long now=System.currentTimeMillis();
             // Check threads
             List<ThreadStatus> unresponsive=new ArrayList<>();

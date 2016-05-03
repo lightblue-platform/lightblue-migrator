@@ -224,7 +224,7 @@ public abstract class Migrator extends AbstractMonitoredThread {
 
 
     @Override
-    public final void run() {
+    public final void monitoredRun() {
         LOGGER=LoggerFactory.getLogger(Migrator.class.getName()+"."+getMigrationConfiguration().getConfigurationName());
         INCONSISTENCY_LOGGER=LoggerFactory.getLogger("inconsistency."+getMigrationConfiguration().getConfigurationName());
 

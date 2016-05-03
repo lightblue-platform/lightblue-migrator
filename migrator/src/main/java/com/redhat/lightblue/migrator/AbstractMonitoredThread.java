@@ -38,4 +38,21 @@ public abstract class AbstractMonitoredThread extends Thread implements Monitore
         if(monitor!=null)
             monitor.ping(msg);
     }
+
+    @Override
+    public void notifyEnd() {
+        if(monitor!=null)
+            monitor.endThread();
+    }
+
+    @Override
+    public final void run() {
+        try {
+            monitoredRun();
+        } finally {
+            notifyEnd();
+        }
+    }
+
+    protected abstract void monitoredRun();
 }
