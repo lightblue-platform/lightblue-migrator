@@ -34,6 +34,7 @@ public class MigratorController extends AbstractController  {
 
     public MigratorController(Controller controller,MigrationConfiguration migrationConfiguration) {
         super(controller,migrationConfiguration,"Migrators:"+migrationConfiguration.getConfigurationName());
+        setName("MigratorController-"+migrationConfiguration.getConfigurationName());
     }
 
     private LockRecord lock(MigrationJob mj)
@@ -138,7 +139,7 @@ public class MigratorController extends AbstractController  {
         Breakpoint.checkpoint("MigratorController:start");
         ThreadMonitor monitor=controller.getThreadMonitor();
         while(!interrupted) {
-
+            LOGGER.debug("Controller thread for {} is alive",migrationConfiguration.getConfigurationName());
             interrupted=isInterrupted();
             if(!interrupted) {
                 // All active threads will notify on migratorThreads when they finish
@@ -149,7 +150,7 @@ public class MigratorController extends AbstractController  {
                     int nThreads=monitor.getThreadCount(migratorThreads,
                                                         ThreadMonitor.Status.alive,
                                                         ThreadMonitor.Status.killed);
-                    LOGGER.debug("There are {} active threads",nThreads);
+                    LOGGER.debug("There are {} active threads for {}",nThreads,migrationConfiguration.getConfigurationName());
                     while(!interrupted&&nThreads>=migrationConfiguration.getThreadCount()) {
                         // Wait until someone terminates (1 sec)
                         try {
@@ -163,7 +164,7 @@ public class MigratorController extends AbstractController  {
                                 MigrationConfiguration x=reloadMigrationConfiguration();
                                 if(x==null) {
                                     // Terminate
-                                    LOGGER.debug("Controller terminating");
+                                    LOGGER.debug("Controller {} terminating",migrationConfiguration.getConfigurationName());
                                     interrupted=true;
                                 } else {
                                     migrationConfiguration=x;
@@ -172,23 +173,27 @@ public class MigratorController extends AbstractController  {
                                 LOGGER.error("Cannot refresh configuration",e);
                             }
                         }
-                    }
+                        nThreads=monitor.getThreadCount(migratorThreads,
+                                                        ThreadMonitor.Status.alive,
+                                                        ThreadMonitor.Status.killed);
+                        LOGGER.debug("There are {} active threads for {}",nThreads,migrationConfiguration.getConfigurationName());
+                   }
                 }
             }
             if(!interrupted) {
-                LOGGER.debug("Find a migration job to process");
+                LOGGER.debug("Find a migration job to process for {}",migrationConfiguration.getConfigurationName());
                 try {
                     Breakpoint.checkpoint("MigratorController:findandlock");
                     LockRecord lockedJob=findAndLockMigrationJob();
                     if(lockedJob!=null) {
-                        LOGGER.debug("Found migration job {}",lockedJob.mj.get_id());
+                        LOGGER.debug("Found migration job {} for {}",lockedJob.mj.get_id(),migrationConfiguration.getConfigurationName());
                         Breakpoint.checkpoint("MigratorController:process");
                         Migrator m=createMigrator(lockedJob.mj,lockedJob.ae);
                         m.registerThreadMonitor(monitor);
                         m.start();
                     } else {
                         // No jobs are available, wait a bit (10sec-30sec), and retry
-                        LOGGER.debug("Waiting");
+                        LOGGER.debug("Waiting for {}",migrationConfiguration.getConfigurationName());
                         Thread.sleep(rnd.nextInt(20000)+10000);
                     }
                 } catch (InterruptedException ie) {
@@ -200,6 +205,6 @@ public class MigratorController extends AbstractController  {
         }
         migratorThreads.interrupt();
         Breakpoint.checkpoint("MigratorController:end");
-        LOGGER.debug("Ending controller thread");
+        LOGGER.debug("Ending controller thread for {}",migrationConfiguration.getConfigurationName());
     }
 }

@@ -206,6 +206,9 @@ public class MigratorTest extends AbstractMigratorController {
             Thread.sleep(100);
         } catch (Exception e) {}
         controller.getThreadMonitor().runNow();
+        try {
+            Thread.sleep(100);
+        } catch (Exception e) {}
         // Thread must be abandoned by now
         Assert.assertEquals(1,controller.getThreadMonitor().getThreadCount(ThreadMonitor.Status.abandoned));
     }

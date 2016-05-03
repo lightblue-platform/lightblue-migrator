@@ -51,7 +51,7 @@
                     }
                 ],
                 "name": "JobRange",
-                "unique": true
+                "unique": false
             }
         ],
         "name": "migrationJob"

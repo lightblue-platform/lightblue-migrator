@@ -108,12 +108,65 @@ public class ConsistencyCheckerController extends AbstractController  {
         return ret;
     }
 
+    private void filterDups(List<MigrationJob> list) {
+        LOGGER.debug("filter dups, {} jobs",list.size());
+        if(!list.isEmpty()) {
+            List<Query> qlist=new ArrayList<>();
+            for(MigrationJob j:list) {
+                MigrationJob.ConsistencyChecker c=j.getConsistencyChecker();
+                if(j!=null) {
+                    qlist.add(Query.and(Query.withValue("consistencyChecker.jobRangeBegin",Query.eq,c.getJobRangeBegin()),
+                                        Query.withValue("consistencyChecker.jobRangeEnd",Query.eq,c.getJobRangeEnd()),
+                                        Query.withValue("consistencyChecker.configurationName",Query.eq,c.getConfigurationName())));
+                }
+            }
+            DataFindRequest req=new DataFindRequest("migrationJob",null);
+            req.where(Query.and(Query.withValue("status",Query.eq,MigrationJob.STATE_AVAILABLE),
+                                Query.or(qlist)));
+            req.select(Projection.includeFieldRecursively("*"));
+            MigrationJob[] dups=null;
+            try {
+                dups=lbClient.data(req,MigrationJob[].class);
+            } catch(Exception e) {
+                LOGGER.error("Cannot de-dup",e);                
+            }
+            if(dups!=null) {
+                LOGGER.debug("There are {} dups",dups.length);
+                for(MigrationJob d:dups) {
+                    for(MigrationJob trc:list) {
+                        if(trc.getConsistencyChecker().getJobRangeBegin().equals(d.getConsistencyChecker().getJobRangeBegin())&&
+                           trc.getConsistencyChecker().getJobRangeEnd().equals(d.getConsistencyChecker().getJobRangeEnd())) {
+                            list.remove(trc);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void batchCreate(List<MigrationJob> mjList) {
         final int batchSize=100;
         List<MigrationJob> batch=new ArrayList<>(batchSize);
         for(MigrationJob mj:mjList) {
             batch.add(mj);
             if(batch.size()>=batchSize) {
+                filterDups(batch);
+                if(!batch.isEmpty()) {
+                    DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+                    req.create(batch);
+                    try {
+                        lbClient.data(req);
+                    } catch (Exception e) {
+                        LOGGER.error("Exception insering a batch of jobs",e);
+                    }
+                }
+                batch.clear();
+            }
+        }
+        if(batch.size()>0) {
+            filterDups(batch);
+            if(!batch.isEmpty()) {
                 DataInsertRequest req=new DataInsertRequest("migrationJob",null);
                 req.create(batch);
                 try {
@@ -121,16 +174,6 @@ public class ConsistencyCheckerController extends AbstractController  {
                 } catch (Exception e) {
                     LOGGER.error("Exception insering a batch of jobs",e);
                 }
-                batch.clear();
-            }
-        }
-        if(batch.size()>0) {
-            DataInsertRequest req=new DataInsertRequest("migrationJob",null);
-            req.create(batch);
-            try {
-                lbClient.data(req);
-            } catch (Exception e) {
-                LOGGER.error("Exception insering a batch of jobs",e);
             }
         }
     }

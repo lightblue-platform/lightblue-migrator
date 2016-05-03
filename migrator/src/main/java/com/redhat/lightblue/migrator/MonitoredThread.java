@@ -7,5 +7,5 @@ public interface MonitoredThread {
 
     void registerThreadMonitor(ThreadMonitor monitor);
     void ping(String msg);
-    
+    void notifyEnd();
 }
