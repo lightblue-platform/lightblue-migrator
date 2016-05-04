@@ -114,30 +114,32 @@ public class ConsistencyCheckerController extends AbstractController  {
             List<Query> qlist=new ArrayList<>();
             for(MigrationJob j:list) {
                 MigrationJob.ConsistencyChecker c=j.getConsistencyChecker();
-                if(j!=null) {
+                if(c!=null) {
                     qlist.add(Query.and(Query.withValue("consistencyChecker.jobRangeBegin",Query.eq,c.getJobRangeBegin()),
                                         Query.withValue("consistencyChecker.jobRangeEnd",Query.eq,c.getJobRangeEnd()),
                                         Query.withValue("consistencyChecker.configurationName",Query.eq,c.getConfigurationName())));
                 }
             }
-            DataFindRequest req=new DataFindRequest("migrationJob",null);
-            req.where(Query.and(Query.withValue("status",Query.eq,MigrationJob.STATE_AVAILABLE),
-                                Query.or(qlist)));
-            req.select(Projection.includeFieldRecursively("*"));
-            MigrationJob[] dups=null;
-            try {
-                dups=lbClient.data(req,MigrationJob[].class);
-            } catch(Exception e) {
-                LOGGER.error("Cannot de-dup",e);                
-            }
-            if(dups!=null) {
-                LOGGER.debug("There are {} dups",dups.length);
-                for(MigrationJob d:dups) {
-                    for(MigrationJob trc:list) {
-                        if(trc.getConsistencyChecker().getJobRangeBegin().equals(d.getConsistencyChecker().getJobRangeBegin())&&
-                           trc.getConsistencyChecker().getJobRangeEnd().equals(d.getConsistencyChecker().getJobRangeEnd())) {
-                            list.remove(trc);
-                            break;
+            if(!qlist.isEmpty()) {
+                DataFindRequest req=new DataFindRequest("migrationJob",null);
+                req.where(Query.and(Query.withValue("status",Query.eq,MigrationJob.STATE_AVAILABLE),
+                                    Query.or(qlist)));
+                req.select(Projection.includeFieldRecursively("*"));
+                MigrationJob[] dups=null;
+                try {
+                    dups=lbClient.data(req,MigrationJob[].class);
+                } catch(Exception e) {
+                    LOGGER.error("Cannot de-dup",e);                
+                }
+                if(dups!=null) {
+                    LOGGER.debug("There are {} dups",dups.length);
+                    for(MigrationJob d:dups) {
+                        for(MigrationJob trc:list) {
+                            if(trc.getConsistencyChecker().getJobRangeBegin().equals(d.getConsistencyChecker().getJobRangeBegin())&&
+                               trc.getConsistencyChecker().getJobRangeEnd().equals(d.getConsistencyChecker().getJobRangeEnd())) {
+                                list.remove(trc);
+                                break;
+                            }
                         }
                     }
                 }
