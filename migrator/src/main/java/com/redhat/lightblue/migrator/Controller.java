@@ -32,8 +32,8 @@ public class Controller extends Thread {
 
     public static class MigrationProcess {
         public final MigrationConfiguration cfg;
-        public final MigratorController mig;
-        public final AbstractController ccc;
+        public MigratorController mig;
+        public AbstractController ccc;
 
         public MigrationProcess(MigrationConfiguration cfg,
                                 MigratorController mig,
@@ -117,6 +117,28 @@ public class Controller extends Thread {
         }
     }
 
+    private boolean shouldHaveConsistencyChecker(MigrationConfiguration cfg) {
+        return cfg.getPeriod()!=null&&cfg.getPeriod().trim().length()>0;
+    }
+
+    private AbstractController getConsistencyCheckerController(MigrationConfiguration cfg) {
+        AbstractController ccc=null;
+        try {
+            if(shouldHaveConsistencyChecker(cfg)) {
+                if(cfg.getConsistencyCheckerControllerClass()!=null&&
+                   cfg.getConsistencyCheckerControllerClass().length()>0) {
+                    ccc=(AbstractController)Class.forName(cfg.getConsistencyCheckerControllerClass()).
+                        getConstructor(Controller.class,MigrationConfiguration.class).newInstance(this,cfg);
+                } else {
+                    ccc=new ConsistencyCheckerController(this,cfg);
+                }
+            } 
+        } catch (Exception e) {
+            LOGGER.error("Cannot create consistency checker controller for {}:{}",cfg.getConfigurationName(),e);
+        }
+        return ccc;
+    }
+
     /**
      * Creates controller threads for migrators and consistency
      * checkers based on the configuration loaded from the db.
@@ -130,25 +152,14 @@ public class Controller extends Thread {
      */
     public void createControllers(MigrationConfiguration[] configurations) throws Exception {
         for(MigrationConfiguration cfg:configurations) {
-            if(!migrationMap.containsKey(cfg.get_id())) {
+            MigrationProcess process=migrationMap.get(cfg.get_id());
+            if(process==null) {
                 LOGGER.debug("Creating a controller thread for configuration {}: {}",cfg.get_id(),cfg.getConfigurationName());
                 MigratorController c=new MigratorController(this,cfg);
-                AbstractController ccc;
-                if(cfg.getPeriod()!=null&&
-                   cfg.getPeriod().length()>0) {
-                    if(cfg.getConsistencyCheckerControllerClass()!=null&&
-                       cfg.getConsistencyCheckerControllerClass().length()>0) {
-                        ccc=(AbstractController)Class.forName(cfg.getConsistencyCheckerControllerClass()).
-                            getConstructor(Controller.class,MigrationConfiguration.class).newInstance(this,cfg);
-                    } else {
-                        ccc=new ConsistencyCheckerController(this,cfg);
-                    }
-                } else {
-                    ccc=null;
-                }
                 if(c instanceof MonitoredThread) {
                     ((MonitoredThread)c).registerThreadMonitor(threadMonitor);
                 }
+                AbstractController ccc=getConsistencyCheckerController(cfg);;
                 if(ccc instanceof MonitoredThread) {
                     ((MonitoredThread)ccc).registerThreadMonitor(threadMonitor);
                 }
@@ -157,6 +168,37 @@ public class Controller extends Thread {
                 if(ccc!=null) {
                     ccc.start();
                 }
+            } else {
+                healthcheck(cfg);
+            }
+        }
+    }
+
+    public void healthcheck(MigrationConfiguration cfg) {
+        // Healthcheck
+        MigrationProcess process=migrationMap.get(cfg.get_id());
+        if(process!=null) {
+            if(!process.mig.isAlive()) {
+                LOGGER.error("Migrator thread for {} is not alive, recreating",cfg.getConfigurationName());
+                process.mig=new MigratorController(this,cfg);
+                if(process.mig instanceof MonitoredThread) {
+                    ((MonitoredThread)process.mig).registerThreadMonitor(threadMonitor);
+                }
+                process.mig.start();
+            }
+            if(shouldHaveConsistencyChecker(cfg)) {
+                if(process.ccc!=null&&!process.ccc.isAlive()) {
+                    LOGGER.error("Consistency checker for {} is not alive, recreating",cfg.getConfigurationName());
+                    process.ccc=getConsistencyCheckerController(cfg);
+                    if(process.ccc!=null) {
+                        if(process.ccc instanceof MonitoredThread) {
+                            ((MonitoredThread)process.ccc).registerThreadMonitor(threadMonitor);
+                        }
+                        process.ccc.start();
+                    }
+                }
+            } else if(process.ccc!=null) {
+                process.ccc.interrupt();
             }
         }
     }
