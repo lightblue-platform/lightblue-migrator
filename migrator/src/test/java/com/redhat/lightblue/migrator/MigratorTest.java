@@ -477,13 +477,19 @@ public class MigratorTest extends AbstractMigratorController {
         Controller controller=new Controller(cfg);
 
         Breakpoint.stop("Controller:createconfig");
+        Breakpoint.stop("CCC:start");
         controller.start();
 
         Breakpoint.waitUntil("Controller:createconfig");
         // Here all threads are created and running
+        Breakpoint.waitUntil("CCC:start");
+        Breakpoint.resume("CCC:start");
+        Assert.assertTrue(controller.getMigrationProcesses().get("customerMigration_0").ccc.isAlive());
         // Kill the ccc thread
+        Breakpoint.stop("CCC:end");
         controller.getMigrationProcesses().get("customerMigration_0").ccc.interrupt();
-        Thread.sleep(50);
+        Breakpoint.waitUntil("CCC:end");
+        Thread.sleep(150);
         Assert.assertFalse(controller.getMigrationProcesses().get("customerMigration_0").ccc.isAlive());
         controller.healthcheck(controller.getMigrationProcesses().get("customerMigration_0").cfg);
         Assert.assertTrue(controller.getMigrationProcesses().get("customerMigration_0").ccc.isAlive());
