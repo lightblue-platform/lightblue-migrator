@@ -47,6 +47,7 @@ public class ConsistencyCheckerController extends AbstractController  {
 
     public ConsistencyCheckerController(Controller controller,MigrationConfiguration migrationConfiguration) {
         super(controller,migrationConfiguration,"ConsistencyChecker:"+migrationConfiguration.getConfigurationName());
+        setName("ConsistencyCheckerController-"+migrationConfiguration.getConfigurationName());
     }
 
     /**
@@ -314,6 +315,6 @@ public class ConsistencyCheckerController extends AbstractController  {
             }
         }
         Breakpoint.checkpoint("CCC:end");
-        LOGGER.debug("Ending controller thread for {}",migrationConfiguration.getConfigurationName());
+        LOGGER.warn("Ending controller thread for {}",migrationConfiguration.getConfigurationName());
     }
 }
