@@ -31,7 +31,7 @@ public class Controller extends Thread {
     private final ThreadMonitor threadMonitor;
 
     public static class MigrationProcess {
-        public final MigrationConfiguration cfg;
+        public MigrationConfiguration cfg;
         public MigratorController mig;
         public AbstractController ccc;
 
@@ -178,6 +178,7 @@ public class Controller extends Thread {
         // Healthcheck
         MigrationProcess process=migrationMap.get(cfg.get_id());
         if(process!=null) {
+            process.cfg=cfg;
             if(!process.mig.isAlive()) {
                 LOGGER.error("Migrator thread for {} is not alive, recreating",cfg.getConfigurationName());
                 process.mig=new MigratorController(this,cfg);
@@ -187,7 +188,7 @@ public class Controller extends Thread {
                 process.mig.start();
             }
             if(shouldHaveConsistencyChecker(cfg)) {
-                if(process.ccc!=null&&!process.ccc.isAlive()) {
+                if(process.ccc==null||(process.ccc!=null&&!process.ccc.isAlive())) {
                     LOGGER.error("Consistency checker for {} is not alive, recreating",cfg.getConfigurationName());
                     process.ccc=getConsistencyCheckerController(cfg);
                     if(process.ccc!=null) {
@@ -197,9 +198,7 @@ public class Controller extends Thread {
                         process.ccc.start();
                     }
                 }
-            } else if(process.ccc!=null) {
-                process.ccc.interrupt();
-            }
+            } 
         }
     }
 
