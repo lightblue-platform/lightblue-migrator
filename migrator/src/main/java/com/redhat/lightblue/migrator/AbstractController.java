@@ -28,6 +28,7 @@ public abstract class AbstractController extends Thread {
     protected final Class migratorClass;
     protected final ThreadGroup migratorThreads;
     protected final HashSet<String> myLocks=new HashSet<>();
+    protected boolean stopped=false;
 
     public AbstractController(Controller controller,MigrationConfiguration migrationConfiguration,String threadGroupName) {
         this.migrationConfiguration=migrationConfiguration;
@@ -44,6 +45,11 @@ public abstract class AbstractController extends Thread {
             }
         
         migratorThreads=new ThreadGroup(threadGroupName);
+    }
+
+    public void setStopped() {
+        stopped=true;
+        interrupt();
     }
 
     public ThreadGroup getMigratorThreads() {

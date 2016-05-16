@@ -114,8 +114,8 @@ public class MigratorTest extends AbstractMigratorController {
         
         System.out.println("Interrupt controller");
         System.out.println("Interrupting "+controller.getMigrationProcesses().get("customerMigration_0").mig.getName());
-        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
-        controller.interrupt();
+        controller.getMigrationProcesses().get("customerMigration_0").mig.setStopped();
+        controller.setStopped();
         System.out.println("Test ends");
         Thread.sleep(1000);
     }
@@ -487,7 +487,7 @@ public class MigratorTest extends AbstractMigratorController {
         Assert.assertTrue(controller.getMigrationProcesses().get("customerMigration_0").ccc.isAlive());
         // Kill the ccc thread
         Breakpoint.stop("CCC:end");
-        controller.getMigrationProcesses().get("customerMigration_0").ccc.interrupt();
+        controller.getMigrationProcesses().get("customerMigration_0").ccc.setStopped();
         Breakpoint.waitUntil("CCC:end");
         Thread.sleep(150);
         Assert.assertFalse(controller.getMigrationProcesses().get("customerMigration_0").ccc.isAlive());

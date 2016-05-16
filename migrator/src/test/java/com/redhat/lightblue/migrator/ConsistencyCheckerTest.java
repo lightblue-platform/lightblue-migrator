@@ -154,7 +154,7 @@ public class ConsistencyCheckerTest extends AbstractMigratorController {
 
         // Stop everything
         Breakpoint.stop("Controller:end");
-        controller.interrupt();
+        controller.setStopped();
         Breakpoint.waitUntil("Controller:end");
         // Controller stopped, but wait a bit more to let others stop as well
         Thread.sleep(200);
@@ -246,7 +246,7 @@ public class ConsistencyCheckerTest extends AbstractMigratorController {
 
         // Stop everything
         Breakpoint.stop("Controller:end");
-        controller.interrupt();
+        controller.setStopped();
         Breakpoint.waitUntil("Controller:end");
         // Controller stopped, but wait a bit more to let others stop as well
         Thread.sleep(200);
