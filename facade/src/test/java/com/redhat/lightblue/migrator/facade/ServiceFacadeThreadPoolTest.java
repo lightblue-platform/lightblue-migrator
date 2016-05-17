@@ -46,13 +46,15 @@ public class ServiceFacadeThreadPoolTest {
 
     ServiceFacade<CountryDAOFacadable> daoFacade;
 
+    public static int TIMEOUT=10;
+
     @Before
     public void setup() throws InstantiationException, IllegalAccessException, CountryException {
         Mockito.when(lightblueDAO.getCountry(Mockito.any(String.class))).thenAnswer(new Answer<Country>() {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(200);
+                Thread.sleep(1000);
                 return new Country("pl");
             }
 
@@ -71,7 +73,7 @@ public class ServiceFacadeThreadPoolTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(200);
+                Thread.sleep(1000);
                 return new Country("pl");
             }
 
@@ -90,6 +92,9 @@ public class ServiceFacadeThreadPoolTest {
         // only 2 parallel calls to lightblue are allowed
         p.setProperty(ServiceFacade.CONFIG_PREFIX+"CountryDAOFacade.threadPool.size", "2");
         daoFacade = new ServiceFacade<CountryDAOFacadable>(legacyDAO, lightblueDAO, "CountryDAOFacade", p);
+
+        TimeoutConfiguration t = new TimeoutConfiguration(TIMEOUT, CountryDAO.class.getSimpleName(), null);
+        daoFacade.setTimeoutConfiguration(t);
 
         Mockito.verify(legacyDAO).setSharedStore((daoFacade).getSharedStore());
         Mockito.verify(lightblueDAO).setSharedStore((daoFacade).getSharedStore());
@@ -117,7 +122,7 @@ public class ServiceFacadeThreadPoolTest {
     };
 
     @Test
-    public void threadPoolTest_read_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
+    public void threadPoolTest_read_withTimeout_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -125,6 +130,7 @@ public class ServiceFacadeThreadPoolTest {
         // calling 4x getCountry in parallel
         Future<Country> c1 = executor.submit(getCountryCallable);
         Future<Country> c2 = executor.submit(getCountryCallable);
+        Thread.sleep(TIMEOUT+100); // wait for lightblue calls to timeout (threads still running in background)
         Future<Country> c3 = executor.submit(getCountryCallable);
         Future<Country> c4 = executor.submit(getCountryCallable);
 
@@ -143,7 +149,7 @@ public class ServiceFacadeThreadPoolTest {
     }
 
     @Test
-    public void threadPoolTest_write_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
+    public void threadPoolTest_write_withTimeout_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
@@ -151,6 +157,7 @@ public class ServiceFacadeThreadPoolTest {
         // calling 4x createCountry in parallel
         Future<Country> c1 = executor.submit(createCountryCallable);
         Future<Country> c2 = executor.submit(createCountryCallable);
+        Thread.sleep(TIMEOUT+100); // wait for lightblue calls to timeout (threads still running in background)
         Future<Country> c3 = executor.submit(createCountryCallable);
         Future<Country> c4 = executor.submit(createCountryCallable);
 
