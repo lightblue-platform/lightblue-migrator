@@ -66,7 +66,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
     // thread pool singleton
     // it is safe to submit to a single executor from multiple threads
     // (http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html)
-    private static ListeningExecutorService executor = null;
+    private static volatile ListeningExecutorService executor = null;
 
     public SharedStore getSharedStore() {
         return sharedStore;
@@ -106,17 +106,21 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         timeoutConfiguration = new TimeoutConfiguration(DEFAULT_TIMEOUT_MS, implementationName, this.properties);
 
         // create ThreadPoolExecutor for all facades
-        synchronized("executor") {
-            if (executor == null) {
-                int threadPoolSize = Integer.parseInt(this.properties.getProperty(CONFIG_PREFIX+implementationName+".threadPool.size", "50"));
+        if (executor == null) {
+            synchronized("executor") {
+                if (executor == null) {
+                    int threadPoolSize = Integer.parseInt(this.properties.getProperty(CONFIG_PREFIX+implementationName+".threadPool.size", "50"));
 
-                // cached means automatic thread reclamation
-                ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
-                // fixed size, no queuing
-                threadPoolExecutor.setCorePoolSize(threadPoolSize);
-                threadPoolExecutor.setMaximumPoolSize(threadPoolSize);
-                executor = MoreExecutors.listeningDecorator(threadPoolExecutor);
-                log.info("Initialized facade threadPool.size="+threadPoolSize);
+                    // cached means automatic thread reclamation
+                    ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+                    // fixed size, no queuing
+                    threadPoolExecutor.setCorePoolSize(threadPoolSize);
+                    threadPoolExecutor.setMaximumPoolSize(threadPoolSize);
+                    executor = MoreExecutors.listeningDecorator(threadPoolExecutor);
+                    log.info("Initialized facade threadPool.size={} for {}."+
+                            "Note it may be used by other services (there is a single, shared thread pool for all facaded services in the deployment",
+                            threadPoolSize, implementationName);
+                }
             }
         }
 
@@ -399,10 +403,12 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
      *
      */
     public static void shutdown() {
-        synchronized ("executor") {
-            if (executor != null) {
-                executor.shutdown();
-                executor = null;
+        if (executor != null) {
+            synchronized ("executor") {
+                if (executor != null) {
+                    executor.shutdown();
+                    executor = null;
+                }
             }
         }
     }
