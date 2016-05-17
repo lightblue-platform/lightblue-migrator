@@ -9,8 +9,8 @@ import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
 
 public class TimeoutConfigurationTest {
 
-    String TIMEOUT_CONFIG_PREFIX = TimeoutConfiguration.CONFIG_PREFIX+TimeoutConfiguration.Type.timeout+".";
-    String SLOWWARNING_CONFIG_PREFIX = TimeoutConfiguration.CONFIG_PREFIX+TimeoutConfiguration.Type.slowwarning+".";
+    String TIMEOUT_CONFIG_PREFIX = ServiceFacade.CONFIG_PREFIX+TimeoutConfiguration.Type.timeout+".";
+    String SLOWWARNING_CONFIG_PREFIX = ServiceFacade.CONFIG_PREFIX+TimeoutConfiguration.Type.slowwarning+".";
 
     @Test
     public void testDefault() {

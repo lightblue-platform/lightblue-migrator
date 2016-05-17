@@ -9,6 +9,8 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -52,10 +54,14 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
     // default timeout is 2 seconds
     public static final long DEFAULT_TIMEOUT_MS = 2000;
 
+    public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
+
     private ConsistencyChecker consistencyChecker;
 
     // used to associate inconsistencies with the service in the logs
     private final String implementationName;
+
+    private ListeningExecutorService executor;
 
     public SharedStore getSharedStore() {
         return sharedStore;
@@ -94,7 +100,16 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
         timeoutConfiguration = new TimeoutConfiguration(DEFAULT_TIMEOUT_MS, implementationName, this.properties);
 
-        log.info("Initialized facade for "+implementationName);
+        int threadPoolSize = Integer.parseInt(this.properties.getProperty(CONFIG_PREFIX+implementationName+".threadPool.size", "50"));
+
+        // cached means automatic thread reclamation
+        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+        // fixed size, no queuing
+        threadPoolExecutor.setCorePoolSize(threadPoolSize);
+        threadPoolExecutor.setMaximumPoolSize(threadPoolSize);
+        executor = MoreExecutors.listeningDecorator(threadPoolExecutor);
+
+        log.info("Initialized facade for "+implementationName+", threadPool.size="+threadPoolSize);
     }
 
     private long getLightblueExecutionTimeout(String methodName) {
@@ -103,10 +118,6 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             timeout = properties.getProperty("com.redhat.lightblue.migrator.facade.timeout."+implementationName, ""+DEFAULT_TIMEOUT_MS);
 
         return Long.parseLong(timeout);
-    }
-
-    private ListeningExecutorService createExecutor() {
-        return MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
     }
 
     private Class[] toClasses(Object[] objects) {
@@ -118,32 +129,38 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
     }
 
     private <T> ListenableFuture<T> callLightblueSvc(final Method method, final Object[] values, final FacadeOperation op, final MethodCallStringifier callStringifier) {
-        ListeningExecutorService executor = createExecutor();
         try {
-        // fetch from lightblue using future (asynchronously)
-        final long parentThreadId = Thread.currentThread().getId();
-        return executor.submit(new Callable<T>(){
-            @Override
-            public T call() throws Exception {
-                Timer dest = new Timer("destination."+method.getName());
-                if (sharedStore != null)
-                    sharedStore.copyFromThread(parentThreadId);
-                try {
-                    return (T) method.invoke(lightblueSvc, values);
-                } finally {
-                    long callTook = dest.complete();
-                    long timeout = timeoutConfiguration.getTimeoutMS(method.getName(), op);
-                    long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
+            // fetch from lightblue using future (asynchronously)
+            final long parentThreadId = Thread.currentThread().getId();
+            return executor.submit(new Callable<T>(){
+                @Override
+                public T call() throws Exception {
+                    Timer dest = new Timer("destination."+method.getName());
+                    if (sharedStore != null)
+                        sharedStore.copyFromThread(parentThreadId);
+                    try {
+                        return (T) method.invoke(lightblueSvc, values);
+                    } finally {
+                        long callTook = dest.complete();
+                        long timeout = timeoutConfiguration.getTimeoutMS(method.getName(), op);
+                        long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
 
-                    if (callTook >= slowWarning && callTook < timeout) {
-                        // call is slow but not slow enough to trigger timeout
-                        log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
+                        if (callTook >= slowWarning && callTook < timeout) {
+                            // call is slow but not slow enough to trigger timeout
+                            log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
+                        }
                     }
                 }
+            });
+        } catch (RejectedExecutionException e) {
+            // this may indicate that lightblue has a problem and threads are piling up on the client side
+            // max thread pool size is there to protect the client
+            log.error("Lightblue call {}.{} was not executed because thread pool is full.", implementationName, callStringifier);
+            if (!shouldSource(op)) {
+                // there is no fallback, throw the exception
+                throw e;
             }
-        });
-        } finally {
-            executor.shutdown();
+            return null;
         }
     }
 
@@ -271,11 +288,19 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             try {
                 if (callInParallel) {
                     // lightblue was called before source/legacy, now just getting results
+                    if (listenableFuture == null) {
+                        log.debug("Lightblue was not called because thread pool is full");
+                        return legacyEntity;
+                    }
                     lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
                     listenableFuture = callLightblueSvc(method, values, facadeOperation, callStringifier);
+                    if (listenableFuture == null) {
+                        log.debug("Lightblue was not called because thread pool is full");
+                        return legacyEntity;
+                    }
                     lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
@@ -356,5 +381,9 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
     public void setTimeoutConfiguration(TimeoutConfiguration timeoutConfiguration) {
         this.timeoutConfiguration = timeoutConfiguration;
+    }
+
+    public void shutdown() {
+        executor.shutdown();
     }
 }
