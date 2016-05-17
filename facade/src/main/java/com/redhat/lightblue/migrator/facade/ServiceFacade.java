@@ -47,21 +47,24 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
     private Map<Class<?>,ModelMixIn> modelMixIns;
 
+    // facade properties
     private Properties properties = new Properties();
+
+    // facade properties prefix
+    public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
 
     private TimeoutConfiguration timeoutConfiguration;
 
     // default timeout is 2 seconds
     public static final long DEFAULT_TIMEOUT_MS = 2000;
 
-    public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
-
     private ConsistencyChecker consistencyChecker;
 
     // used to associate inconsistencies with the service in the logs
     private final String implementationName;
 
-    private ListeningExecutorService executor;
+    // thread pool singleton
+    private static ListeningExecutorService executor = null;
 
     public SharedStore getSharedStore() {
         return sharedStore;
@@ -100,16 +103,22 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
         timeoutConfiguration = new TimeoutConfiguration(DEFAULT_TIMEOUT_MS, implementationName, this.properties);
 
-        int threadPoolSize = Integer.parseInt(this.properties.getProperty(CONFIG_PREFIX+implementationName+".threadPool.size", "50"));
+        // create ThreadPoolExecutor for all facades
+        synchronized("executor") {
+            if (executor == null) {
+                int threadPoolSize = Integer.parseInt(this.properties.getProperty(CONFIG_PREFIX+implementationName+".threadPool.size", "50"));
 
-        // cached means automatic thread reclamation
-        ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
-        // fixed size, no queuing
-        threadPoolExecutor.setCorePoolSize(threadPoolSize);
-        threadPoolExecutor.setMaximumPoolSize(threadPoolSize);
-        executor = MoreExecutors.listeningDecorator(threadPoolExecutor);
+                // cached means automatic thread reclamation
+                ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+                // fixed size, no queuing
+                threadPoolExecutor.setCorePoolSize(threadPoolSize);
+                threadPoolExecutor.setMaximumPoolSize(threadPoolSize);
+                executor = MoreExecutors.listeningDecorator(threadPoolExecutor);
+                log.info("Initialized facade threadPool.size="+threadPoolSize);
+            }
+        }
 
-        log.info("Initialized facade for "+implementationName+", threadPool.size="+threadPoolSize);
+        log.info("Initialized facade for "+implementationName);
     }
 
     private long getLightblueExecutionTimeout(String methodName) {
@@ -383,7 +392,16 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         this.timeoutConfiguration = timeoutConfiguration;
     }
 
-    public void shutdown() {
-        executor.shutdown();
+    /**
+     * Shutdown thread pool executor for all facades.
+     *
+     */
+    public static void shutdown() {
+        synchronized ("executor") {
+            if (executor != null) {
+                executor.shutdown();
+                executor = null;
+            }
+        }
     }
 }

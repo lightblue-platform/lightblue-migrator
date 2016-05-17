@@ -117,16 +117,41 @@ public class ServiceFacadeThreadPoolTest {
     };
 
     @Test
-    public void threadPoolTest_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
+    public void threadPoolTest_read_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
 
-        // calling 2x getCountry and 2x createCountry in parallel
+        // calling 4x getCountry in parallel
         Future<Country> c1 = executor.submit(getCountryCallable);
-        Future<Country> c2 = executor.submit(createCountryCallable);
-        Thread.sleep(100);
+        Future<Country> c2 = executor.submit(getCountryCallable);
         Future<Country> c3 = executor.submit(getCountryCallable);
+        Future<Country> c4 = executor.submit(getCountryCallable);
+
+        // make sure client does not see any errors
+        Assert.assertEquals(new Country("pl"), c1.get());
+        Assert.assertEquals(new Country("pl"), c2.get());
+        Assert.assertEquals(new Country("pl"), c3.get());
+        Assert.assertEquals(new Country("pl"), c4.get());
+
+        // lightblueDAO was called only 2 times, because that's the pool size
+        Mockito.verify(lightblueDAO, Mockito.times(2)).getCountry("pl");
+        // legacyDAO was called 4 times, which matches the number of facade calls
+        Mockito.verify(legacyDAO, Mockito.times(4)).getCountry("pl");
+
+        executor.shutdown();
+    }
+
+    @Test
+    public void threadPoolTest_write_dualPhase() throws InstantiationException, IllegalAccessException, CountryException, InterruptedException, ExecutionException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        ExecutorService executor = Executors.newFixedThreadPool(10);
+
+        // calling 4x createCountry in parallel
+        Future<Country> c1 = executor.submit(createCountryCallable);
+        Future<Country> c2 = executor.submit(createCountryCallable);
+        Future<Country> c3 = executor.submit(createCountryCallable);
         Future<Country> c4 = executor.submit(createCountryCallable);
 
         // make sure client does not see any errors
@@ -136,11 +161,9 @@ public class ServiceFacadeThreadPoolTest {
         Assert.assertEquals(new Country("pl"), c4.get());
 
         // lightblueDAO was called only 2 times, because that's the pool size
-        Mockito.verify(lightblueDAO, Mockito.times(1)).getCountry("pl");
-        Mockito.verify(lightblueDAO, Mockito.times(1)).createCountry(new Country("pl"));
+        Mockito.verify(lightblueDAO, Mockito.times(2)).createCountry(new Country("pl"));
         // legacyDAO was called 4 times, which matches the number of facade calls
-        Mockito.verify(legacyDAO, Mockito.times(2)).getCountry("pl");
-        Mockito.verify(legacyDAO, Mockito.times(2)).createCountry(new Country("pl"));
+        Mockito.verify(legacyDAO, Mockito.times(4)).createCountry(new Country("pl"));
 
         executor.shutdown();
     }
@@ -152,7 +175,7 @@ public class ServiceFacadeThreadPoolTest {
 
         ExecutorService executor = Executors.newFixedThreadPool(10);
 
-        // calling 2x getCountry and 2x createCountry in parallel
+        // calling 3x getCountry in parallel
         Future<Country> c1 = executor.submit(getCountryCallable);
         Future<Country> c2 = executor.submit(getCountryCallable);
         Future<Country> c3 = executor.submit(getCountryCallable);
