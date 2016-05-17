@@ -64,6 +64,8 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
     private final String implementationName;
 
     // thread pool singleton
+    // it is safe to submit to a single executor from multiple threads
+    // (http://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html)
     private static ListeningExecutorService executor = null;
 
     public SharedStore getSharedStore() {
