@@ -5,6 +5,8 @@ import java.util.Date;
 
 public class MigrationConfiguration {
 
+    public static final String ENTITY_NAME = "migrationConfiguration";
+    
     private String _id;
     private String configurationName;
     private String consistencyCheckerName;

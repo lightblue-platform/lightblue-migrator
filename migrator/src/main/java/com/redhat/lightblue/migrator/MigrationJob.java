@@ -5,6 +5,8 @@ import java.util.List;
 
 public class MigrationJob {
 
+    public static final String ENTITY_NAME = "migrationJob";
+
     public static final String STATE_AVAILABLE = "available";
     public static final String STATE_ACTIVE = "active";
     public static final String STATE_COMPLETED = "completed";
@@ -68,7 +70,7 @@ public class MigrationJob {
          * @return the value of activeExecutionId
          */
         public final String getActiveExecutionId() {
-            return this.activeExecutionId;
+            return activeExecutionId;
         }
 
         /**
@@ -77,7 +79,7 @@ public class MigrationJob {
          * @param argActiveExecutionId Value to assign to this.activeExecutionId
          */
         public final void setActiveExecutionId(final String argActiveExecutionId) {
-            this.activeExecutionId = argActiveExecutionId;
+            activeExecutionId = argActiveExecutionId;
         }
 
         /**
@@ -86,7 +88,7 @@ public class MigrationJob {
          * @return the value of ownerName
          */
         public final String getOwnerName() {
-            return this.ownerName;
+            return ownerName;
         }
 
         /**
@@ -95,7 +97,7 @@ public class MigrationJob {
          * @param argOwnerName Value to assign to this.ownerName
          */
         public final void setOwnerName(final String argOwnerName) {
-            this.ownerName = argOwnerName;
+            ownerName = argOwnerName;
         }
 
         /**
@@ -104,7 +106,7 @@ public class MigrationJob {
          * @return the value of hostName
          */
         public final String getHostName() {
-            return this.hostName;
+            return hostName;
         }
 
         /**
@@ -113,7 +115,7 @@ public class MigrationJob {
          * @param argHostName Value to assign to this.hostName
          */
         public final void setHostName(final String argHostName) {
-            this.hostName = argHostName;
+            hostName = argHostName;
         }
 
         /**
@@ -122,7 +124,7 @@ public class MigrationJob {
          * @return the value of actualStartDate
          */
         public final Date getActualStartDate() {
-            return this.actualStartDate;
+            return actualStartDate;
         }
 
         /**
@@ -131,7 +133,7 @@ public class MigrationJob {
          * @param argActualStartDate Value to assign to this.actualStartDate
          */
         public final void setActualStartDate(final Date argActualStartDate) {
-            this.actualStartDate = argActualStartDate;
+            actualStartDate = argActualStartDate;
         }
 
         /**
@@ -140,7 +142,7 @@ public class MigrationJob {
          * @return the value of actualEndDate
          */
         public final Date getActualEndDate() {
-            return this.actualEndDate;
+            return actualEndDate;
         }
 
         /**
@@ -149,7 +151,7 @@ public class MigrationJob {
          * @param argActualEndDate Value to assign to this.actualEndDate
          */
         public final void setActualEndDate(final Date argActualEndDate) {
-            this.actualEndDate = argActualEndDate;
+            actualEndDate = argActualEndDate;
         }
 
         /**
@@ -158,7 +160,7 @@ public class MigrationJob {
          * @return the value of status
          */
         public final String getStatus() {
-            return this.status;
+            return status;
         }
 
         /**
@@ -167,7 +169,7 @@ public class MigrationJob {
          * @param argStatus Value to assign to this.status
          */
         public final void setStatus(final String argStatus) {
-            this.status = argStatus;
+            status = argStatus;
         }
 
         /**
@@ -176,7 +178,7 @@ public class MigrationJob {
          * @return the value of errorMsg
          */
         public final String getErrorMsg() {
-            return this.errorMsg;
+            return errorMsg;
         }
 
         /**
@@ -185,7 +187,7 @@ public class MigrationJob {
          * @param argErrorMsg Value to assign to this.errorMsg
          */
         public final void setErrorMsg(final String argErrorMsg) {
-            this.errorMsg = argErrorMsg;
+            errorMsg = argErrorMsg;
         }
 
         /**
@@ -194,7 +196,7 @@ public class MigrationJob {
          * @return the value of processedDocumentCount
          */
         public final int getProcessedDocumentCount() {
-            return this.processedDocumentCount;
+            return processedDocumentCount;
         }
 
         /**
@@ -204,7 +206,7 @@ public class MigrationJob {
          * this.processedDocumentCount
          */
         public final void setProcessedDocumentCount(final int argProcessedDocumentCount) {
-            this.processedDocumentCount = argProcessedDocumentCount;
+            processedDocumentCount = argProcessedDocumentCount;
         }
 
         /**
@@ -213,7 +215,7 @@ public class MigrationJob {
          * @return the value of consistentDocumentCount
          */
         public final int getConsistentDocumentCount() {
-            return this.consistentDocumentCount;
+            return consistentDocumentCount;
         }
 
         /**
@@ -223,7 +225,7 @@ public class MigrationJob {
          * this.consistentDocumentCount
          */
         public final void setConsistentDocumentCount(final int argConsistentDocumentCount) {
-            this.consistentDocumentCount = argConsistentDocumentCount;
+            consistentDocumentCount = argConsistentDocumentCount;
         }
 
         /**
@@ -232,7 +234,7 @@ public class MigrationJob {
          * @return the value of inconsistentDocumentCount
          */
         public final int getInconsistentDocumentCount() {
-            return this.inconsistentDocumentCount;
+            return inconsistentDocumentCount;
         }
 
         /**
@@ -242,7 +244,7 @@ public class MigrationJob {
          * this.inconsistentDocumentCount
          */
         public final void setInconsistentDocumentCount(final int argInconsistentDocumentCount) {
-            this.inconsistentDocumentCount = argInconsistentDocumentCount;
+            inconsistentDocumentCount = argInconsistentDocumentCount;
         }
 
         /**
@@ -251,7 +253,7 @@ public class MigrationJob {
          * @return the value of overwrittenDocumentCount
          */
         public final int getOverwrittenDocumentCount() {
-            return this.overwrittenDocumentCount;
+            return overwrittenDocumentCount;
         }
 
         /**
@@ -261,7 +263,7 @@ public class MigrationJob {
          * this.overwrittenDocumentCount
          */
         public final void setOverwrittenDocumentCount(final int argOverwrittenDocumentCount) {
-            this.overwrittenDocumentCount = argOverwrittenDocumentCount;
+            overwrittenDocumentCount = argOverwrittenDocumentCount;
         }
 
     }
