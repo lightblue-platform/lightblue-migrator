@@ -27,17 +27,16 @@ public class MigrationConfiguration {
     private Date timestampInitialValue;
     /**
      * The period is one of:
-     <pre>
-     millis
-     millis "ms"
-     seconds "s"
-     minutes "m"
-     hours "h"
-     days "d"
-     </pre>
-    */
+     * <pre>
+     * millis
+     * millis "ms"
+     * seconds "s"
+     * minutes "m"
+     * hours "h"
+     * days "d"
+     * </pre>
+     */
     private String period;
-
 
     /**
      * Gets the value of _id
@@ -83,17 +82,17 @@ public class MigrationConfiguration {
     public final String getConsistencyCheckerName() {
         return this.consistencyCheckerName;
     }
-    
+
     /**
      * Sets the value of consistencyCheckerName
      *
-     * @param argConsistencyCheckerName Value to assign to this.consistencyCheckerName
+     * @param argConsistencyCheckerName Value to assign to
+     * this.consistencyCheckerName
      */
     public final void setConsistencyCheckerName(final String argConsistencyCheckerName) {
         this.consistencyCheckerName = argConsistencyCheckerName;
     }
-    
- 
+
     /**
      * Gets the value of threadCount
      *
@@ -130,13 +129,12 @@ public class MigrationConfiguration {
         this.migratorClass = argMigratorClass;
     }
 
-
     public final List<String> getComparisonExclusionPaths() {
         return comparisonExclusionPaths;
     }
 
     public final void setComparisonExclusionPaths(List<String> s) {
-        comparisonExclusionPaths=s;
+        comparisonExclusionPaths = s;
     }
 
     /**
@@ -151,7 +149,8 @@ public class MigrationConfiguration {
     /**
      * Sets the value of overwriteDestinationDocuments
      *
-     * @param argOverwriteDestinationDocuments Value to assign to this.overwriteDestinationDocuments
+     * @param argOverwriteDestinationDocuments Value to assign to
+     * this.overwriteDestinationDocuments
      */
     public final void setOverwriteDestinationDocuments(final boolean argOverwriteDestinationDocuments) {
         this.overwriteDestinationDocuments = argOverwriteDestinationDocuments;
@@ -169,7 +168,8 @@ public class MigrationConfiguration {
     /**
      * Sets the value of destinationServiceURI
      *
-     * @param argDestinationServiceURI Value to assign to this.destinationServiceURI
+     * @param argDestinationServiceURI Value to assign to
+     * this.destinationServiceURI
      */
     public final void setDestinationServiceURI(final String argDestinationServiceURI) {
         this.destinationServiceURI = argDestinationServiceURI;
@@ -187,7 +187,8 @@ public class MigrationConfiguration {
     /**
      * Sets the value of destinationEntityName
      *
-     * @param argDestinationEntityName Value to assign to this.destinationEntityName
+     * @param argDestinationEntityName Value to assign to
+     * this.destinationEntityName
      */
     public final void setDestinationEntityName(final String argDestinationEntityName) {
         this.destinationEntityName = argDestinationEntityName;
@@ -205,7 +206,8 @@ public class MigrationConfiguration {
     /**
      * Sets the value of destinationEntityVersion
      *
-     * @param argDestinationEntityVersion Value to assign to this.destinationEntityVersion
+     * @param argDestinationEntityVersion Value to assign to
+     * this.destinationEntityVersion
      */
     public final void setDestinationEntityVersion(final String argDestinationEntityVersion) {
         this.destinationEntityVersion = argDestinationEntityVersion;
@@ -270,7 +272,7 @@ public class MigrationConfiguration {
     }
 
     public final void setDestinationIdentityFields(List<String> s) {
-        destinationIdentityFields=s;
+        destinationIdentityFields = s;
     }
 
     /**
@@ -285,7 +287,8 @@ public class MigrationConfiguration {
     /**
      * Sets the value of destinationConfigPath
      *
-     * @param argDestinationConfigPath Value to assign to this.destinationConfigPath
+     * @param argDestinationConfigPath Value to assign to
+     * this.destinationConfigPath
      */
     public final void setDestinationConfigPath(final String argDestinationConfigPath) {
         this.destinationConfigPath = argDestinationConfigPath;
@@ -308,7 +311,6 @@ public class MigrationConfiguration {
     public final void setSourceConfigPath(final String argSourceConfigPath) {
         this.sourceConfigPath = argSourceConfigPath;
     }
-    
 
     /**
      * Gets the value of timestampFieldName
@@ -340,7 +342,8 @@ public class MigrationConfiguration {
     /**
      * Sets the value of timestampInitialValue
      *
-     * @param argTimestampInitialValue Value to assign to this.timestampInitialValue
+     * @param argTimestampInitialValue Value to assign to
+     * this.timestampInitialValue
      */
     public final void setTimestampInitialValue(final Date argTimestampInitialValue) {
         this.timestampInitialValue = argTimestampInitialValue;
@@ -364,7 +367,6 @@ public class MigrationConfiguration {
         this.period = argPeriod;
     }
 
-
     /**
      * Gets the value of consistencyCheckerControllerClass
      *
@@ -377,12 +379,12 @@ public class MigrationConfiguration {
     /**
      * Sets the value of consistencyCheckerControllerClass
      *
-     * @param argConsistencyCheckerControllerClass Value to assign to this.consistencyCheckerControllerClass
+     * @param argConsistencyCheckerControllerClass Value to assign to
+     * this.consistencyCheckerControllerClass
      */
     public final void setConsistencyCheckerControllerClass(final String argConsistencyCheckerControllerClass) {
         this.consistencyCheckerControllerClass = argConsistencyCheckerControllerClass;
     }
-
 
     @Override
     public String toString() {

@@ -8,15 +8,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public class FailMigrator extends  Migrator {
+public class FailMigrator extends Migrator {
 
     public FailMigrator(ThreadGroup g) {
         super(g);
     }
-    
+
     public List<JsonNode> getSourceDocuments() {
         // Throw exception here
-        String x=null;
+        String x = null;
         x.charAt(0);
         return null;
     }
@@ -25,7 +25,7 @@ public class FailMigrator extends  Migrator {
         return null;
     }
 
-    public List<String> compareDocs(JsonNode source,JsonNode dest) {
+    public List<String> compareDocs(JsonNode source, JsonNode dest) {
         return null;
     }
 
@@ -33,8 +33,7 @@ public class FailMigrator extends  Migrator {
         return null;
     }
 
-    public String createRangeQuery(Date d,Date e) {
+    public String createRangeQuery(Date d, Date e) {
         return null;
     }
 }
-

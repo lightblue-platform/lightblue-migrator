@@ -11,7 +11,7 @@ import org.apache.commons.cli.ParseException;
 public class MainConfiguration {
 
     public static final Options options;
-    
+
     private String name;
     private String hostName;
     private String clientConfig;
@@ -19,7 +19,7 @@ public class MainConfiguration {
 
     static {
         options = new Options();
-        
+
         options.addOption(Option.builder("n")
                 .argName("name")
                 .longOpt("name")
@@ -50,13 +50,12 @@ public class MainConfiguration {
                 .build());
     }
 
-
     public String getName() {
         return name;
     }
 
     public void setName(String s) {
-        name=s;
+        name = s;
     }
 
     public String getHostName() {
@@ -64,7 +63,7 @@ public class MainConfiguration {
     }
 
     public void setHostName(String s) {
-        hostName=s;
+        hostName = s;
     }
 
     public String getClientConfig() {
@@ -72,29 +71,29 @@ public class MainConfiguration {
     }
 
     public void setClientConfig(String s) {
-        clientConfig=s;
+        clientConfig = s;
     }
 
     public void setThreadTimeout(String s) {
-        if(s!=null) 
+        if (s != null) {
             setThreadTimeout(Long.valueOf(s));
+        }
     }
 
     public void setThreadTimeout(Long l) {
-        threadTimeout=l;
+        threadTimeout = l;
     }
 
     public Long getThreadTimeout() {
         return threadTimeout;
     }
 
-
     public String toString() {
-        return "name="+name+" hostName="+hostName+" config="+clientConfig;
+        return "name=" + name + " hostName=" + hostName + " config=" + clientConfig;
     }
-    
-    public static Properties processArguments(String[] args){
-        Properties prop=new Properties();        
+
+    public static Properties processArguments(String[] args) {
+        Properties prop = new Properties();
         try {
             DefaultParser parser = new DefaultParser();
             CommandLine commandline = parser.parse(options, args);
@@ -109,23 +108,27 @@ public class MainConfiguration {
     }
 
     public static MainConfiguration getCfg(Properties p) {
-        MainConfiguration cfg=new MainConfiguration();
+        MainConfiguration cfg = new MainConfiguration();
         cfg.applyProperties(p);
         return cfg;
     }
 
     public void applyProperties(Properties p) {
-        String s=p.getProperty("name");
-        if(s!=null)
+        String s = p.getProperty("name");
+        if (s != null) {
             setName(s);
-        s=p.getProperty("hostname");
-        if(s!=null)
+        }
+        s = p.getProperty("hostname");
+        if (s != null) {
             setHostName(s);
-        s=p.getProperty("config");
-        if(s!=null)
+        }
+        s = p.getProperty("config");
+        if (s != null) {
             setClientConfig(s);
-        s=p.getProperty("threadTimeout");
-        if(s!=null)
+        }
+        s = p.getProperty("threadTimeout");
+        if (s != null) {
             setThreadTimeout(s);
+        }
     }
 }

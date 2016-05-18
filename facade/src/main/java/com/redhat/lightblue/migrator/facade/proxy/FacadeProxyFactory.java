@@ -17,8 +17,9 @@ import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreSetter;
 
 /**
- * Creates a dynamic proxy implementing given interface. The calls to the interface apis will be directed
- * to the underlying {@link ServiceFacade} according to the type of the operation specified using annotations.
+ * Creates a dynamic proxy implementing given interface. The calls to the
+ * interface apis will be directed to the underlying {@link ServiceFacade}
+ * according to the type of the operation specified using annotations.
  *
  * @author mpatercz
  *
@@ -26,8 +27,7 @@ import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreSetter;
 public class FacadeProxyFactory {
 
     /**
-     * Indicates this api performs a read operation. See
-     * {@link ServiceFacade#callSvcMethod(FacadeOperation, boolean, Class, String, Class[], Object...) for details.
+     * Indicates this api performs a read operation. See null null     {@link ServiceFacade#callSvcMethod(FacadeOperation, boolean, Class, String, Class[], Object...) for details.
      *
      * Set parallel to true if services do not need to share state.
      *
@@ -41,8 +41,7 @@ public class FacadeProxyFactory {
     }
 
     /**
-     * Indicates this api performs a write operation. See
-     * {@link ServiceFacade#callSvcMethod(FacadeOperation, boolean, Class, String, Class[], Object...) for details.
+     * Indicates this api performs a write operation. See null null     {@link ServiceFacade#callSvcMethod(FacadeOperation, boolean, Class, String, Class[], Object...) for details.
      *
      * Set parallel to true if services do not need to share state.
      *
@@ -56,8 +55,9 @@ public class FacadeProxyFactory {
     }
 
     /**
-     * Pass the call directly to destination or source service. Ignores migration phases (togglz).
-     * Note that @Direct(target=SOURCE) is the same as no annotation.
+     * Pass the call directly to destination or source service. Ignores
+     * migration phases (togglz). Note that @Direct(target=SOURCE) is the same
+     * as no annotation.
      *
      * @author mpatercz
      *
@@ -68,6 +68,7 @@ public class FacadeProxyFactory {
         enum Target {
             LEGACY, LIGHTBLUE;
         }
+
         Target target();
     }
 
@@ -113,13 +114,13 @@ public class FacadeProxyFactory {
 
             if (method.isAnnotationPresent(ReadOperation.class)) {
                 ReadOperation ro = method.getAnnotation(ReadOperation.class);
-                log.debug("Performing parallel="+ro.parallel()+" "+FacadeOperation.READ+" operation");
+                log.debug("Performing parallel=" + ro.parallel() + " " + FacadeOperation.READ + " operation");
                 return svcFacade.callSvcMethod(FacadeOperation.READ, ro.parallel(), method, args);
             }
 
             if (method.isAnnotationPresent(WriteOperation.class)) {
                 WriteOperation wo = method.getAnnotation(WriteOperation.class);
-                log.debug("Performing parallel="+wo.parallel()+" "+FacadeOperation.WRITE+" operation");
+                log.debug("Performing parallel=" + wo.parallel() + " " + FacadeOperation.WRITE + " operation");
                 return svcFacade.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method, args);
             }
 
@@ -134,29 +135,38 @@ public class FacadeProxyFactory {
     /**
      * Create facade proxy from {@link ServiceFacade}.
      *
-     * Java does not allow typed argument with both typed and static bounds, i.e. <D extends SharedStoreSetter & T> does not compile.
-     * To work around this limitation and to ensure that facaded services implement both the facade interface and {@link SharedStoreSetter},
-     * I'm using <T extends D,D extends SharedStoreSetter>. This makes the facade interface - T - require to implement
-     * {@link SharedStoreSetter}. It does not logically belong to the facade interface, but I guess I can live with that.
+     * Java does not allow typed argument with both typed and static bounds,
+     * i.e. <D extends SharedStoreSetter & T> does not compile. To work around
+     * this limitation and to ensure that facaded services implement both the
+     * facade interface and {@link SharedStoreSetter}, I'm using
+     * <T extends D,D extends SharedStoreSetter>. This makes the facade
+     * interface - T - require to implement {@link SharedStoreSetter}. It does
+     * not logically belong to the facade interface, but I guess I can live with
+     * that.
      *
-     * @param svcFacade initialized with services implementing the facadeInterface
+     * @param svcFacade initialized with services implementing the
+     * facadeInterface
      * @param facadeInterface has to implement {@link SharedStoreSetter}
      * @return facaded service proxy
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
     @SuppressWarnings("unchecked")
-    public static <T extends D,D extends SharedStoreSetter> D createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> facadeInterface) throws InstantiationException, IllegalAccessException {
-        return (D) Proxy.newProxyInstance(facadeInterface.getClassLoader(), new Class[] {facadeInterface}, new FacadeInvocationHandler<D>(svcFacade));
+    public static <T extends D, D extends SharedStoreSetter> D createFacadeProxy(ServiceFacade<D> svcFacade, Class<T> facadeInterface) throws InstantiationException, IllegalAccessException {
+        return (D) Proxy.newProxyInstance(facadeInterface.getClassLoader(), new Class[]{facadeInterface}, new FacadeInvocationHandler<D>(svcFacade));
     }
 
     /**
      * Create a facade proxy.
      *
-     * Java does not allow typed argument with both typed and static bounds, i.e. <D extends SharedStoreSetter & T> does not compile.
-     * To work around this limitation and to ensure that facaded services implement both the facade interface and {@link SharedStoreSetter},
-     * I'm using <T extends D,D extends SharedStoreSetter>. This makes the facade interface - T - require to implement
-     * {@link SharedStoreSetter}. It does not logically belong to the facade interface, but I guess I can live with that.
+     * Java does not allow typed argument with both typed and static bounds,
+     * i.e. <D extends SharedStoreSetter & T> does not compile. To work around
+     * this limitation and to ensure that facaded services implement both the
+     * facade interface and {@link SharedStoreSetter}, I'm using
+     * <T extends D,D extends SharedStoreSetter>. This makes the facade
+     * interface - T - require to implement {@link SharedStoreSetter}. It does
+     * not logically belong to the facade interface, but I guess I can live with
+     * that.
      *
      * @param legacySvc has to implement facadeInterface
      * @param lightblueSvc has to implement facadeInterface
@@ -166,7 +176,7 @@ public class FacadeProxyFactory {
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
-    public static <T extends D,D extends SharedStoreSetter> D createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> facadeInterface, Properties properties) throws InstantiationException, IllegalAccessException {
+    public static <T extends D, D extends SharedStoreSetter> D createFacadeProxy(D legacySvc, D lightblueSvc, Class<T> facadeInterface, Properties properties) throws InstantiationException, IllegalAccessException {
         return createFacadeProxy(new ServiceFacade<D>(legacySvc, lightblueSvc, facadeInterface.getSimpleName(), properties), facadeInterface);
     }
 

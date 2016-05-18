@@ -9,15 +9,17 @@ public class ExcludeFieldsFilter extends AbstractFieldListFilter {
         super(fields);
     }
 
-    public ExcludeFieldsFilter(String...fields) {
+    public ExcludeFieldsFilter(String... fields) {
         super(fields);
     }
 
     @Override
     public boolean includeField(List<String> fieldName) {
-        for(List<String> pattern:fields)
-            if(matches(pattern,fieldName))
+        for (List<String> pattern : fields) {
+            if (matches(pattern, fieldName)) {
                 return false;
+            }
+        }
         return true;
     }
 }

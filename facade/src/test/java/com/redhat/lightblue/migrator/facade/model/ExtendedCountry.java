@@ -1,6 +1,5 @@
 package com.redhat.lightblue.migrator.facade.model;
 
-
 public class ExtendedCountry extends Country {
 
     public ExtendedCountry(Long id, String iso2Code) {
