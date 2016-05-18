@@ -219,14 +219,14 @@ public class ThreadMonitor extends Thread {
         return count;
     }
 
-    private Object waiter=new Object();
+    private final Object waiter=new Object();
     private boolean runNow=false;
 
     public void runNow() {
         synchronized(waiter) {
             waiter.notifyAll();
+            runNow=true;
         }
-        runNow=true;
     }
     
     @Override
