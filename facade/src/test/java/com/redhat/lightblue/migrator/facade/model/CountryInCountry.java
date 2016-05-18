@@ -1,6 +1,5 @@
 package com.redhat.lightblue.migrator.facade.model;
 
-
 public class CountryInCountry extends Country {
 
     private Country country;

@@ -17,7 +17,7 @@ public class SharedStoreTest {
         SharedStore store = new SharedStoreImpl("implementation name");
 
         store.push(101l);
-        Assert.assertEquals((Long)101l, store.pop());
+        Assert.assertEquals((Long) 101l, store.pop());
     }
 
     @Test
@@ -27,9 +27,9 @@ public class SharedStoreTest {
         store.push(101l);
         store.push(102l);
         store.push(103l);
-        Assert.assertEquals((Long)101l, store.pop());
-        Assert.assertEquals((Long)102l, store.pop());
-        Assert.assertEquals((Long)103l, store.pop());
+        Assert.assertEquals((Long) 101l, store.pop());
+        Assert.assertEquals((Long) 102l, store.pop());
+        Assert.assertEquals((Long) 103l, store.pop());
     }
 
     @Test
@@ -41,19 +41,19 @@ public class SharedStoreTest {
         store1.push(102l);
         store2.push(104l);
         store2.push(105l);
-        Assert.assertEquals((Long)101l, store1.pop());
-        Assert.assertEquals((Long)104l, store2.pop());
-        Assert.assertEquals((Long)102l, store1.pop());
-        Assert.assertEquals((Long)105l, store2.pop());
+        Assert.assertEquals((Long) 101l, store1.pop());
+        Assert.assertEquals((Long) 104l, store2.pop());
+        Assert.assertEquals((Long) 102l, store1.pop());
+        Assert.assertEquals((Long) 105l, store2.pop());
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void noId() {
         SharedStore store = new SharedStoreImpl("implementation name");
         store.pop();
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test(expected = RuntimeException.class)
     public void noId2() {
         SharedStore store = new SharedStoreImpl("implementation name");
         store.push(1l);
@@ -125,12 +125,14 @@ public class SharedStoreTest {
         try {
             store.pop();
             Assert.fail();
-        } catch (SharedStoreException e) {}
+        } catch (SharedStoreException e) {
+        }
 
         try {
             store.isDualMigrationPhase();
             Assert.fail();
-        } catch (SharedStoreException e) {}
+        } catch (SharedStoreException e) {
+        }
     }
 
     class TestThread extends Thread {
@@ -149,8 +151,8 @@ public class SharedStoreTest {
         public void run() {
             store.copyFromThread(parentThreadId);
 
-            checksPassed = 101l == (Long)store.pop() && 102l == (Long)store.pop() && 103l == (Long)store.pop() &&
-                    store.isDualMigrationPhase();
+            checksPassed = 101l == (Long) store.pop() && 102l == (Long) store.pop() && 103l == (Long) store.pop()
+                    && store.isDualMigrationPhase();
         }
 
         public boolean isChecksPassed() {

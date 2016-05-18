@@ -25,9 +25,11 @@ public interface SharedStore {
     public void copyFromThread(long sourceThreadId);
 
     /**
-     * This flag tells lightblue service implementation if it's running alone or not.
+     * This flag tells lightblue service implementation if it's running alone or
+     * not.
      *
-     * @return true if 2 services are running - legacy and lightblue. False if it's only lightblue.
+     * @return true if 2 services are running - legacy and lightblue. False if
+     * it's only lightblue.
      */
     public boolean isDualMigrationPhase();
 

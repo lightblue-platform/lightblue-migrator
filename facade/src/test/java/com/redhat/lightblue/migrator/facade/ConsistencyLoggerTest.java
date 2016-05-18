@@ -61,8 +61,8 @@ public class ConsistencyLoggerTest {
         int count = maxBytes / 12; // one country is ~12 bytes when its transformed to json
 
         List<String> list = new ArrayList<>();
-        for (long i=0;i<count;i++) {
-            list.add(String.valueOf(prefix+(i+10000)));
+        for (long i = 0; i < count; i++) {
+            list.add(String.valueOf(prefix + (i + 10000)));
         }
 
         return list;
@@ -167,8 +167,9 @@ public class ConsistencyLoggerTest {
     }
 
     /**
-     * Changing logging category can break logging if relevant log4j configs on the application side
-     * are not updated as well. This regression test ensures that logging category is not accidently changed.
+     * Changing logging category can break logging if relevant log4j configs on
+     * the application side are not updated as well. This regression test
+     * ensures that logging category is not accidently changed.
      *
      */
     @Test

@@ -15,7 +15,7 @@ public class FakeMigrator extends Migrator {
     public FakeMigrator(ThreadGroup g) {
         super(g);
     }
-    
+
     public void migrate(MigrationJobExecution execution) {
         System.out.println("Testmigrator ran");
         count++;
@@ -29,7 +29,7 @@ public class FakeMigrator extends Migrator {
         return null;
     }
 
-    public List<String> compareDocs(JsonNode source,JsonNode dest) {
+    public List<String> compareDocs(JsonNode source, JsonNode dest) {
         return null;
     }
 
@@ -37,8 +37,7 @@ public class FakeMigrator extends Migrator {
         return null;
     }
 
-    public String createRangeQuery(Date d,Date e) {
-        return d.toString()+"->"+e.toString();
+    public String createRangeQuery(Date d, Date e) {
+        return d.toString() + "->" + e.toString();
     }
 }
-

@@ -29,12 +29,12 @@ public class ConsistencyChecker {
 
     // using non-static slf4j loggers for easy unit testing
     Logger inconsistencyLog = LoggerFactory.getLogger(this.getClass());
-    Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass().getName()+"Huge");
+    Logger hugeInconsistencyLog = LoggerFactory.getLogger(this.getClass().getName() + "Huge");
 
     private final String implementationName;
     protected int maxInconsistencyLogLength = 65536; // 64KB
     protected boolean logResponseDataEnabled = true;
-    private Map<Class<?>,ModelMixIn> modelMixIns;
+    private Map<Class<?>, ModelMixIn> modelMixIns;
     private ObjectMapper objectMapper = null;
 
     private JsonDiff jiff = new JsonDiff();
@@ -46,8 +46,8 @@ public class ConsistencyChecker {
         this.objectMapper = createObjectMapper();
     }
 
-    private Map<Class<?>,ModelMixIn> findModelMixInMappings() {
-        if  (modelMixIns==null) {
+    private Map<Class<?>, ModelMixIn> findModelMixInMappings() {
+        if (modelMixIns == null) {
             Reflections reflections = new Reflections("");
             Set<Class<?>> classes = reflections.getTypesAnnotatedWith(ModelMixIn.class);
             modelMixIns = new HashMap<>();
@@ -82,9 +82,9 @@ public class ConsistencyChecker {
     private void logInconsistency(String parentThreadName, String callToLogInCaseOfInconsistency, String legacyJson, String lightblueJson, String diff) {
         String logMessage = String.format("[%s] Inconsistency found in %s.%s - diff: %s - legacyJson: %s, lightblueJson: %s", parentThreadName, implementationName, callToLogInCaseOfInconsistency, diff, legacyJson, lightblueJson);
         if (logResponseDataEnabled) {
-            if (logMessage.length()<=maxInconsistencyLogLength) {
+            if (logMessage.length() <= maxInconsistencyLogLength) {
                 inconsistencyLog.warn(logMessage);
-            } else if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
+            } else if (diff != null && diff.length() <= maxInconsistencyLogLength) {
                 inconsistencyLog.warn(String.format("[%s] Inconsistency found in %s.%s - diff: %s", parentThreadName, implementationName, callToLogInCaseOfInconsistency, diff));
                 hugeInconsistencyLog.debug(logMessage);
             } else {
@@ -92,7 +92,7 @@ public class ConsistencyChecker {
                 hugeInconsistencyLog.debug(logMessage);
             }
         } else {
-            if (diff!=null&&diff.length()<=maxInconsistencyLogLength) {
+            if (diff != null && diff.length() <= maxInconsistencyLogLength) {
                 inconsistencyLog.warn(String.format("[%s] Inconsistency found in %s.%s - diff: %s", parentThreadName, implementationName, callToLogInCaseOfInconsistency, diff));
             } else {
                 inconsistencyLog.warn(String.format("[%s] Inconsistency found in %s.%s - diff is greater than %d bytes!", parentThreadName, implementationName, callToLogInCaseOfInconsistency, maxInconsistencyLogLength));
@@ -101,7 +101,6 @@ public class ConsistencyChecker {
             hugeInconsistencyLog.debug(logMessage);
         }
     }
-
 
     private void logInconsistencyUsingJSONCompare(final String parentThreadName, final String legacyJson, final String lightblueJson, final MethodCallStringifier callToLogInCaseOfInconsistency) {
         try {
@@ -124,7 +123,7 @@ public class ConsistencyChecker {
             // log nice diff
             logInconsistency(parentThreadName, callToLogInCaseOfInconsistency.toString(), legacyJson, lightblueJson, result.getMessage().replaceAll("\n", ","));
         } catch (Exception e) {
-            inconsistencyLog.error("JSONCompare consistency check failed for "+callToLogInCaseOfInconsistency, e);
+            inconsistencyLog.error("JSONCompare consistency check failed for " + callToLogInCaseOfInconsistency, e);
         }
     }
 
@@ -152,15 +151,15 @@ public class ConsistencyChecker {
     /**
      * Check that objects are equal using org.skyscreamer.jsonassert library.
      *
-     * @param legacyEntity                    object returned from legacy call
-     * @param lightblueEntity                 object returned from lightblue call
-     * @param methodName                      the method name
-     * @param callToLogInCaseOfInconsistency  the call including parameters
+     * @param legacyEntity object returned from legacy call
+     * @param lightblueEntity object returned from lightblue call
+     * @param methodName the method name
+     * @param callToLogInCaseOfInconsistency the call including parameters
      * @return
      */
     public boolean checkConsistency(final Object legacyEntity, final Object lightblueEntity, final String methodName, MethodCallStringifier callToLogInCaseOfInconsistency) {
 
-        if (legacyEntity==null&&lightblueEntity==null) {
+        if (legacyEntity == null && lightblueEntity == null) {
             return true;
         }
 
@@ -181,7 +180,7 @@ public class ConsistencyChecker {
             long jiffConsistencyCheckTook = t.complete();
 
             if (inconsistencyLog.isDebugEnabled()) {
-                inconsistencyLog.debug("Jiff consistency check took: " + jiffConsistencyCheckTook+" ms");
+                inconsistencyLog.debug("Jiff consistency check took: " + jiffConsistencyCheckTook + " ms");
                 inconsistencyLog.debug("Jiff consistency check passed: true");
             }
 
@@ -191,14 +190,16 @@ public class ConsistencyChecker {
 
             // objects are inconsistent, use org.skyscreamer.jsonassert.JSONCompare to produce inconsistency warning
             // it's slow, but produces nice diffs
-            String legacyJsonStr =  objectMapper.writeValueAsString(legacyEntity);
-            String lightblueJsonStr =  objectMapper.writeValueAsString(lightblueEntity);
+            String legacyJsonStr = objectMapper.writeValueAsString(legacyEntity);
+            String lightblueJsonStr = objectMapper.writeValueAsString(lightblueEntity);
 
             // JSONCompare fails when comparing booleans, convert them to strings
-            if ("true".equals(legacyJsonStr) || "false".equals(legacyJsonStr))
-                legacyJsonStr = "\""+legacyJsonStr+"\"";
-            if ("true".equals(lightblueJsonStr) || "false".equals(lightblueJsonStr))
-                lightblueJsonStr = "\""+lightblueJsonStr+"\"";
+            if ("true".equals(legacyJsonStr) || "false".equals(legacyJsonStr)) {
+                legacyJsonStr = "\"" + legacyJsonStr + "\"";
+            }
+            if ("true".equals(lightblueJsonStr) || "false".equals(lightblueJsonStr)) {
+                lightblueJsonStr = "\"" + lightblueJsonStr + "\"";
+            }
 
             if ("null".equals(legacyJsonStr) || "null".equals(lightblueJsonStr)) {
                 logInconsistency(Thread.currentThread().getName(), callToLogInCaseOfInconsistency.toString(), legacyJsonStr, lightblueJsonStr, "One object is null and the other isn't");
@@ -210,7 +211,7 @@ public class ConsistencyChecker {
             return false;
 
         } catch (IOException e) {
-            inconsistencyLog.error("Consistency check failed in "+implementationName+"."+callToLogInCaseOfInconsistency+"! Invalid JSON: legacyJson="+legacyJson+", lightblueJson="+lightblueJson, e);
+            inconsistencyLog.error("Consistency check failed in " + implementationName + "." + callToLogInCaseOfInconsistency + "! Invalid JSON: legacyJson=" + legacyJson + ", lightblueJson=" + lightblueJson, e);
         }
         return false;
     }

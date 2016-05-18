@@ -9,8 +9,9 @@ import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreImpl;
 /**
  * Deprecated. Use {@link SharedStoreImpl} instead.
  *
- * EntityIdStore implementation using ehcache. Creates a cache object per dao and uses thread id as key to avoid conflicts.
- * There is an assumption that both legacy and destination daos create entities in the same order.
+ * EntityIdStore implementation using ehcache. Creates a cache object per dao
+ * and uses thread id as key to avoid conflicts. There is an assumption that
+ * both legacy and destination daos create entities in the same order.
  *
  * TODO: ehcache.xml will need to be optimized to minimize overhead.
  *
@@ -43,7 +44,7 @@ public class EntityIdStoreImpl implements EntityIdStore {
     @Override
     public Long pop() {
         try {
-            return (Long)sharedStore.pop();
+            return (Long) sharedStore.pop();
         } catch (SharedStoreException e) {
             throw new EntityIdStoreException(e);
         }

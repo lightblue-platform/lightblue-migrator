@@ -44,46 +44,45 @@ public class LazyMethodCallStringifier implements MethodCallStringifier {
     @Override
     public String toString() {
 
-        if (stringifiedMethodCall != null)
+        if (stringifiedMethodCall != null) {
             return stringifiedMethodCall;
+        }
 
         try {
             StringBuilder str = new StringBuilder();
             str.append(method.getName()).append("(");
             Iterator<Object> it = Arrays.asList(values).iterator();
             Iterator<Annotation[]> annotations = Arrays.asList(method.getParameterAnnotations()).iterator();
-            while(it.hasNext()) {
+            while (it.hasNext()) {
                 Object value = it.next();
                 boolean isSecret = false;
-                for (Annotation a: annotations.next()) {
+                for (Annotation a : annotations.next()) {
                     if (a instanceof Secret) {
-                        isSecret=true;
+                        isSecret = true;
                         break;
                     }
                 }
 
                 if (isSecret) {
                     str.append("****");
-                } else {
-                    if (value != null && value.getClass().isArray())
-                        if (value.getClass().getComponentType().isPrimitive()) {
-                            // this is an array of primitives, convert to a meaningful string using reflection
-                            String primitiveArrayType = value.getClass().getComponentType().getName();
+                } else if (value != null && value.getClass().isArray()) {
+                    if (value.getClass().getComponentType().isPrimitive()) {
+                        // this is an array of primitives, convert to a meaningful string using reflection
+                        String primitiveArrayType = value.getClass().getComponentType().getName();
 
-                            StringBuilder pStr = new StringBuilder();
-                            for (int i = 0; i < Array.getLength(value); i ++) {
-                                pStr.append(Array.get(value, i));
-                                if (i != Array.getLength(value)-1) {
-                                    pStr.append(", ");
-                                }
+                        StringBuilder pStr = new StringBuilder();
+                        for (int i = 0; i < Array.getLength(value); i++) {
+                            pStr.append(Array.get(value, i));
+                            if (i != Array.getLength(value) - 1) {
+                                pStr.append(", ");
                             }
-                            str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
                         }
-                        else {
-                            str.append(Arrays.deepToString((Object[])value));
-                        }
-                    else
-                        str.append(value);
+                        str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
+                    } else {
+                        str.append(Arrays.deepToString((Object[]) value));
+                    }
+                } else {
+                    str.append(value);
                 }
 
                 if (it.hasNext()) {
