@@ -1,5 +1,7 @@
 package com.redhat.lightblue.migrator.monitor;
 
+import java.util.Date;
+
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormat;
 import org.joda.time.format.PeriodFormatter;
@@ -56,8 +58,10 @@ public class Monitor extends Thread {
     private void process() throws Exception {
         for (MigrationConfiguration cfg : findMigrationConfigurations()) {
             long period = parsePeriod(cfg.getPeriod());
-            //TODO calculate time window to search for new jobs in
-            int jobs = countMigrationJobs(cfg.getConfigurationName());
+            Date endDate = new Date();
+            Date startDate = new Date(endDate.getTime() - period);
+
+            int jobs = countMigrationJobs(cfg.getConfigurationName(), startDate, endDate);
             if (jobs <= 0) {
                 //TODO some sort of alert
             }
@@ -67,7 +71,7 @@ public class Monitor extends Thread {
     /**
      * Returns the period in msecs
      */
-    public static long parsePeriod(String periodStr) {
+    private static long parsePeriod(String periodStr) {
         PeriodFormatter fmt = PeriodFormat.getDefault();
         Period p = fmt.parsePeriod(periodStr);
         return p.toStandardDuration().getMillis();
@@ -84,9 +88,15 @@ public class Monitor extends Thread {
         return lightblueClient.data(findConfigurations, MigrationConfiguration[].class);
     }
 
-    private int countMigrationJobs(String configurationName) throws LightblueException {
+    private int countMigrationJobs(String configurationName, Date startDate, Date endDate) throws LightblueException {
         DataFindRequest findJobs = new DataFindRequest(MigrationJob.ENTITY_NAME);
-        findJobs.where(Query.withValue("configurationName", Query.eq, configurationName));
+        findJobs.where(
+            Query.and(
+                Query.withValue("configurationName", Query.eq, configurationName),
+                Query.withValue("scheduledDate", Query.gte, startDate),
+                Query.withValue("scheduledDate", Query.lte, endDate)
+            )
+        );
         findJobs.select(new Projection[]{Projection.excludeFieldRecursively("*")}, 0, 0);
 
         LightblueDataResponse response = lightblueClient.data(findJobs);
