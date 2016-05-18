@@ -40,8 +40,6 @@ public class TimeoutConfiguration {
         timeout, slowwarning;
     }
 
-    public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
-
     private long defaultTimeoutMS;
     private String beanName;
     private Properties properties;
@@ -86,7 +84,7 @@ public class TimeoutConfiguration {
             return methodTimeouts.get(cacheKey);
         }
 
-        String configurationKeyPrefix = CONFIG_PREFIX + type + "." + beanName;
+        String configurationKeyPrefix = ServiceFacade.CONFIG_PREFIX + type + "." + beanName;
 
         String timeoutPropValue = properties.getProperty(configurationKeyPrefix + "." + methodName);
 

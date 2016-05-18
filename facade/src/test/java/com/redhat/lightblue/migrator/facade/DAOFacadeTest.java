@@ -594,8 +594,8 @@ public class DAOFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Success_FromProperties_Method() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacadeExample.setTimeoutConfiguration(t);
 
@@ -626,8 +626,8 @@ public class DAOFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout_FromProperties_Bean() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacadeExample.setTimeoutConfiguration(t);
 
