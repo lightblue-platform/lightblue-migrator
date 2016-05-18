@@ -2,13 +2,11 @@ package com.redhat.lightblue.migrator;
 
 import java.util.Properties;
 
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.HelpFormatter;
 
 public class MainConfiguration {
 
@@ -22,34 +20,34 @@ public class MainConfiguration {
     static {
         options = new Options();
         
-        options.addOption(OptionBuilder.
-                          withArgName("name").
-                          withLongOpt("name").
-                          hasArg(true).
-                          withDescription("Name of checker instance").
-                          isRequired().
-                          create('n'));
-        options.addOption(OptionBuilder.
-                          withArgName("hostname").
-                          withLongOpt("hostname").
-                          hasArg(true).
-                          withDescription("Hostname running the checker instance").
-                          isRequired().
-                          create('h'));
-        options.addOption(OptionBuilder.
-                          withArgName("config").
-                          withLongOpt("config").
-                          hasArg(true).
-                          withDescription("Path to configuration file for migration").
-                          isRequired().
-                          create('c'));
-        options.addOption(OptionBuilder.
-                          withArgName("threadTimeout").
-                          withLongOpt("threadTimeout").
-                          hasArg(true).
-                          withDescription("Maximum time thread is allowed to run (msecs)").
-                          isRequired(false).
-                          create('t'));
+        options.addOption(Option.builder("n")
+                .argName("name")
+                .longOpt("name")
+                .hasArg(true)
+                .desc("Name of checker instance")
+                .required(true)
+                .build());
+        options.addOption(Option.builder("h")
+                .argName("hostname")
+                .longOpt("hostname")
+                .hasArg(true)
+                .desc("Hostname running the checker instance")
+                .required(true)
+                .build());
+        options.addOption(Option.builder("c")
+                .argName("config")
+                .longOpt("config")
+                .hasArg(true)
+                .desc("Path to configuration file for migration")
+                .required(true)
+                .build());
+        options.addOption(Option.builder("t")
+                .argName("threadTimeout")
+                .longOpt("threadTimeout")
+                .hasArg(true)
+                .desc("Maximum time thread is allowed to run (msecs)")
+                .required(true)
+                .build());
     }
 
 
@@ -98,7 +96,7 @@ public class MainConfiguration {
     public static Properties processArguments(String[] args){
         Properties prop=new Properties();        
         try {
-            PosixParser parser = new PosixParser();
+            DefaultParser parser = new DefaultParser();
             CommandLine commandline = parser.parse(options, args);
             Option[] opts = commandline.getOptions();
             for (Option opt : opts) {
