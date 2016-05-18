@@ -27,11 +27,14 @@ import com.redhat.lightblue.migrator.features.LightblueMigration;
 import com.redhat.lightblue.migrator.features.TogglzRandomUsername;
 
 /**
- * Deprecated. Does not support hiding secrets in the logs and slow call warnings. Use {@link ServiceFacade} instead.
+ * Deprecated. Does not support hiding secrets in the logs and slow call
+ * warnings. Use {@link ServiceFacade} instead.
  *
- * A helper base class for migrating services from legacy datastore to lightblue. It lets you call any service/dao method, using togglz switches to choose which
- * service/dao to use and verifying returned data. Verification uses equals method - use {@link BeanConsistencyChecker} in your beans for sophisticated
- * consistency check.
+ * A helper base class for migrating services from legacy datastore to
+ * lightblue. It lets you call any service/dao method, using togglz switches to
+ * choose which service/dao to use and verifying returned data. Verification
+ * uses equals method - use {@link BeanConsistencyChecker} in your beans for
+ * sophisticated consistency check.
  *
  *
  * @author mpatercz
@@ -47,7 +50,7 @@ public class DAOFacadeBase<D> {
 
     private EntityIdStore entityIdStore = null;
 
-    private Map<Class<?>,ModelMixIn> modelMixIns;
+    private Map<Class<?>, ModelMixIn> modelMixIns;
 
     private ConsistencyChecker consistencyChecker;
 
@@ -95,12 +98,13 @@ public class DAOFacadeBase<D> {
         setEntityIdStore(new EntityIdStoreImpl(this.getClass())); // this.getClass() will point at superclass
         this.implementationName = this.getClass().getSimpleName();
 
-        if (properties != null)
+        if (properties != null) {
             this.properties = properties;
+        }
 
         timeoutConfiguration = new TimeoutConfiguration(ServiceFacade.DEFAULT_TIMEOUT_MS, implementationName, properties);
 
-        log.info("Initialized facade for "+implementationName);
+        log.info("Initialized facade for " + implementationName);
     }
 
     private ListeningExecutorService createExecutor() {
@@ -109,7 +113,7 @@ public class DAOFacadeBase<D> {
 
     private Class[] toClasses(Object[] objects) {
         List<Class> classes = new ArrayList<>();
-        for (Object o: objects) {
+        for (Object o : objects) {
             classes.add(o.getClass());
         }
         return classes.toArray(new Class[]{});
@@ -118,21 +122,22 @@ public class DAOFacadeBase<D> {
     private <T> ListenableFuture<T> callLightblueDAO(final boolean passIds, final Method method, final Object[] values) {
         ListeningExecutorService executor = createExecutor();
         try {
-        // fetch from lightblue using future (asynchronously)
-        final long parentThreadId = Thread.currentThread().getId();
-        return executor.submit(new Callable<T>(){
-            @Override
-            public T call() throws Exception {
-                Timer dest = new Timer("destination."+method.getName());
-                if (passIds)
-                    entityIdStore.copyFromThread(parentThreadId);
-                try {
-                    return (T) method.invoke(lightblueDAO, values);
-                } finally {
-                    dest.complete();
+            // fetch from lightblue using future (asynchronously)
+            final long parentThreadId = Thread.currentThread().getId();
+            return executor.submit(new Callable<T>() {
+                @Override
+                public T call() throws Exception {
+                    Timer dest = new Timer("destination." + method.getName());
+                    if (passIds) {
+                        entityIdStore.copyFromThread(parentThreadId);
+                    }
+                    try {
+                        return (T) method.invoke(lightblueDAO, values);
+                    } finally {
+                        dest.complete();
+                    }
                 }
-            }
-        });
+            });
         } finally {
             executor.shutdown();
         }
@@ -149,8 +154,7 @@ public class DAOFacadeBase<D> {
     private Throwable extractUnderlyingException(Throwable t) {
         if ((t instanceof ExecutionException || t instanceof InvocationTargetException) && t.getCause() != null) {
             return extractUnderlyingException(t.getCause());
-        }
-        else {
+        } else {
             return t;
         }
     }
@@ -165,9 +169,10 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        if (log.isDebugEnabled())
+    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object... values) throws Throwable {
+        if (log.isDebugEnabled()) {
             log.debug("Calling {}.{} ({} {})", implementationName, EagerMethodCallStringifier.stringifyMethodCall(methodName, values), "parallel", "READ");
+        }
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -181,8 +186,8 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldReadSourceEntity()) {
             // fetch from oracle, synchronously
             log.debug("Calling legacy {}.{}", implementationName, methodName);
-            Method method = legacyDAO.getClass().getMethod(methodName,types);
-            Timer source = new Timer("source."+methodName);
+            Method method = legacyDAO.getClass().getMethod(methodName, types);
+            Timer source = new Timer("source." + methodName);
             try {
                 legacyEntity = (T) method.invoke(legacyDAO, values);
             } catch (InvocationTargetException e) {
@@ -199,7 +204,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture, methodName, FacadeOperation.READ, LightblueMigration.shouldReadSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.READ)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call " + implementationName + "." + EagerMethodCallStringifier.stringifyMethodCall(methodName, values) + " is taking too long (longer than " + timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.READ) + "s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -214,9 +219,9 @@ public class DAOFacadeBase<D> {
             }
         }
 
-        if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() &&  LightblueMigration.shouldReadDestinationEntity()) {
+        if (LightblueMigration.shouldCheckReadConsistency() && LightblueMigration.shouldReadSourceEntity() && LightblueMigration.shouldReadDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
-            log.debug("."+methodName+" checking returned entity's consistency");
+            log.debug("." + methodName + " checking returned entity's consistency");
             if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new EagerMethodCallStringifier(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
@@ -229,12 +234,13 @@ public class DAOFacadeBase<D> {
         return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
-    public <T> List<T> callDAOReadMethodReturnList(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        return (List<T>)callDAOReadMethod(returnedType, methodName, types, values);
+    public <T> List<T> callDAOReadMethodReturnList(final Class<T> returnedType, final String methodName, final Class[] types, final Object... values) throws Throwable {
+        return (List<T>) callDAOReadMethod(returnedType, methodName, types, values);
     }
 
     /**
-     * Call dao method which reads data. Won't work if method has primitive parameters.
+     * Call dao method which reads data. Won't work if method has primitive
+     * parameters.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -242,13 +248,16 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
+    public <T> T callDAOReadMethod(final Class<T> returnedType, final String methodName, final Object... values) throws Throwable {
         return callDAOReadMethod(returnedType, methodName, toClasses(values), values);
     }
 
     /**
-     * Call dao method which updates data. Updating makes sense only for entities with known ID. If ID is not specified, it will be generated
-     * by both legacy and lightblue datastores independently, creating a data inconsistency. If you don't know the ID, use on of the callDAOCreate methods.
+     * Call dao method which updates data. Updating makes sense only for
+     * entities with known ID. If ID is not specified, it will be generated by
+     * both legacy and lightblue datastores independently, creating a data
+     * inconsistency. If you don't know the ID, use on of the callDAOCreate
+     * methods.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -257,9 +266,10 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        if (log.isDebugEnabled())
+    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Class[] types, final Object... values) throws Throwable {
+        if (log.isDebugEnabled()) {
             log.debug("Calling {}.{} ({} {})", implementationName, EagerMethodCallStringifier.stringifyMethodCall(methodName, values), "parallel", "WRITE");
+        }
         TogglzRandomUsername.init();
 
         T legacyEntity = null, lightblueEntity = null;
@@ -273,8 +283,8 @@ public class DAOFacadeBase<D> {
         if (LightblueMigration.shouldWriteSourceEntity()) {
             // fetch from oracle, synchronously
             log.debug("Calling legacy {}.{}", implementationName, methodName);
-            Method method = legacyDAO.getClass().getMethod(methodName,types);
-            Timer source = new Timer("source."+methodName);
+            Method method = legacyDAO.getClass().getMethod(methodName, types);
+            Timer source = new Timer("source." + methodName);
             try {
                 legacyEntity = (T) method.invoke(legacyDAO, values);
             } catch (InvocationTargetException e) {
@@ -291,7 +301,7 @@ public class DAOFacadeBase<D> {
                 lightblueEntity = getWithTimeout(listenableFuture, methodName, FacadeOperation.WRITE, LightblueMigration.shouldWriteSourceEntity());
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.WRITE)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call " + implementationName + "." + EagerMethodCallStringifier.stringifyMethodCall(methodName, values) + " is taking too long (longer than " + timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.WRITE) + "s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -308,7 +318,7 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
-            log.debug("."+methodName+" checking returned entity's consistency");
+            log.debug("." + methodName + " checking returned entity's consistency");
             if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new EagerMethodCallStringifier(methodName, values))) {
                 // return lightblue data if they are
                 return lightblueEntity;
@@ -322,7 +332,8 @@ public class DAOFacadeBase<D> {
     }
 
     /**
-     * Call dao method which updates data. Won't work if method has primitive parameters.
+     * Call dao method which updates data. Won't work if method has primitive
+     * parameters.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -330,12 +341,14 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
+    public <T> T callDAOUpdateMethod(final Class<T> returnedType, final String methodName, final Object... values) throws Throwable {
         return callDAOUpdateMethod(returnedType, methodName, toClasses(values), values);
     }
 
     /**
-     * Call dao method which creates a single entity. It will ensure that entities in both legacy and lightblue datastores are the same, including IDs.
+     * Call dao method which creates a single entity. It will ensure that
+     * entities in both legacy and lightblue datastores are the same, including
+     * IDs.
      *
      * @param returnedType type of the returned object
      * @param methodName method name to call
@@ -344,21 +357,23 @@ public class DAOFacadeBase<D> {
      * @return Object returned by dao
      * @throws Exception
      */
-    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object ... values) throws Throwable {
-        if (log.isDebugEnabled())
+    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Class[] types, final Object... values) throws Throwable {
+        if (log.isDebugEnabled()) {
             log.debug("Calling {}.{} ({} {})", implementationName, EagerMethodCallStringifier.stringifyMethodCall(methodName, values), "serial", "WRITE");
+        }
         TogglzRandomUsername.init();
 
-        if (entityIdStore != null)
+        if (entityIdStore != null) {
             entityIdStore.clear();
+        }
 
         T legacyEntity = null, lightblueEntity = null;
 
         if (LightblueMigration.shouldWriteSourceEntity()) {
             // insert to oracle, synchronously
             log.debug("Calling legacy {}.{}", implementationName, methodName);
-            Method method = legacyDAO.getClass().getMethod(methodName,types);
-            Timer source = new Timer("source."+methodName);
+            Method method = legacyDAO.getClass().getMethod(methodName, types);
+            Timer source = new Timer("source." + methodName);
             try {
                 legacyEntity = (T) method.invoke(legacyDAO, values);
             } catch (InvocationTargetException e) {
@@ -406,7 +421,7 @@ public class DAOFacadeBase<D> {
                 }
             } catch (TimeoutException te) {
                 if (LightblueMigration.shouldReadSourceEntity()) {
-                    log.warn("Lightblue call "+implementationName+"."+EagerMethodCallStringifier.stringifyMethodCall(methodName, values)+" is taking too long (longer than "+timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.WRITE)+"s). Returning data from legacy.");
+                    log.warn("Lightblue call " + implementationName + "." + EagerMethodCallStringifier.stringifyMethodCall(methodName, values) + " is taking too long (longer than " + timeoutConfiguration.getTimeoutMS(methodName, FacadeOperation.WRITE) + "s). Returning data from legacy.");
                     return legacyEntity;
                 } else {
                     throw te;
@@ -424,7 +439,7 @@ public class DAOFacadeBase<D> {
 
         if (LightblueMigration.shouldCheckWriteConsistency() && LightblueMigration.shouldWriteSourceEntity() && LightblueMigration.shouldWriteDestinationEntity()) {
             // make sure that response from lightblue and oracle are the same
-            log.debug("."+methodName+" checking returned entity's consistency");
+            log.debug("." + methodName + " checking returned entity's consistency");
 
             // check if entities match
             if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, new EagerMethodCallStringifier(methodName, values))) {
@@ -442,7 +457,7 @@ public class DAOFacadeBase<D> {
     private EntityIdStoreException extractEntityIdStoreExceptionIfExists(ExecutionException ee) {
         try {
             if (ee.getCause().getCause() instanceof EntityIdStoreException) {
-                return (EntityIdStoreException)ee.getCause().getCause();
+                return (EntityIdStoreException) ee.getCause().getCause();
             } else {
                 return null;
             }
@@ -451,7 +466,7 @@ public class DAOFacadeBase<D> {
         }
     }
 
-    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object ... values) throws Throwable {
+    public <T> T callDAOCreateSingleMethod(final EntityIdExtractor<T> entityIdExtractor, final Class<T> returnedType, final String methodName, final Object... values) throws Throwable {
         return callDAOCreateSingleMethod(entityIdExtractor, returnedType, methodName, toClasses(values), values);
     }
 
@@ -462,7 +477,7 @@ public class DAOFacadeBase<D> {
 
     @Deprecated
     public void setTimeoutSeconds(int timeoutSeconds) {
-        this.timeoutConfiguration = new TimeoutConfiguration(timeoutSeconds*1000, implementationName, properties);
+        this.timeoutConfiguration = new TimeoutConfiguration(timeoutSeconds * 1000, implementationName, properties);
     }
 
     public void setLogResponseDataEnabled(boolean logResponsesEnabled) {

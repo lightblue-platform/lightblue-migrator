@@ -6,6 +6,8 @@ package com.redhat.lightblue.migrator;
 public interface MonitoredThread {
 
     void registerThreadMonitor(ThreadMonitor monitor);
+
     void ping(String msg);
+
     void notifyEnd();
 }

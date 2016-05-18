@@ -6,12 +6,12 @@ public class MigrationJobExecution {
 
     private String ownerName;
     private String hostName;
-    
+
     private String activeExecutionId;
     // actual run times for job
     private Date actualStartDate;
     private Date actualEndDate;
-    
+
     private String status;
 
     private String errorMsg;
@@ -27,7 +27,7 @@ public class MigrationJobExecution {
     }
 
     public void setActiveExecutionId(String s) {
-        activeExecutionId=s;
+        activeExecutionId = s;
     }
 
     public String getOwnerName() {
@@ -35,7 +35,7 @@ public class MigrationJobExecution {
     }
 
     public void setOwnerName(String s) {
-        ownerName=s;
+        ownerName = s;
     }
 
     public String getHostName() {
@@ -43,7 +43,7 @@ public class MigrationJobExecution {
     }
 
     public void setHostName(String s) {
-        hostName=s;
+        hostName = s;
     }
 
     public String getErrorMsg() {
@@ -51,9 +51,9 @@ public class MigrationJobExecution {
     }
 
     public void setErrorMsg(String s) {
-        errorMsg=s;
+        errorMsg = s;
     }
-    
+
     public Date getActualStartDate() {
         return actualStartDate;
     }
@@ -69,7 +69,7 @@ public class MigrationJobExecution {
     public void setActualEndDate(Date actualEndDate) {
         this.actualEndDate = actualEndDate;
     }
-    
+
     public int getProcessedDocumentCount() {
         return processedDocumentCount;
     }

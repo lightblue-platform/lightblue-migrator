@@ -16,8 +16,7 @@ public abstract class LightblueMigrationPhase {
         if (enable) {
             togglzRule.enable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
             togglzRule.enable(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY);
-        }
-        else {
+        } else {
             togglzRule.disable(LightblueMigrationFeatures.CHECK_WRITE_CONSISTENCY);
             togglzRule.disable(LightblueMigrationFeatures.CHECK_READ_CONSISTENCY);
         }
