@@ -21,8 +21,7 @@ public abstract class AbstractMigratorController extends LightblueClientTestHarn
     }
 
     /**
-     * Work around method until a way to pass in security access level is
-     * found.
+     * Work around method until a way to pass in security access level is found.
      */
     protected ObjectNode grantAnyoneAccess(ObjectNode node) {
         ObjectNode schema = (ObjectNode) node.get("schema");
@@ -38,8 +37,9 @@ public abstract class AbstractMigratorController extends LightblueClientTestHarn
     }
 
     /**
-     * Temporary method that will remove the hooks from  metadata. Ideally, this
-     * method will go away once the test generic metadata supports arbitrary configurations.
+     * Temporary method that will remove the hooks from metadata. Ideally, this
+     * method will go away once the test generic metadata supports arbitrary
+     * configurations.
      */
     protected ObjectNode removeHooks(ObjectNode node) {
         ObjectNode schema = (ObjectNode) node.get("entityInfo");

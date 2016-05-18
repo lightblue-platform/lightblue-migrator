@@ -5,8 +5,8 @@ import org.togglz.core.user.SimpleFeatureUser;
 import org.togglz.core.user.UserProvider;
 
 /**
- * Call {@link TogglzRandomUsername#init()} to generate new random username before
- * this provider is used. {@link DAOFacadeBase} apis already handle that.
+ * Call {@link TogglzRandomUsername#init()} to generate new random username
+ * before this provider is used. {@link DAOFacadeBase} apis already handle that.
  *
  * @author mpatercz
  *

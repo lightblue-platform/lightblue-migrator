@@ -10,11 +10,11 @@ public class EntityIdStoreException extends RuntimeException {
     }
 
     public EntityIdStoreException(String cacheName, long threadId) {
-        super("No ids found for "+cacheName+" thread="+threadId+"!");
+        super("No ids found for " + cacheName + " thread=" + threadId + "!");
     }
 
     public EntityIdStoreException(String cacheName, long threadId, Throwable e) {
-        super("No ids found for "+cacheName+" thread="+threadId+"!", e);
+        super("No ids found for " + cacheName + " thread=" + threadId + "!", e);
     }
 
 }

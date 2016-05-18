@@ -15,15 +15,19 @@ public class MethodCallStringifierTest {
 
     interface Foo {
         public void foo(int x, String y);
+
         public void foo(Country[] c, int x, String y);
+
         public void foo(long[] l, int x, String y);
+
         public void foo(List<Country> c, int x, String y);
+
         public void foo2(List<Long> l, int x, String y);
+
         public void foo(String login, @Secret String password);
     }
 
-
-    private Method getMethod(String name, Class<?> ... types) {
+    private Method getMethod(String name, Class<?>... types) {
         try {
             return Foo.class.getMethod(name, types);
         } catch (Exception e) {

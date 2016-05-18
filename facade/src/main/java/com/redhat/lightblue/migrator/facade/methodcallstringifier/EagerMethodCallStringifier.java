@@ -10,8 +10,9 @@ import org.slf4j.LoggerFactory;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory.Secret;
 
 /**
- * Use ${link {@link LazyMethodCallStringifier} instead. This @{link {@link MethodCallStringifier} does not
- * support the {@link Secret} annotations.
+ * Use ${link {@link LazyMethodCallStringifier} instead. This @{link
+ * {@link MethodCallStringifier} does not support the {@link Secret}
+ * annotations.
  *
  * @author mpatercz
  *
@@ -36,27 +37,27 @@ public class EagerMethodCallStringifier implements MethodCallStringifier {
             StringBuilder str = new StringBuilder();
             str.append(methodName).append("(");
             Iterator<Object> it = Arrays.asList(values).iterator();
-            while(it.hasNext()) {
+            while (it.hasNext()) {
                 Object value = it.next();
-                if (value != null && value.getClass().isArray())
+                if (value != null && value.getClass().isArray()) {
                     if (value.getClass().getComponentType().isPrimitive()) {
                         // this is an array of primitives, convert to a meaningful string using reflection
                         String primitiveArrayType = value.getClass().getComponentType().getName();
 
                         StringBuilder pStr = new StringBuilder();
-                        for (int i = 0; i < Array.getLength(value); i ++) {
+                        for (int i = 0; i < Array.getLength(value); i++) {
                             pStr.append(Array.get(value, i));
-                            if (i != Array.getLength(value)-1) {
+                            if (i != Array.getLength(value) - 1) {
                                 pStr.append(", ");
                             }
                         }
                         str.append(primitiveArrayType).append("[").append(pStr.toString()).append("]");
+                    } else {
+                        str.append(Arrays.deepToString((Object[]) value));
                     }
-                    else {
-                        str.append(Arrays.deepToString((Object[])value));
-                    }
-                else
+                } else {
                     str.append(value);
+                }
                 if (it.hasNext()) {
                     str.append(", ");
                 }

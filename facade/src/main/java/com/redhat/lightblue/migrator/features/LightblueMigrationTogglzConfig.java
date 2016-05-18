@@ -17,8 +17,9 @@ import org.togglz.core.repository.util.DefaultMapSerializer;
 import org.togglz.core.user.UserProvider;
 
 /**
- * TogglzConfig configured for lightblue migration needs: @{link {@link LightblueMigrationFeatures}, database state repository and
- * randomized usernames (see {@link TogglzRandomUsername}).
+ * TogglzConfig configured for lightblue migration needs: @{link
+ * {@link LightblueMigrationFeatures}, database state repository and randomized
+ * usernames (see {@link TogglzRandomUsername}).
  *
  * @author mpatercz
  *
@@ -62,7 +63,7 @@ public class LightblueMigrationTogglzConfig implements TogglzConfig {
     public static void main(String[] args) {
         DefaultMapSerializer s = DefaultMapSerializer.singleline();
 
-        Map<String,String> params = new HashMap<String,String>();
+        Map<String, String> params = new HashMap<String, String>();
         params.put("param", "value");
 
         String str = s.serialize(params);

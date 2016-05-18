@@ -18,9 +18,9 @@ public class JsonDelta {
     public JsonDelta(String field,
                      JsonNode node1,
                      JsonNode node2) {
-        this.field=field;
-        this.node1=node1;
-        this.node2=node2;
+        this.field = field;
+        this.node1 = node1;
+        this.node2 = node2;
     }
 
     public String getField() {
@@ -37,17 +37,18 @@ public class JsonDelta {
 
     @Override
     public String toString() {
-        return field+"("+describe(node1)+" != "+ describe(node2)+")";
+        return field + "(" + describe(node1) + " != " + describe(node2) + ")";
     }
 
     private String describe(JsonNode node) {
-        if(node==null)
+        if (node == null) {
             return "null";
-        else if(node instanceof ObjectNode)
+        } else if (node instanceof ObjectNode) {
             return "ObjectNode";
-        else if(node instanceof ArrayNode)
+        } else if (node instanceof ArrayNode) {
             return "ArrayNode";
-        else
+        } else {
             return node.toString();
+        }
     }
 }

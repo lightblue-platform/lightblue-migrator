@@ -24,21 +24,21 @@ public interface CountryDAOFacadable extends CountryDAO, SharedStoreSetter {
     @WriteOperation
     public abstract Country createCountryIfNotExists(Country country) throws CountryException;
 
-    @WriteOperation(parallel=true)
+    @WriteOperation(parallel = true)
     public abstract Country updateCountry(Country country) throws CountryException;
 
-    @ReadOperation(parallel=true)
+    @ReadOperation(parallel = true)
     public abstract Country getCountry(String iso2Code) throws CountryException;
 
-    @ReadOperation(parallel=true)
+    @ReadOperation(parallel = true)
     public abstract List<Country> getCountries(long[] ids) throws CountryException;
 
     public abstract Country getCountryFromLegacy(long id) throws CountryException;
 
-    @DirectOperation(target=Target.LEGACY)
+    @DirectOperation(target = Target.LEGACY)
     public abstract Country getCountryFromLegacy2(long id) throws CountryException;
 
-    @DirectOperation(target=Target.LIGHTBLUE)
+    @DirectOperation(target = Target.LIGHTBLUE)
     public abstract Country getCountryFromLightblue(long id) throws CountryException;
 
     @WriteOperation

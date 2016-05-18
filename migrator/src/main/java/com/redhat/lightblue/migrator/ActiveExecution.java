@@ -3,15 +3,14 @@ package com.redhat.lightblue.migrator;
 import java.util.Date;
 
 /**
- * This class represents an active execution of a migration job. There
- * can only be one active execution for each migration job.
+ * This class represents an active execution of a migration job. There can only
+ * be one active execution for each migration job.
  *
- * Instances of this object is used as synchronization aid. A thread
- * willing to process a migration job creates an active execution in
- * the database. The database is setup with a unique index on
- * migrationJobId. If creation is successfull, the thread acquires the
- * job, otherwise the thread looks for another job. So, an
- * ActiveExecution instance is also a lock record for the
+ * Instances of this object is used as synchronization aid. A thread willing to
+ * process a migration job creates an active execution in the database. The
+ * database is setup with a unique index on migrationJobId. If creation is
+ * successfull, the thread acquires the job, otherwise the thread looks for
+ * another job. So, an ActiveExecution instance is also a lock record for the
  * corresponsing migration job.
  */
 public class ActiveExecution {
@@ -45,7 +44,7 @@ public class ActiveExecution {
     }
 
     public void set_id(String id) {
-        _id=id;
+        _id = id;
     }
 
     public String getMigrationJobId() {
@@ -53,7 +52,7 @@ public class ActiveExecution {
     }
 
     public void setMigrationJobId(String s) {
-        migrationJobId=s;
+        migrationJobId = s;
     }
 
     public Date getStartTime() {
@@ -61,7 +60,7 @@ public class ActiveExecution {
     }
 
     public void setStartTime(Date d) {
-        startTime=d;
+        startTime = d;
     }
 
     public int getNumDocsToProcess() {
@@ -69,7 +68,7 @@ public class ActiveExecution {
     }
 
     public void setNumDocsToProcess(int i) {
-        numDocsToProcess=i;
+        numDocsToProcess = i;
     }
 
     public int getNumDocsProcessed() {
@@ -77,7 +76,7 @@ public class ActiveExecution {
     }
 
     public void setNumDocsProcessed(int i) {
-        numDocsProcessed=i;
+        numDocsProcessed = i;
     }
 
     /**

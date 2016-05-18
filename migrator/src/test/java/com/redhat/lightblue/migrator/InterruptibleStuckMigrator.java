@@ -11,19 +11,19 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public class InterruptibleStuckMigrator extends  Migrator {
+public class InterruptibleStuckMigrator extends Migrator {
 
-    private static final Logger LOGGER=LoggerFactory.getLogger(InterruptibleStuckMigrator.class);
-    public static int numInterrupted=0;
+    private static final Logger LOGGER = LoggerFactory.getLogger(InterruptibleStuckMigrator.class);
+    public static int numInterrupted = 0;
 
     public InterruptibleStuckMigrator(ThreadGroup g) {
         super(g);
     }
-    
+
     public List<JsonNode> getSourceDocuments() {
         LOGGER.debug("getSourceDocuments start");
         Breakpoint.checkpoint("Migrator:getSourceDocuments");
-        while(true) {
+        while (true) {
             LOGGER.debug("getSourceDocuments waiting");
             try {
                 Thread.sleep(1000);
@@ -40,7 +40,7 @@ public class InterruptibleStuckMigrator extends  Migrator {
         return null;
     }
 
-    public List<String> compareDocs(JsonNode source,JsonNode dest) {
+    public List<String> compareDocs(JsonNode source, JsonNode dest) {
         return null;
     }
 
@@ -48,8 +48,7 @@ public class InterruptibleStuckMigrator extends  Migrator {
         return null;
     }
 
-    public String createRangeQuery(Date d,Date e) {
+    public String createRangeQuery(Date d, Date e) {
         return null;
     }
 }
-

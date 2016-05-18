@@ -8,22 +8,22 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-public class UninterruptibleStuckMigrator extends  Migrator {
+public class UninterruptibleStuckMigrator extends Migrator {
 
     public UninterruptibleStuckMigrator(ThreadGroup g) {
         super(g);
     }
-    
+
     public List<JsonNode> getSourceDocuments() {
         Breakpoint.checkpoint("Migrator:getSourceDocuments");
-        while(true);
+        while (true);
     }
 
     public List<JsonNode> getDestinationDocuments(Collection<Identity> docs) {
         return null;
     }
 
-    public List<String> compareDocs(JsonNode source,JsonNode dest) {
+    public List<String> compareDocs(JsonNode source, JsonNode dest) {
         return null;
     }
 
@@ -31,8 +31,7 @@ public class UninterruptibleStuckMigrator extends  Migrator {
         return null;
     }
 
-    public String createRangeQuery(Date d,Date e) {
+    public String createRangeQuery(Date d, Date e) {
         return null;
     }
 }
-
