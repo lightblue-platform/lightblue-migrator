@@ -109,7 +109,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
         // create ThreadPoolExecutor for all facades
         if (executor == null) {
-            synchronized("executor") {
+            synchronized(CONFIG_PREFIX) {
                 if (executor == null) {
                     int threadPoolSize = Integer.parseInt(this.properties.getProperty(CONFIG_PREFIX+implementationName+".threadPool.size", "50"));
 
@@ -419,7 +419,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
      */
     public static void shutdown() {
         if (executor != null) {
-            synchronized ("executor") {
+            synchronized (CONFIG_PREFIX) {
                 if (executor != null) {
                     executor.shutdown();
                     executor = null;
