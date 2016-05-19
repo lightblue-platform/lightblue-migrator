@@ -8,7 +8,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-public class MainConfiguration {
+public class MonitorConfiguration {
 
     public static final Options options;
 
@@ -50,8 +50,8 @@ public class MainConfiguration {
         return prop;
     }
 
-    public static MainConfiguration getCfg(Properties p) {
-        MainConfiguration cfg = new MainConfiguration();
+    public static MonitorConfiguration getCfg(Properties p) {
+        MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.applyProperties(p);
         return cfg;
     }

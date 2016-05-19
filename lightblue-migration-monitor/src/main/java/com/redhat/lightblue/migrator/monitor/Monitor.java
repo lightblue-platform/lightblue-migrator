@@ -1,12 +1,12 @@
 package com.redhat.lightblue.migrator.monitor;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormat;
 import org.joda.time.format.PeriodFormatter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueException;
@@ -19,13 +19,11 @@ import com.redhat.lightblue.client.response.LightblueDataResponse;
 import com.redhat.lightblue.migrator.MigrationConfiguration;
 import com.redhat.lightblue.migrator.MigrationJob;
 
-public class Monitor extends Thread {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(Monitor.class);
+public class Monitor {
 
     private final LightblueClient lightblueClient;
 
-    public Monitor(MainConfiguration cfg) {
+    public Monitor(MonitorConfiguration cfg) {
         if (cfg.getClientConfig() != null) {
             lightblueClient = new LightblueHttpClient(cfg.getClientConfig());
         } else {
@@ -33,29 +31,8 @@ public class Monitor extends Thread {
         }
     }
 
-    @Override
-    public void run() {
-        LOGGER.debug("Starting migrator monitor");
-        boolean stop = false;
-
-        while (!isInterrupted() && !stop) {
-            try {
-                process();
-            } catch (Exception e) {
-                LOGGER.error("Error during configuration load:" + e);
-            }
-
-            if (!stop) {
-                try {
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                    stop = true;
-                }
-            }
-        }
-    }
-
-    private void process() throws Exception {
+    public void runCheck(final Notifier... notifiers) throws LightblueException {
+        List<String> configurationsMissingJobs = new ArrayList<>();
         for (MigrationConfiguration cfg : findMigrationConfigurations()) {
             long period = parsePeriod(cfg.getPeriod());
             Date endDate = new Date();
@@ -63,7 +40,17 @@ public class Monitor extends Thread {
 
             int jobs = countMigrationJobs(cfg.getConfigurationName(), startDate, endDate);
             if (jobs <= 0) {
-                //TODO some sort of alert
+                configurationsMissingJobs.add(cfg.getConfigurationName());
+            }
+        }
+
+        if (configurationsMissingJobs.isEmpty()) {
+            for (Notifier n : notifiers) {
+                n.sendSuccess();
+            }
+        } else {
+            for (Notifier n : notifiers) {
+                n.sendFailure(configurationsMissingJobs);
             }
         }
     }

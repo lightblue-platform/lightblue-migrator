@@ -23,14 +23,6 @@
       <artifactId>commons-cli</artifactId>
     </dependency>
     <dependency>
-      <groupId>commons-daemon</groupId>
-      <artifactId>commons-daemon</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-api</artifactId>
-    </dependency>
-    <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
     </dependency>
