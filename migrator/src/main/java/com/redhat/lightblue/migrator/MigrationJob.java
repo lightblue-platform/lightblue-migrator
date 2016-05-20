@@ -5,6 +5,8 @@ import java.util.List;
 
 public class MigrationJob {
 
+    public static final String ENTITY_NAME = "migrationJob";
+    
     public static final String STATE_AVAILABLE = "available";
     public static final String STATE_ACTIVE = "active";
     public static final String STATE_COMPLETED = "completed";
