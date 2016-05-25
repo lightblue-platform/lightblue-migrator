@@ -379,16 +379,6 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         }
     }
 
-    @Deprecated
-    public int getTimeoutSeconds() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    public void setTimeoutSeconds(int timeoutSeconds) {
-        timeoutConfiguration = new TimeoutConfiguration(timeoutSeconds * 1000, implementationName, properties);
-    }
-
     public void setLogResponseDataEnabled(boolean logResponsesEnabled) {
         getConsistencyChecker().setLogResponseDataEnabled(logResponsesEnabled);
     }
