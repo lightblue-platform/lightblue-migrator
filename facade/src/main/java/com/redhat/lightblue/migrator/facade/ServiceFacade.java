@@ -119,8 +119,8 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                     threadPoolExecutor.setCorePoolSize(threadPoolSize);
                     threadPoolExecutor.setMaximumPoolSize(threadPoolSize);
                     executor = MoreExecutors.listeningDecorator(threadPoolExecutor);
-                    log.info("Initialized facade threadPool.size={} for {}."+
-                            "Note it may be used by other services (there is a single, shared thread pool for all facaded services in the deployment",
+                    log.info("Initialized facade threadPool.size={} for {}. "+
+                            "Note it may be used by other services (there is a single, shared thread pool for all facaded services using the same classloader)",
                             threadPoolSize, implementationName);
                 }
             }
