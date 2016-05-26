@@ -1,0 +1,124 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.redhat.lightblue.migrator</groupId>
+    <artifactId>lightblue-migrator-pom</artifactId>
+    <version>2.36.0-SNAPSHOT</version>
+  </parent>
+  
+  <artifactId>lightblue-migration-monitor</artifactId>
+  
+  <properties>
+    <rpm.install.basedir>/usr/share/migrator/monitor</rpm.install.basedir>
+  </properties>
+  
+  <dependencies>
+    <dependency>
+      <groupId>com.redhat.lightblue.migrator</groupId>
+      <artifactId>lightblue-migrator</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.redhat.lightblue.client</groupId>
+      <artifactId>lightblue-client-http</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>commons-cli</groupId>
+      <artifactId>commons-cli</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>joda-time</groupId>
+      <artifactId>joda-time</artifactId>
+    </dependency>
+    
+    <dependency>
+      <groupId>com.redhat.lightblue.client</groupId>
+      <artifactId>lightblue-client-integration-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+    
+  </dependencies>
+  
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.3</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>com.redhat.lightblue.migrator.monitor.Main</mainClass>
+                </transformer>
+              </transformers>
+              <shadedArtifactAttached>true</shadedArtifactAttached>
+              <shadedClassifierName>alldeps</shadedClassifierName>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+  
+  <profiles>
+    <profile>
+      <id>rpm</id>
+      <!-- RPM packing -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>rpm-maven-plugin</artifactId>
+            <version>2.1-alpha-3</version>
+            <extensions>true</extensions>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>attached-rpm</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <name>${project.artifactId}</name>
+              <copyright>Red Hat</copyright>
+              <distribution>RHEL</distribution>
+              <group>Lightblue Platform</group>
+              <packager>${user.name}</packager>
+              <defaultFilemode>744</defaultFilemode>
+              <defaultUsername>jboss</defaultUsername>
+              <defaultGroupname>jboss</defaultGroupname>
+              <mappings>
+                <mapping>
+                  <directory>${rpm.install.basedir}</directory>
+                  <sources>
+                    <source>
+                      <location>target/${project.artifactId}-${project.version}-alldeps.${project.packaging}</location>
+                    </source>
+                  </sources>
+                </mapping>
+              </mappings>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  
+</project>
