@@ -37,7 +37,7 @@ public abstract class AbstractController extends Thread {
         locking=lbClient.getLocking("migration");
         if(migrationConfiguration.getMigratorClass()==null)
             migratorClass=DefaultMigrator.class;
-        else
+        else {
             try {
                 migratorClass = Class.forName(migrationConfiguration.getMigratorClass());
             } catch (Exception e) {
