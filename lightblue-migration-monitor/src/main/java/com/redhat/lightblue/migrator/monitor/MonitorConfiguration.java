@@ -13,16 +13,27 @@ public class MonitorConfiguration {
     public static final Options options;
 
     private String clientConfig;
+    private Integer periods;
 
     static {
         options = new Options();
 
         options.addOption(Option.builder("c")
+                .type(String.class)
                 .required(true)
                 .hasArg(true)
                 .desc("Path to configuration file for migration")
                 .longOpt("config")
                 .argName("config")
+                .build());
+
+        options.addOption(Option.builder("p")
+                .type(Integer.class)
+                .required(false)
+                .hasArg(true)
+                .desc("Number of periods back to include in search")
+                .longOpt("periods")
+                .argName("periods")
                 .build());
     }
 
@@ -32,6 +43,14 @@ public class MonitorConfiguration {
 
     public void setClientConfig(String clientConfig) {
         this.clientConfig = clientConfig;
+    }
+
+    public Integer getPeriods(){
+        return periods;
+    }
+
+    public void setPeriods(Integer periods){
+        this.periods = periods;
     }
 
     public static Properties processArguments(String[] args) {
@@ -60,6 +79,11 @@ public class MonitorConfiguration {
         String s = p.getProperty("config");
         if (s != null) {
             setClientConfig(s);
+        }
+
+        Integer periods = Integer.getInteger(p.getProperty("periods"));
+        if(periods != null){
+            setPeriods(periods);
         }
     }
 

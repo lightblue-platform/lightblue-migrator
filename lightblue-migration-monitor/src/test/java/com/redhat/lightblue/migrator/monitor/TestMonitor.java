@@ -4,6 +4,8 @@ import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -55,11 +57,11 @@ public class TestMonitor {
         return config;
     }
 
-    private MigrationJob generateMigrationJob() {
+    private MigrationJob generateMigrationJob(Date scheduledDate) {
         MigrationJob job = new MigrationJob();
         job.setConfigurationName("fake");
         job.setStatus("ready");
-        job.setScheduledDate(new Date());
+        job.setScheduledDate(scheduledDate);
 
         return job;
     }
@@ -114,7 +116,7 @@ public class TestMonitor {
         lightblue.getLightblueClient().data(insertConfigRequest);
 
         DataInsertRequest insertJobRequest = new DataInsertRequest(MigrationJob.ENTITY_NAME);
-        insertJobRequest.create(generateMigrationJob());
+        insertJobRequest.create(generateMigrationJob(new Date()));
         insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertJobRequest);
 
@@ -129,6 +131,66 @@ public class TestMonitor {
             @Override
             public void sendFailure(List<String> configurationsMissingJobs) {
                 fail("Should not be a failure");
+            }
+        });
+    }
+
+    @Test
+    public void testRunCheck_Check2PeriodsAgo_Success() throws Exception {
+        DataInsertRequest insertConfigRequest = new DataInsertRequest(MigrationConfiguration.ENTITY_NAME);
+        insertConfigRequest.create(generateMigrationConfiguration("1 day"));
+        insertConfigRequest.returns(Projection.excludeFieldRecursively("*"));
+        lightblue.getLightblueClient().data(insertConfigRequest);
+
+        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
+        DataInsertRequest insertJobRequest = new DataInsertRequest(MigrationJob.ENTITY_NAME);
+        insertJobRequest.create(generateMigrationJob(Date.from(yesterday)));
+        insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
+        lightblue.getLightblueClient().data(insertJobRequest);
+
+        MonitorConfiguration cfg = new MonitorConfiguration();
+        cfg.setPeriods(2);
+        Monitor monitor = new Monitor(cfg);
+        monitor.runCheck(new Notifier() {
+
+            @Override
+            public void sendSuccess() {
+                //Do nothing
+            }
+
+            @Override
+            public void sendFailure(List<String> configurationsMissingJobs) {
+                fail("Should not be a failure");
+            }
+        });
+    }
+
+    @Test
+    public void testRunCheck_Check2PeriodsAgo_Failure() throws Exception {
+        DataInsertRequest insertConfigRequest = new DataInsertRequest(MigrationConfiguration.ENTITY_NAME);
+        insertConfigRequest.create(generateMigrationConfiguration("1 day"));
+        insertConfigRequest.returns(Projection.excludeFieldRecursively("*"));
+        lightblue.getLightblueClient().data(insertConfigRequest);
+
+        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
+        DataInsertRequest insertJobRequest = new DataInsertRequest(MigrationJob.ENTITY_NAME);
+        insertJobRequest.create(generateMigrationJob(Date.from(yesterday)));
+        insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
+        lightblue.getLightblueClient().data(insertJobRequest);
+
+        MonitorConfiguration cfg = new MonitorConfiguration();
+        cfg.setPeriods(1);
+        Monitor monitor = new Monitor(cfg);
+        monitor.runCheck(new Notifier() {
+
+            @Override
+            public void sendSuccess() {
+                fail("Should be a failure");
+            }
+
+            @Override
+            public void sendFailure(List<String> configurationsMissingJobs) {
+                //Do nothing
             }
         });
     }

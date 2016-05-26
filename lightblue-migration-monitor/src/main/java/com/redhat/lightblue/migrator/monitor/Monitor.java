@@ -21,20 +21,24 @@ import com.redhat.lightblue.migrator.MigrationJob;
 
 public class Monitor {
 
+    private final MonitorConfiguration monitorCfg;
     private final LightblueClient lightblueClient;
 
-    public Monitor(MonitorConfiguration cfg) {
-        if (cfg.getClientConfig() != null) {
-            lightblueClient = new LightblueHttpClient(cfg.getClientConfig());
+    public Monitor(MonitorConfiguration monitorCfg) {
+        this.monitorCfg = monitorCfg;
+        if (monitorCfg.getClientConfig() != null) {
+            lightblueClient = new LightblueHttpClient(monitorCfg.getClientConfig());
         } else {
             lightblueClient = new LightblueHttpClient();
         }
     }
 
     public void runCheck(final Notifier... notifiers) throws LightblueException {
+        int periods = (monitorCfg.getPeriods() == null) ? 1 : monitorCfg.getPeriods();
+
         List<String> configurationsMissingJobs = new ArrayList<>();
         for (MigrationConfiguration cfg : findMigrationConfigurations()) {
-            long period = parsePeriod(cfg.getPeriod());
+            long period = periods * parsePeriod(cfg.getPeriod());
             Date endDate = new Date();
             Date startDate = new Date(endDate.getTime() - period);
 
