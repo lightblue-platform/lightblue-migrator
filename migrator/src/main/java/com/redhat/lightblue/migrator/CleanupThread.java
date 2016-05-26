@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.*;
 import com.redhat.lightblue.client.request.data.*;
+import java.io.Closeable;
+import java.io.IOException;
 
 public class CleanupThread extends Thread {
 
@@ -121,13 +123,24 @@ public class CleanupThread extends Thread {
 
             LOGGER.debug("Woke up");
 
-            LightblueClient cli = controller.getLightblueClient();
+            LightblueClient cli = null;
+            
+            try {
+                cli = controller.getLightblueClient();
 
-            Date d = new Date(System.currentTimeMillis() - oldJobThreshold);
-            cleanupOldJobs(cli, d);
-            d = new Date(System.currentTimeMillis() - period * 3); // 3 times period=too long            
-            enableStuckJobs(cli, d);
-
+                Date d = new Date(System.currentTimeMillis() - oldJobThreshold);
+                cleanupOldJobs(cli, d);
+                d = new Date(System.currentTimeMillis() - period * 3); // 3 times period=too long            
+                enableStuckJobs(cli, d);
+            } finally {
+                if (cli != null && cli instanceof Closeable) {
+                    try {
+                        ((Closeable)cli).close();
+                    } catch (IOException ex) {
+                        LOGGER.warn("Unable to close LightblueClient, resource leak possible!");
+                    }
+                }
+            }
             LOGGER.debug("Completed");
         }
     }
