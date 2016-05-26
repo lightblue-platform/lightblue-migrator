@@ -4,9 +4,8 @@ import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -142,9 +141,10 @@ public class TestMonitor {
         insertConfigRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertConfigRequest);
 
-        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
         DataInsertRequest insertJobRequest = new DataInsertRequest(MigrationJob.ENTITY_NAME);
-        insertJobRequest.create(generateMigrationJob(Date.from(yesterday)));
+        insertJobRequest.create(generateMigrationJob(cal.getTime()));
         insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertJobRequest);
 
@@ -172,9 +172,10 @@ public class TestMonitor {
         insertConfigRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertConfigRequest);
 
-        Instant yesterday = Instant.now().minus(1, ChronoUnit.DAYS);
+        Calendar cal = Calendar.getInstance();
+        cal.add(Calendar.DATE, -1);
         DataInsertRequest insertJobRequest = new DataInsertRequest(MigrationJob.ENTITY_NAME);
-        insertJobRequest.create(generateMigrationJob(Date.from(yesterday)));
+        insertJobRequest.create(generateMigrationJob(cal.getTime()));
         insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertJobRequest);
 
