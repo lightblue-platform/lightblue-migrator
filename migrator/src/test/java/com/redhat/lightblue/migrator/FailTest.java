@@ -15,10 +15,7 @@ import com.redhat.lightblue.client.request.data.DataDeleteRequest;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.response.LightblueResponse;
 
-
-
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
-
 
 public class FailTest extends AbstractMigratorController {
 
@@ -27,8 +24,9 @@ public class FailTest extends AbstractMigratorController {
     private String versionSourceCustomer;
     private String versionDestinationCustomer;
 
-    public FailTest() throws Exception {}
-        
+    public FailTest() throws Exception {
+    }
+
     @Override
     protected JsonNode[] getMetadataJsonNodes() throws Exception {
         ObjectNode jsonActiveExecution = (ObjectNode) loadJsonNode("./activeExecution.json");
@@ -43,23 +41,23 @@ public class FailTest extends AbstractMigratorController {
         versionDestinationCustomer = parseEntityVersion(jsonDestinationCustomer);
 
         return new JsonNode[]{
-                removeHooks(grantAnyoneAccess(jsonMigrationJob)),
-                removeHooks(grantAnyoneAccess(jsonMigrationConfiguration)),
-                removeHooks(grantAnyoneAccess(jsonActiveExecution)),
-                jsonSourceCustomer,
-                jsonDestinationCustomer
+            removeHooks(grantAnyoneAccess(jsonMigrationJob)),
+            removeHooks(grantAnyoneAccess(jsonMigrationConfiguration)),
+            removeHooks(grantAnyoneAccess(jsonActiveExecution)),
+            jsonSourceCustomer,
+            jsonDestinationCustomer
         };
     }
 
     public void clearData() throws Exception {
         LightblueClient cli = new LightblueHttpClient();
-        DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
+        DataDeleteRequest req = new DataDeleteRequest("activeExecution", null);
         req.where(Query.withValue("objectType", Query.BinOp.eq, "activeExecution"));
         cli.data(req);
-        req=new DataDeleteRequest("migrationJob",null);
+        req = new DataDeleteRequest("migrationJob", null);
         req.where(Query.withValue("objectType", Query.BinOp.eq, "migrationJob"));
         cli.data(req);
-        req=new DataDeleteRequest("migrationConfiguration",null);
+        req = new DataDeleteRequest("migrationConfiguration", null);
         req.where(Query.withValue("objectType", Query.BinOp.eq, "migrationConfiguration"));
         cli.data(req);
     }
@@ -70,11 +68,11 @@ public class FailTest extends AbstractMigratorController {
         Breakpoint.clearAll();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-failmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
-        
-        MainConfiguration cfg=new MainConfiguration();
+
+        MainConfiguration cfg = new MainConfiguration();
         cfg.setName("continuum");
         cfg.setHostName("hostname");
-        Controller controller=new Controller(cfg);
+        Controller controller = new Controller(cfg);
 
         Breakpoint.stop("MigratorController::unlock");
 
@@ -82,29 +80,28 @@ public class FailTest extends AbstractMigratorController {
         controller.start();
         System.out.println("failTest: controller started");
 
-        Map<String,Controller.MigrationProcess> prc=controller.getMigrationProcesses();
+        Map<String, Controller.MigrationProcess> prc = controller.getMigrationProcesses();
 
         System.out.println("failTest: wait until unlock");
         Breakpoint.waitUntil("MigratorController:unlock");
         System.out.println("failTest: done");
         // Here, it should have failed already
-        LightblueClient cli=new LightblueHttpClient();
-        DataFindRequest req=new DataFindRequest("migrationJob",null);
+        LightblueClient cli = new LightblueHttpClient();
+        DataFindRequest req = new DataFindRequest("migrationJob", null);
         req.where(Query.withValue("objectType = migrationJob"));
         req.select(Projection.includeFieldRecursively("jobExecutions.0.errorMsg"));
-        LightblueResponse resp=cli.data(req);
-        JsonNode node=resp.getJson();
-        System.out.println("Response:"+node);
-        JsonNode x=node.get("processed");
-        Assert.assertEquals(1,x.size());
-        x=x.get(0).get("jobExecutions").get(0).get("errorMsg");
+        LightblueResponse resp = cli.data(req);
+        JsonNode node = resp.getJson();
+        System.out.println("Response:" + node);
+        JsonNode x = node.get("processed");
+        Assert.assertEquals(1, x.size());
+        x = x.get(0).get("jobExecutions").get(0).get("errorMsg");
         Assert.assertNotNull(x.asText());
-        System.out.println("Error:"+x.asText());
+        System.out.println("Error:" + x.asText());
         Breakpoint.resume("MigratorController:unlock");
         controller.getMigrationProcesses().get("customerMigration_0").mig.setStopped();
         controller.interrupt();
         Thread.sleep(100);
     }
-         
-}
 
+}

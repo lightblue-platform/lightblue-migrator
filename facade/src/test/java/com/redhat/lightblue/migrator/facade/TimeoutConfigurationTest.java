@@ -9,8 +9,8 @@ import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
 
 public class TimeoutConfigurationTest {
 
-    String TIMEOUT_CONFIG_PREFIX = TimeoutConfiguration.CONFIG_PREFIX+TimeoutConfiguration.Type.timeout+".";
-    String SLOWWARNING_CONFIG_PREFIX = TimeoutConfiguration.CONFIG_PREFIX+TimeoutConfiguration.Type.slowwarning+".";
+    String TIMEOUT_CONFIG_PREFIX = ServiceFacade.CONFIG_PREFIX + TimeoutConfiguration.Type.timeout + ".";
+    String SLOWWARNING_CONFIG_PREFIX = ServiceFacade.CONFIG_PREFIX + TimeoutConfiguration.Type.slowwarning + ".";
 
     @Test
     public void testDefault() {
@@ -24,8 +24,8 @@ public class TimeoutConfigurationTest {
     @Test
     public void testMethod() {
         Properties p = new Properties();
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.fooBar", "5000");
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"BarService.fooBar", "10000");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.fooBar", "5000");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "BarService.fooBar", "10000");
 
         TimeoutConfiguration t = new TimeoutConfiguration(2000, "FooService", p);
 
@@ -40,12 +40,11 @@ public class TimeoutConfigurationTest {
     @Test
     public void testOperation() {
         Properties p = new Properties();
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.WRITE", "5000");
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.READ", "2000");
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.fooBar", "10000");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.WRITE", "5000");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.READ", "2000");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.fooBar", "10000");
 
         TimeoutConfiguration t = new TimeoutConfiguration(2000, "FooService", p);
-
 
         Assert.assertEquals(2000, t.getTimeoutMS("foo", FacadeOperation.READ));
         Assert.assertEquals(5000, t.getTimeoutMS("bar", FacadeOperation.WRITE));
@@ -58,13 +57,13 @@ public class TimeoutConfigurationTest {
     public void testSlowWarning() {
         Properties p = new Properties();
 
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.WRITE", "5001");
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.READ", "2001");
-        p.setProperty(TIMEOUT_CONFIG_PREFIX+"FooService.fooBar", "10001");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.WRITE", "5001");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.READ", "2001");
+        p.setProperty(TIMEOUT_CONFIG_PREFIX + "FooService.fooBar", "10001");
 
-        p.setProperty(SLOWWARNING_CONFIG_PREFIX+"FooService.WRITE", "5000");
-        p.setProperty(SLOWWARNING_CONFIG_PREFIX+"FooService.READ", "2000");
-        p.setProperty(SLOWWARNING_CONFIG_PREFIX+"FooService.fooBar", "10000");
+        p.setProperty(SLOWWARNING_CONFIG_PREFIX + "FooService.WRITE", "5000");
+        p.setProperty(SLOWWARNING_CONFIG_PREFIX + "FooService.READ", "2000");
+        p.setProperty(SLOWWARNING_CONFIG_PREFIX + "FooService.fooBar", "10000");
 
         TimeoutConfiguration t = new TimeoutConfiguration(2000, "FooService", p);
 

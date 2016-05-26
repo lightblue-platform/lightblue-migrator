@@ -28,8 +28,10 @@ public class DAOFacadeTest {
     @Rule
     public TogglzRule togglzRule = TogglzRule.allDisabled(LightblueMigrationFeatures.class);
 
-    @Mock CountryDAO legacyDAO;
-    @Mock CountryDAOLightblue lightblueDAO;
+    @Mock
+    CountryDAO legacyDAO;
+    @Mock
+    CountryDAOLightblue lightblueDAO;
     CountryDAO facade;
 
     DAOFacadeExample daoFacadeExample;
@@ -52,7 +54,6 @@ public class DAOFacadeTest {
     }
 
     /* Read tests */
-
     @Test
     public void initialPhaseRead() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
@@ -107,10 +108,10 @@ public class DAOFacadeTest {
         Country pl = new Country(1l, "PL");
         Country ca = new Country(2l, "CA");
 
-        long[] ids = new long[]{1l,2l,3l};
+        long[] ids = new long[]{1l, 2l, 3l};
 
-        Mockito.when(legacyDAO.getCountries(ids)).thenReturn(Arrays.asList(new Country[] {ca}));
-        Mockito.when(lightblueDAO.getCountries(ids)).thenReturn(Arrays.asList(new Country[] {pl}));
+        Mockito.when(legacyDAO.getCountries(ids)).thenReturn(Arrays.asList(new Country[]{ca}));
+        Mockito.when(lightblueDAO.getCountries(ids)).thenReturn(Arrays.asList(new Country[]{pl}));
 
         Country returnedCountry = facade.getCountries(ids).get(0);
 
@@ -134,7 +135,6 @@ public class DAOFacadeTest {
     }
 
     /* update tests */
-
     @Test
     public void initialPhaseUpdate() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
@@ -195,7 +195,6 @@ public class DAOFacadeTest {
     }
 
     /* insert tests */
-
     @Test
     public void initialPhaseCreate() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
@@ -221,13 +220,12 @@ public class DAOFacadeTest {
         Country createdCountry = facade.createCountry(pl);
         Assert.assertEquals(new Long(101), createdCountry.getId());
 
-
         Mockito.verify(legacyDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == ((DAOFacadeBase)facade).getEntityIdStore().pop());
+        Assert.assertTrue(101l == ((DAOFacadeBase) facade).getEntityIdStore().pop());
     }
 
     @Test
@@ -270,7 +268,6 @@ public class DAOFacadeTest {
     }
 
     /* insert tests when method also does a read */
-
     @Test
     public void initialPhaseCreateWithRead() throws CountryException {
         LightblueMigrationPhase.initialPhase(togglzRule);
@@ -296,13 +293,12 @@ public class DAOFacadeTest {
         Country createdCountry = facade.createCountryIfNotExists(pl);
         Assert.assertEquals(new Long(101), createdCountry.getId());
 
-
         Mockito.verify(legacyDAO).createCountryIfNotExists(pl);
         Mockito.verify(lightblueDAO).createCountryIfNotExists(pl);
         Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
 
         // CountryDAOLightblue should set the id. Since it's just a mock, I'm checking what's in the cache.
-        Assert.assertTrue(101l == ((DAOFacadeBase)facade).getEntityIdStore().pop());
+        Assert.assertTrue(101l == ((DAOFacadeBase) facade).getEntityIdStore().pop());
     }
 
     @Test
@@ -319,7 +315,6 @@ public class DAOFacadeTest {
     }
 
     /* lightblue failure tests */
-
     @Test
     public void ligtblueFailureDuringReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
@@ -381,9 +376,9 @@ public class DAOFacadeTest {
         try {
             facade.getCountry("PL");
             Assert.fail();
-        } catch(CountryException ce) {
+        } catch (CountryException ce) {
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail();
         }
 
@@ -402,9 +397,9 @@ public class DAOFacadeTest {
         try {
             facade.createCountry(pl);
             Assert.fail();
-        } catch(CountryException ce) {
+        } catch (CountryException ce) {
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail();
         }
 
@@ -423,9 +418,9 @@ public class DAOFacadeTest {
         try {
             facade.updateCountry(pl);
             Assert.fail();
-        } catch(CountryException ce) {
+        } catch (CountryException ce) {
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail();
         }
 
@@ -451,7 +446,6 @@ public class DAOFacadeTest {
     }
 
     /* lightblue timeout tests */
-
     @Test
     public void lightblueTakesLongToRespondOnCreate_TimoutDisabled() throws CountryException {
         TimeoutConfiguration t = new TimeoutConfiguration(0, CountryDAO.class.getSimpleName(), null);
@@ -600,8 +594,8 @@ public class DAOFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Success_FromProperties_Method() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO", "1000");
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacadeExample.setTimeoutConfiguration(t);
 
@@ -632,8 +626,8 @@ public class DAOFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout_FromProperties_Bean() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO", "1000");
-        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
+        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacadeExample.setTimeoutConfiguration(t);
 
@@ -746,7 +740,6 @@ public class DAOFacadeTest {
     }
 
     /* legacy failure tests */
-
     @Test
     public void legacyFailureDuringReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
@@ -764,9 +757,9 @@ public class DAOFacadeTest {
         try {
             facade.getCountry("PL");
             Assert.fail();
-        } catch(CountryException ce) {
+        } catch (CountryException ce) {
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail();
         }
 
@@ -793,9 +786,9 @@ public class DAOFacadeTest {
         try {
             facade.updateCountry(pl);
             Assert.fail();
-        } catch(CountryException ce) {
+        } catch (CountryException ce) {
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail();
         }
 
@@ -822,9 +815,9 @@ public class DAOFacadeTest {
         try {
             facade.createCountry(pl);
             Assert.fail();
-        } catch(CountryException ce) {
+        } catch (CountryException ce) {
 
-        } catch(Exception e) {
+        } catch (Exception e) {
             Assert.fail();
         }
 
@@ -844,8 +837,8 @@ public class DAOFacadeTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Country country = (Country)invocation.getArguments()[0];
-                if (country.getIso2Code().equals("CA")){
+                Country country = (Country) invocation.getArguments()[0];
+                if (country.getIso2Code().equals("CA")) {
                     // oracle service pushes id of a created object into shared store
                     daoFacadeExample.getEntityIdStore().push(12l);
                     return new Country(12l, "CA");
@@ -864,8 +857,8 @@ public class DAOFacadeTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Country country = (Country)invocation.getArguments()[0];
-                if (country.getIso2Code().equals("CA")){
+                Country country = (Country) invocation.getArguments()[0];
+                if (country.getIso2Code().equals("CA")) {
                     throw new CountryException();
                 } else {
                     return new Country(daoFacadeExample.getEntityIdStore().pop(), "PL");
@@ -881,7 +874,7 @@ public class DAOFacadeTest {
         // reusing same thread id as the previous call
         Country returned = facade.createCountry(pl);
 
-        Assert.assertEquals((Long)13l, returned.getId());
+        Assert.assertEquals((Long) 13l, returned.getId());
 
         // the id pushed into shared store during first, failed call, is cleared, expecting no inconsistency
         Mockito.verify(consistencyChecker).checkConsistency(Mockito.eq(new Country(13l, "PL")), Mockito.eq(new Country(13l, "PL")), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));

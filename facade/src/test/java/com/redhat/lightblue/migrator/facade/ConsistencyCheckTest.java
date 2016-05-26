@@ -117,42 +117,42 @@ public class ConsistencyCheckTest {
 
     @Test
     public void testConsistencyList() {
-        Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
-        Country[] cArr2 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr1 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr2 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
 
         Assert.assertTrue(consistencyChecker.checkConsistency(Arrays.asList(cArr1), Arrays.asList(cArr2)));
     }
 
     @Test
     public void testInconsistencyList() {
-        Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
-        Country[] cArr2 = new Country[] { new Country(3l, "PL"), new Country(2l, "CA")};
+        Country[] cArr1 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr2 = new Country[]{new Country(3l, "PL"), new Country(2l, "CA")};
 
         Assert.assertFalse(consistencyChecker.checkConsistency(Arrays.asList(cArr1), Arrays.asList(cArr2)));
 
-        Country[] cArr3 = new Country[] { new Country(2l, "CA"), new Country(1l, "PL")};
-        Country[] cArr4 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr3 = new Country[]{new Country(2l, "CA"), new Country(1l, "PL")};
+        Country[] cArr4 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
 
         Assert.assertTrue(consistencyChecker.checkConsistency(Arrays.asList(cArr3), Arrays.asList(cArr4)));
     }
 
     @Test
     public void testConsistencyArray() {
-        Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
-        Country[] cArr2 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr1 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr2 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
 
         Assert.assertTrue(consistencyChecker.checkConsistency(cArr1, cArr2));
     }
 
     @Test
     public void testInconsistencyArray() {
-        Country[] cArr1 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
-        Country[] cArr2 = new Country[] { new Country(3l, "PL"), new Country(2l, "CA")};
+        Country[] cArr1 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr2 = new Country[]{new Country(3l, "PL"), new Country(2l, "CA")};
 
         Assert.assertFalse(consistencyChecker.checkConsistency(cArr1, cArr2));
 
-        Country[] cArr3 = new Country[] { new Country(2l, "CA"), new Country(1l, "PL")};
-        Country[] cArr4 = new Country[] { new Country(1l, "PL"), new Country(2l, "CA")};
+        Country[] cArr3 = new Country[]{new Country(2l, "CA"), new Country(1l, "PL")};
+        Country[] cArr4 = new Country[]{new Country(1l, "PL"), new Country(2l, "CA")};
 
         Assert.assertTrue(consistencyChecker.checkConsistency(cArr3, cArr4));
     }
@@ -178,7 +178,6 @@ public class ConsistencyCheckTest {
         // We are using compare mode = Lenient, which means object 2 can have additional data
         Assert.assertTrue(consistencyChecker.checkConsistency(pl2, pl1));
     }*/
-
     @Test
     public void testInaccessibleReqField_IsIgnored() {
         Country pl1 = new VeryExtendedCountry(1l, "PL", "foo");
@@ -216,7 +215,7 @@ public class ConsistencyCheckTest {
     public void testSqlTimestampWithNanos() {
         Date date = new Date(1434638750978l);
         Timestamp timestamp = new Timestamp(date.getTime());
-        timestamp.setNanos(timestamp.getNanos()+125300); // higher precision, difference in nano
+        timestamp.setNanos(timestamp.getNanos() + 125300); // higher precision, difference in nano
 
         Assert.assertEquals(date.getTime(), timestamp.getTime());
 
@@ -252,7 +251,6 @@ public class ConsistencyCheckTest {
 //        Assert.assertFalse(consistencyChecker.checkConsistency(p1, p2, "getPerson", null));
 //        Assert.assertTrue(consistencyChecker.checkConsistency(p1, p2, "getPerson2", null));
 //    }
-
     @Test
     public void testWithSimpleObjects() throws InterruptedException {
         Assert.assertTrue(consistencyChecker.checkConsistency("Test", "Test", "savePerson", null));

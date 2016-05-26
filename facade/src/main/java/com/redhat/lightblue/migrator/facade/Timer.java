@@ -27,10 +27,10 @@ public class Timer {
 
     public long complete() {
         Date end = new Date();
-        long callTookMS = end.getTime()-start.getTime();
+        long callTookMS = end.getTime() - start.getTime();
 
         if (log.isDebugEnabled()) {
-            log.debug(method+" call took "+ callTookMS + "ms");
+            log.debug(method + " call took " + callTookMS + "ms");
         }
 
         return callTookMS;

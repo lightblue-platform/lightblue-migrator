@@ -2,18 +2,16 @@ package com.redhat.lightblue.migrator;
 
 import java.util.Properties;
 
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.PosixParser;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.DefaultParser;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.HelpFormatter;
 
 public class MainConfiguration {
 
     public static final Options options;
-    
+
     private String name;
     private String hostName;
     private String clientConfig;
@@ -21,44 +19,43 @@ public class MainConfiguration {
 
     static {
         options = new Options();
-        
-        options.addOption(OptionBuilder.
-                          withArgName("name").
-                          withLongOpt("name").
-                          hasArg(true).
-                          withDescription("Name of checker instance").
-                          isRequired().
-                          create('n'));
-        options.addOption(OptionBuilder.
-                          withArgName("hostname").
-                          withLongOpt("hostname").
-                          hasArg(true).
-                          withDescription("Hostname running the checker instance").
-                          isRequired().
-                          create('h'));
-        options.addOption(OptionBuilder.
-                          withArgName("config").
-                          withLongOpt("config").
-                          hasArg(true).
-                          withDescription("Path to configuration file for migration").
-                          isRequired().
-                          create('c'));
-        options.addOption(OptionBuilder.
-                          withArgName("threadTimeout").
-                          withLongOpt("threadTimeout").
-                          hasArg(true).
-                          withDescription("Maximum time thread is allowed to run (msecs)").
-                          isRequired(false).
-                          create('t'));
-    }
 
+        options.addOption(Option.builder("n")
+                .argName("name")
+                .longOpt("name")
+                .hasArg(true)
+                .desc("Name of checker instance")
+                .required(true)
+                .build());
+        options.addOption(Option.builder("h")
+                .argName("hostname")
+                .longOpt("hostname")
+                .hasArg(true)
+                .desc("Hostname running the checker instance")
+                .required(true)
+                .build());
+        options.addOption(Option.builder("c")
+                .argName("config")
+                .longOpt("config")
+                .hasArg(true)
+                .desc("Path to configuration file for migration")
+                .required(true)
+                .build());
+        options.addOption(Option.builder("t")
+                .argName("threadTimeout")
+                .longOpt("threadTimeout")
+                .hasArg(true)
+                .desc("Maximum time thread is allowed to run (msecs)")
+                .required(true)
+                .build());
+    }
 
     public String getName() {
         return name;
     }
 
     public void setName(String s) {
-        name=s;
+        name = s;
     }
 
     public String getHostName() {
@@ -66,7 +63,7 @@ public class MainConfiguration {
     }
 
     public void setHostName(String s) {
-        hostName=s;
+        hostName = s;
     }
 
     public String getClientConfig() {
@@ -74,31 +71,31 @@ public class MainConfiguration {
     }
 
     public void setClientConfig(String s) {
-        clientConfig=s;
+        clientConfig = s;
     }
 
     public void setThreadTimeout(String s) {
-        if(s!=null) 
+        if (s != null) {
             setThreadTimeout(Long.valueOf(s));
+        }
     }
 
     public void setThreadTimeout(Long l) {
-        threadTimeout=l;
+        threadTimeout = l;
     }
 
     public Long getThreadTimeout() {
         return threadTimeout;
     }
 
-
     public String toString() {
-        return "name="+name+" hostName="+hostName+" config="+clientConfig;
+        return "name=" + name + " hostName=" + hostName + " config=" + clientConfig;
     }
-    
-    public static Properties processArguments(String[] args){
-        Properties prop=new Properties();        
+
+    public static Properties processArguments(String[] args) {
+        Properties prop = new Properties();
         try {
-            PosixParser parser = new PosixParser();
+            DefaultParser parser = new DefaultParser();
             CommandLine commandline = parser.parse(options, args);
             Option[] opts = commandline.getOptions();
             for (Option opt : opts) {
@@ -111,23 +108,27 @@ public class MainConfiguration {
     }
 
     public static MainConfiguration getCfg(Properties p) {
-        MainConfiguration cfg=new MainConfiguration();
+        MainConfiguration cfg = new MainConfiguration();
         cfg.applyProperties(p);
         return cfg;
     }
 
     public void applyProperties(Properties p) {
-        String s=p.getProperty("name");
-        if(s!=null)
+        String s = p.getProperty("name");
+        if (s != null) {
             setName(s);
-        s=p.getProperty("hostname");
-        if(s!=null)
+        }
+        s = p.getProperty("hostname");
+        if (s != null) {
             setHostName(s);
-        s=p.getProperty("config");
-        if(s!=null)
+        }
+        s = p.getProperty("config");
+        if (s != null) {
             setClientConfig(s);
-        s=p.getProperty("threadTimeout");
-        if(s!=null)
+        }
+        s = p.getProperty("threadTimeout");
+        if (s != null) {
             setThreadTimeout(s);
+        }
     }
 }

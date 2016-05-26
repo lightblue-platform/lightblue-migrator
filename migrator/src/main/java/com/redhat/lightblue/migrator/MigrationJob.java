@@ -5,17 +5,17 @@ import java.util.List;
 
 public class MigrationJob {
 
-    public static final String STATE_AVAILABLE="available";
-    public static final String STATE_ACTIVE="active";
-    public static final String STATE_COMPLETED="completed";
-    public static final String STATE_FAILED="failed";
+    public static final String STATE_AVAILABLE = "available";
+    public static final String STATE_ACTIVE = "active";
+    public static final String STATE_COMPLETED = "completed";
+    public static final String STATE_FAILED = "failed";
 
     public static class ConsistencyChecker {
         /**
          * Beginning of job range, date, id, etc.
          */
         private String jobRangeBegin;
-        
+
         /**
          * End of job range, date, id, etc.
          */
@@ -26,27 +26,27 @@ public class MigrationJob {
         public String getConfigurationName() {
             return configurationName;
         }
-        
+
         public void setConfigurationName(String s) {
-            configurationName=s;
+            configurationName = s;
         }
 
         public String getJobRangeBegin() {
             return jobRangeBegin;
         }
-        
+
         public void setJobRangeBegin(String s) {
-            jobRangeBegin=s;
+            jobRangeBegin = s;
         }
-        
+
         public String getJobRangeEnd() {
             return jobRangeEnd;
         }
-        
+
         public void setJobRangeEnd(String s) {
-            jobRangeEnd=s;
+            jobRangeEnd = s;
         }
-        
+
     }
 
     public static class JobExecution {
@@ -62,7 +62,6 @@ public class MigrationJob {
         private int inconsistentDocumentCount;
         private int overwrittenDocumentCount;
 
-        
         /**
          * Gets the value of activeExecutionId
          *
@@ -201,7 +200,8 @@ public class MigrationJob {
         /**
          * Sets the value of processedDocumentCount
          *
-         * @param argProcessedDocumentCount Value to assign to this.processedDocumentCount
+         * @param argProcessedDocumentCount Value to assign to
+         * this.processedDocumentCount
          */
         public final void setProcessedDocumentCount(final int argProcessedDocumentCount) {
             this.processedDocumentCount = argProcessedDocumentCount;
@@ -219,7 +219,8 @@ public class MigrationJob {
         /**
          * Sets the value of consistentDocumentCount
          *
-         * @param argConsistentDocumentCount Value to assign to this.consistentDocumentCount
+         * @param argConsistentDocumentCount Value to assign to
+         * this.consistentDocumentCount
          */
         public final void setConsistentDocumentCount(final int argConsistentDocumentCount) {
             this.consistentDocumentCount = argConsistentDocumentCount;
@@ -237,7 +238,8 @@ public class MigrationJob {
         /**
          * Sets the value of inconsistentDocumentCount
          *
-         * @param argInconsistentDocumentCount Value to assign to this.inconsistentDocumentCount
+         * @param argInconsistentDocumentCount Value to assign to
+         * this.inconsistentDocumentCount
          */
         public final void setInconsistentDocumentCount(final int argInconsistentDocumentCount) {
             this.inconsistentDocumentCount = argInconsistentDocumentCount;
@@ -255,14 +257,15 @@ public class MigrationJob {
         /**
          * Sets the value of overwrittenDocumentCount
          *
-         * @param argOverwrittenDocumentCount Value to assign to this.overwrittenDocumentCount
+         * @param argOverwrittenDocumentCount Value to assign to
+         * this.overwrittenDocumentCount
          */
         public final void setOverwrittenDocumentCount(final int argOverwrittenDocumentCount) {
             this.overwrittenDocumentCount = argOverwrittenDocumentCount;
         }
 
     }
-    
+
     /**
      * The migration job id
      */
@@ -276,7 +279,8 @@ public class MigrationJob {
     private Date scheduledDate;
 
     /**
-     * A back-end specific query to retrieve documents that will be migrated by this job
+     * A back-end specific query to retrieve documents that will be migrated by
+     * this job
      */
     private String query;
 
@@ -299,7 +303,7 @@ public class MigrationJob {
     }
 
     public void set_id(String s) {
-        _id=s;
+        _id = s;
     }
 
     public String getConfigurationName() {
@@ -307,7 +311,7 @@ public class MigrationJob {
     }
 
     public void setConfigurationName(String s) {
-        configurationName=s;
+        configurationName = s;
     }
 
     public Date getScheduledDate() {
@@ -315,7 +319,7 @@ public class MigrationJob {
     }
 
     public void setScheduledDate(Date d) {
-        scheduledDate=d;
+        scheduledDate = d;
     }
 
     public String getQuery() {
@@ -323,7 +327,7 @@ public class MigrationJob {
     }
 
     public void setQuery(String s) {
-        query=s;
+        query = s;
     }
 
     public String getStatus() {
@@ -331,7 +335,7 @@ public class MigrationJob {
     }
 
     public void setStatus(String s) {
-        status=s;
+        status = s;
     }
 
     public boolean isGenerated() {
@@ -339,7 +343,7 @@ public class MigrationJob {
     }
 
     public void setGenerated(boolean s) {
-        generated=s;
+        generated = s;
     }
 
     public ConsistencyChecker getConsistencyChecker() {
@@ -347,7 +351,7 @@ public class MigrationJob {
     }
 
     public void setConsistencyChecker(ConsistencyChecker c) {
-        consistencyChecker=c;
+        consistencyChecker = c;
     }
 
     public List<JobExecution> getJobExecutions() {
@@ -355,6 +359,6 @@ public class MigrationJob {
     }
 
     public void setJobExecutions(List<JobExecution> a) {
-        jobExecutions=a;
+        jobExecutions = a;
     }
 }

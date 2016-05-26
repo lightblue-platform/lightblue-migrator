@@ -14,7 +14,6 @@ import com.redhat.lightblue.client.request.data.DataDeleteRequest;
 
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 
-
 public class ControllerTest extends AbstractMigratorController {
 
     private String versionMigrationJob;
@@ -22,8 +21,9 @@ public class ControllerTest extends AbstractMigratorController {
     private String versionSourceCustomer;
     private String versionDestinationCustomer;
 
-    public ControllerTest() throws Exception {}
-        
+    public ControllerTest() throws Exception {
+    }
+
     @Override
     protected JsonNode[] getMetadataJsonNodes() throws Exception {
         ObjectNode jsonActiveExecution = (ObjectNode) loadJsonNode("./activeExecution.json");
@@ -38,23 +38,23 @@ public class ControllerTest extends AbstractMigratorController {
         versionDestinationCustomer = parseEntityVersion(jsonDestinationCustomer);
 
         return new JsonNode[]{
-                removeHooks(grantAnyoneAccess(jsonMigrationJob)),
-                removeHooks(grantAnyoneAccess(jsonMigrationConfiguration)),
-                removeHooks(grantAnyoneAccess(jsonActiveExecution)),
-                jsonSourceCustomer,
-                jsonDestinationCustomer
+            removeHooks(grantAnyoneAccess(jsonMigrationJob)),
+            removeHooks(grantAnyoneAccess(jsonMigrationConfiguration)),
+            removeHooks(grantAnyoneAccess(jsonActiveExecution)),
+            jsonSourceCustomer,
+            jsonDestinationCustomer
         };
     }
 
     public void clearData() throws Exception {
         LightblueClient cli = new LightblueHttpClient();
-        DataDeleteRequest req=new DataDeleteRequest("activeExecution",null);
+        DataDeleteRequest req = new DataDeleteRequest("activeExecution", null);
         req.where(Query.withValue("objectType", Query.BinOp.eq, "activeExecution"));
         cli.data(req);
-        req=new DataDeleteRequest("migrationJob",null);
+        req = new DataDeleteRequest("migrationJob", null);
         req.where(Query.withValue("objectType", Query.BinOp.eq, "migrationJob"));
         cli.data(req);
-        req=new DataDeleteRequest("migrationConfiguration",null);
+        req = new DataDeleteRequest("migrationConfiguration", null);
         req.where(Query.withValue("objectType", Query.BinOp.eq, "migrationConfiguration"));
         cli.data(req);
     }
@@ -65,16 +65,16 @@ public class ControllerTest extends AbstractMigratorController {
         Breakpoint.clearAll();
         loadData("migrationConfiguration", versionMigrationConfiguration, "./test/data/load-migration-configurations-testmigrator.json");
         loadData("migrationJob", versionMigrationJob, "./test/data/load-migration-jobs.json");
-        
-        MainConfiguration cfg=new MainConfiguration();
+
+        MainConfiguration cfg = new MainConfiguration();
         cfg.setName("continuum");
         cfg.setHostName("hostname");
-        Controller controller=new Controller(cfg);
+        Controller controller = new Controller(cfg);
 
         Breakpoint.stop("Controller:start");
         Breakpoint.stop("Controller:loadconfig");
         Breakpoint.stop("Controller:createconfig");
-        
+
         controller.start();
 
         Breakpoint.waitUntil("Controller:start");
@@ -91,17 +91,16 @@ public class ControllerTest extends AbstractMigratorController {
         Breakpoint.stop("MigratorController:process");
         Breakpoint.stop("MigratorController:unlock");
         Breakpoint.stop("MigratorController:end");
-        
+
         Breakpoint.waitUntil("Controller:createconfig");
         System.out.println("Checking controllers");
 
-        Map<String,Controller.MigrationProcess> prc=controller.getMigrationProcesses();
-        Assert.assertEquals(1,prc.size());
-        
+        Map<String, Controller.MigrationProcess> prc = controller.getMigrationProcesses();
+        Assert.assertEquals(1, prc.size());
+
         Breakpoint.resume("Controller:createconfig");
 
         // Controller created threads, now check the migrator controller thread progress
-
         Breakpoint.waitUntil("MigratorController:start");
         Breakpoint.resume("MigratorController:start");
         System.out.println("Migrator controller started");
@@ -111,12 +110,12 @@ public class ControllerTest extends AbstractMigratorController {
 
         Breakpoint.waitUntil("MigratorController:process");
         System.out.println("Processing");
-        FakeMigrator.count=0;
+        FakeMigrator.count = 0;
         Breakpoint.resume("MigratorController:process");
 
         Breakpoint.waitUntil("MigratorController:unlock");
         // At this point, there must be one TestMigrator instance running
-        Assert.assertEquals(1,FakeMigrator.count);
+        Assert.assertEquals(1, FakeMigrator.count);
         Breakpoint.resume("MigratorController:unlock");
 
         controller.getMigrationProcesses().get("customerMigration_0").mig.setStopped();
@@ -124,4 +123,3 @@ public class ControllerTest extends AbstractMigratorController {
         Thread.sleep(100);
     }
 }
-

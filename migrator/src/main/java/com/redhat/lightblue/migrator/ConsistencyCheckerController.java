@@ -22,63 +22,61 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.response.LightblueDataResponse;
 
 /**
- * There is one consistency checker controller for each
- * entity. Consistency checker controller is created and initialized
- * from a MigrationConfiguration. The migration configuration gives
- * the period with which the consistency checker runs. The consistency
- * checker operates using a timestamp field. Every time it wakes up,
- * it attempts to process documents that were created/modified after
- * the last run time, and before (now-period).  When the consistency
- * checker wakes up, it creates a migration job for every (period)
- * length time slice.
+ * There is one consistency checker controller for each entity. Consistency
+ * checker controller is created and initialized from a MigrationConfiguration.
+ * The migration configuration gives the period with which the consistency
+ * checker runs. The consistency checker operates using a timestamp field. Every
+ * time it wakes up, it attempts to process documents that were created/modified
+ * after the last run time, and before (now-period). When the consistency
+ * checker wakes up, it creates a migration job for every (period) length time
+ * slice.
  *
- * The consistency checker always leaves the last period
- * unprocessed. This is to allow for any time discrepancies between
- * nodes updating the database. If a node updates a record with a
- * timestamp that is smaller than the current latest record, the
- * consistency checker will miss that in the next run if the current
- * maximum was used as the starting value of the next run.
+ * The consistency checker always leaves the last period unprocessed. This is to
+ * allow for any time discrepancies between nodes updating the database. If a
+ * node updates a record with a timestamp that is smaller than the current
+ * latest record, the consistency checker will miss that in the next run if the
+ * current maximum was used as the starting value of the next run.
  */
-public class ConsistencyCheckerController extends AbstractController  {
+public class ConsistencyCheckerController extends AbstractController {
 
-    private static final Logger LOGGER=LoggerFactory.getLogger(ConsistencyCheckerController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ConsistencyCheckerController.class);
 
     private ThreadMonitor monitor;
 
-    public ConsistencyCheckerController(Controller controller,MigrationConfiguration migrationConfiguration) {
-        super(controller,migrationConfiguration,"ConsistencyChecker:"+migrationConfiguration.getConfigurationName());
-        setName("ConsistencyCheckerController-"+migrationConfiguration.getConfigurationName());
+    public ConsistencyCheckerController(Controller controller, MigrationConfiguration migrationConfiguration) {
+        super(controller, migrationConfiguration, "ConsistencyChecker:" + migrationConfiguration.getConfigurationName());
+        setName("ConsistencyCheckerController-" + migrationConfiguration.getConfigurationName());
     }
 
     /**
      * Returns the period in msecs
      */
     public static long parsePeriod(String periodStr) {
-        PeriodFormatter fmt=PeriodFormat.getDefault();
-        Period p=fmt.parsePeriod(periodStr);
+        PeriodFormatter fmt = PeriodFormat.getDefault();
+        Period p = fmt.parsePeriod(periodStr);
         return p.toStandardDuration().getMillis();
     }
 
-
     /**
-     * Returns the end date given the start date end the period. The
-     * end date is startDate+period, but only if endDate is at least
-     * one period ago. That is, we always leave the last incomplete
-     * period unprocessed.
+     * Returns the end date given the start date end the period. The end date is
+     * startDate+period, but only if endDate is at least one period ago. That
+     * is, we always leave the last incomplete period unprocessed.
      *
      * Override this to control the job generation algorithm
      */
-    public Date getEndDate(Date startDate,long period) {
-        long now=getNow().getTime();
-        long endDate=startDate.getTime()+period;
-        if(now-period>endDate)
+    public Date getEndDate(Date startDate, long period) {
+        long now = getNow().getTime();
+        long endDate = startDate.getTime() + period;
+        if (now - period > endDate) {
             return new Date(endDate);
-        else
+        } else {
             return null;
+        }
     }
 
     /**
-     * This is simply here so that we can override it in the tests, and change the current time
+     * This is simply here so that we can override it in the tests, and change
+     * the current time
      */
     protected Date getNow() {
         return new Date();
@@ -88,11 +86,11 @@ public class ConsistencyCheckerController extends AbstractController  {
      * Create a migration job or jobs to process records created between the
      * given dates. startDate is inclusive, end date is exclusive
      */
-    protected List<MigrationJob> createJobs(Date startDate,Date endDate,ActiveExecution ae) throws Exception {
-        List<MigrationJob> ret=new ArrayList<MigrationJob>();
+    protected List<MigrationJob> createJobs(Date startDate, Date endDate, ActiveExecution ae) throws Exception {
+        List<MigrationJob> ret = new ArrayList<MigrationJob>();
         LOGGER.debug("Creating the migrator to setup new jobs");
         // We setup a new migration job
-        MigrationJob mj=new MigrationJob();
+        MigrationJob mj = new MigrationJob();
         mj.setConfigurationName(getMigrationConfiguration().getConfigurationName());
         mj.setScheduledDate(getNow());
         mj.setGenerated(true);
@@ -101,43 +99,43 @@ public class ConsistencyCheckerController extends AbstractController  {
         mj.getConsistencyChecker().setJobRangeBegin(ClientConstants.getDateFormat().format(startDate));
         mj.getConsistencyChecker().setJobRangeEnd(ClientConstants.getDateFormat().format(endDate));
         mj.getConsistencyChecker().setConfigurationName(mj.getConfigurationName());
-        Migrator migrator=createMigrator(mj,ae);
-        mj.setQuery(migrator.createRangeQuery(startDate,endDate));
+        Migrator migrator = createMigrator(mj, ae);
+        mj.setQuery(migrator.createRangeQuery(startDate, endDate));
         // At this point, mj.query contains the range query
-        LOGGER.debug("Migration job query:{}",mj.getQuery());
+        LOGGER.debug("Migration job query:{}", mj.getQuery());
         ret.add(mj);
         return ret;
     }
 
     private void filterDups(List<MigrationJob> list) {
-        LOGGER.debug("filter dups, {} jobs",list.size());
-        if(!list.isEmpty()) {
-            List<Query> qlist=new ArrayList<>();
-            for(MigrationJob j:list) {
-                MigrationJob.ConsistencyChecker c=j.getConsistencyChecker();
-                if(c!=null) {
-                    qlist.add(Query.and(Query.withValue("consistencyChecker.jobRangeBegin",Query.eq,c.getJobRangeBegin()),
-                                        Query.withValue("consistencyChecker.jobRangeEnd",Query.eq,c.getJobRangeEnd()),
-                                        Query.withValue("consistencyChecker.configurationName",Query.eq,c.getConfigurationName())));
+        LOGGER.debug("filter dups, {} jobs", list.size());
+        if (!list.isEmpty()) {
+            List<Query> qlist = new ArrayList<>();
+            for (MigrationJob j : list) {
+                MigrationJob.ConsistencyChecker c = j.getConsistencyChecker();
+                if (c != null) {
+                    qlist.add(Query.and(Query.withValue("consistencyChecker.jobRangeBegin", Query.eq, c.getJobRangeBegin()),
+                            Query.withValue("consistencyChecker.jobRangeEnd", Query.eq, c.getJobRangeEnd()),
+                            Query.withValue("consistencyChecker.configurationName", Query.eq, c.getConfigurationName())));
                 }
             }
-            if(!qlist.isEmpty()) {
-                DataFindRequest req=new DataFindRequest("migrationJob",null);
-                req.where(Query.and(Query.withValue("status",Query.eq,MigrationJob.STATE_AVAILABLE),
-                                    Query.or(qlist)));
+            if (!qlist.isEmpty()) {
+                DataFindRequest req = new DataFindRequest("migrationJob", null);
+                req.where(Query.and(Query.withValue("status", Query.eq, MigrationJob.STATE_AVAILABLE),
+                        Query.or(qlist)));
                 req.select(Projection.includeFieldRecursively("*"));
-                MigrationJob[] dups=null;
+                MigrationJob[] dups = null;
                 try {
-                    dups=lbClient.data(req,MigrationJob[].class);
-                } catch(Exception e) {
-                    LOGGER.error("Cannot de-dup",e);                
+                    dups = lbClient.data(req, MigrationJob[].class);
+                } catch (Exception e) {
+                    LOGGER.error("Cannot de-dup", e);
                 }
-                if(dups!=null) {
-                    LOGGER.debug("There are {} dups",dups.length);
-                    for(MigrationJob d:dups) {
-                        for(MigrationJob trc:list) {
-                            if(trc.getConsistencyChecker().getJobRangeBegin().equals(d.getConsistencyChecker().getJobRangeBegin())&&
-                               trc.getConsistencyChecker().getJobRangeEnd().equals(d.getConsistencyChecker().getJobRangeEnd())) {
+                if (dups != null) {
+                    LOGGER.debug("There are {} dups", dups.length);
+                    for (MigrationJob d : dups) {
+                        for (MigrationJob trc : list) {
+                            if (trc.getConsistencyChecker().getJobRangeBegin().equals(d.getConsistencyChecker().getJobRangeBegin())
+                                    && trc.getConsistencyChecker().getJobRangeEnd().equals(d.getConsistencyChecker().getJobRangeEnd())) {
                                 list.remove(trc);
                                 break;
                             }
@@ -149,33 +147,33 @@ public class ConsistencyCheckerController extends AbstractController  {
     }
 
     private void batchCreate(List<MigrationJob> mjList) {
-        final int batchSize=100;
-        List<MigrationJob> batch=new ArrayList<>(batchSize);
-        for(MigrationJob mj:mjList) {
+        final int batchSize = 100;
+        List<MigrationJob> batch = new ArrayList<>(batchSize);
+        for (MigrationJob mj : mjList) {
             batch.add(mj);
-            if(batch.size()>=batchSize) {
+            if (batch.size() >= batchSize) {
                 filterDups(batch);
-                if(!batch.isEmpty()) {
-                    DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+                if (!batch.isEmpty()) {
+                    DataInsertRequest req = new DataInsertRequest("migrationJob", null);
                     req.create(batch);
                     try {
                         lbClient.data(req);
                     } catch (Exception e) {
-                        LOGGER.error("Exception insering a batch of jobs",e);
+                        LOGGER.error("Exception insering a batch of jobs", e);
                     }
                 }
                 batch.clear();
             }
         }
-        if(batch.size()>0) {
+        if (batch.size() > 0) {
             filterDups(batch);
-            if(!batch.isEmpty()) {
-                DataInsertRequest req=new DataInsertRequest("migrationJob",null);
+            if (!batch.isEmpty()) {
+                DataInsertRequest req = new DataInsertRequest("migrationJob", null);
                 req.create(batch);
                 try {
                     lbClient.data(req);
                 } catch (Exception e) {
-                    LOGGER.error("Exception insering a batch of jobs",e);
+                    LOGGER.error("Exception insering a batch of jobs", e);
                 }
             }
         }
@@ -183,29 +181,29 @@ public class ConsistencyCheckerController extends AbstractController  {
 
     private void update(List<MigrationJob> mjList) throws Exception {
         batchCreate(mjList);
-        DataUpdateRequest upd=new DataUpdateRequest("migrationConfiguration",null);
-        upd.where(Query.withValue("_id",Query.eq,migrationConfiguration.get_id()));
-        upd.updates(Update.set("timestampInitialValue",Literal.value(migrationConfiguration.getTimestampInitialValue())));
-        lbClient.data(upd);        
+        DataUpdateRequest upd = new DataUpdateRequest("migrationConfiguration", null);
+        upd.where(Query.withValue("_id", Query.eq, migrationConfiguration.get_id()));
+        upd.updates(Update.set("timestampInitialValue", Literal.value(migrationConfiguration.getTimestampInitialValue())));
+        lbClient.data(upd);
     }
 
-    private boolean migrationJobsExist()  {
-        LOGGER.debug("Checking if there are migration jobs for {}",migrationConfiguration.getConfigurationName());
-        DataFindRequest req=new DataFindRequest("migrationJob",null);
-        req.where(Query.and(Query.withValue("configurationName",Query.eq,migrationConfiguration.getConfigurationName()),
-                            Query.withValue("generated",Query.eq,false),
-                            Query.withValue("status",Query.eq,MigrationJob.STATE_AVAILABLE)));
+    private boolean migrationJobsExist() {
+        LOGGER.debug("Checking if there are migration jobs for {}", migrationConfiguration.getConfigurationName());
+        DataFindRequest req = new DataFindRequest("migrationJob", null);
+        req.where(Query.and(Query.withValue("configurationName", Query.eq, migrationConfiguration.getConfigurationName()),
+                Query.withValue("generated", Query.eq, false),
+                Query.withValue("status", Query.eq, MigrationJob.STATE_AVAILABLE)));
         req.select(Projection.includeField("_id"));
-        req.range(1,1);
+        req.range(1, 1);
         try {
-            LightblueDataResponse resp=lbClient.data(req);
-            return resp.parseMatchCount()>0;
+            LightblueDataResponse resp = lbClient.data(req);
+            return resp.parseMatchCount() > 0;
         } catch (Exception e) {
-            LOGGER.error("Cannot query migration jobs:{}",e,e);
+            LOGGER.error("Cannot query migration jobs:{}", e, e);
             return true;
         }
     }
-    
+
     @Override
     public void run() {
         LOGGER.debug("Starting consistency checker controller for {} with period {}",migrationConfiguration.getConfigurationName(),
@@ -300,8 +298,8 @@ public class ConsistencyCheckerController extends AbstractController  {
             if(!stopped) {
                 try {
                     LOGGER.debug("Consistency checker {} is going to sleep for {} msecs",
-                                 migrationConfiguration.getConfigurationName(),
-                                 period);
+                            migrationConfiguration.getConfigurationName(),
+                            period);
                     Thread.sleep(period);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
@@ -309,6 +307,6 @@ public class ConsistencyCheckerController extends AbstractController  {
             }
         }
         Breakpoint.checkpoint("CCC:end");
-        LOGGER.warn("Ending controller thread for {}",migrationConfiguration.getConfigurationName());
+        LOGGER.warn("Ending controller thread for {}", migrationConfiguration.getConfigurationName());
     }
 }

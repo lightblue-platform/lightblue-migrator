@@ -48,12 +48,12 @@ public class ConsistencyCheckPerforformanceTest {
     }
 
     private Foo generateRandomFoo() {
-        return new Foo(UUID.randomUUID()+" "+UUID.randomUUID(), UUID.randomUUID()+" "+UUID.randomUUID(), random.nextLong());
+        return new Foo(UUID.randomUUID() + " " + UUID.randomUUID(), UUID.randomUUID() + " " + UUID.randomUUID(), random.nextLong());
     }
 
     public ConsistencyCheckPerforformanceTest() {
-        log.info("Generating "+FOO_COUNT+" Foo objects");
-        for (int i=0;i<FOO_COUNT;i++) {
+        log.info("Generating " + FOO_COUNT + " Foo objects");
+        for (int i = 0; i < FOO_COUNT; i++) {
             fooList.add(generateRandomFoo());
         }
         log.info("Generation complete");
@@ -69,7 +69,7 @@ public class ConsistencyCheckPerforformanceTest {
         Timer t = new Timer("ConsistencyChecker.checkConsistency");
         Assert.assertTrue(c.checkConsistency(fooList, fooList));
         long tookMs = t.complete();
-        log.info("Total consistency check (including conversion to json) took "+tookMs+"ms");
+        log.info("Total consistency check (including conversion to json) took " + tookMs + "ms");
     }
 
     /**
@@ -82,15 +82,15 @@ public class ConsistencyCheckPerforformanceTest {
 
         String jsonStr = new ObjectMapper().writeValueAsString(fooList);
 
-        log.info("Json str size: "+jsonStr.length()/1024+"kB");
+        log.info("Json str size: " + jsonStr.length() / 1024 + "kB");
 
-        JsonDiff diff=new JsonDiff();
+        JsonDiff diff = new JsonDiff();
         diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
 
         Timer t = new Timer("Jiff.computeDiff");
         Assert.assertTrue(diff.computeDiff(jsonStr, jsonStr).isEmpty());
         long tookMs = t.complete();
-        log.info("Jiff consistency check took "+tookMs+"ms");
+        log.info("Jiff consistency check took " + tookMs + "ms");
     }
 
     /**
@@ -104,12 +104,12 @@ public class ConsistencyCheckPerforformanceTest {
 
         String jsonStr = new ObjectMapper().writeValueAsString(fooList);
 
-        log.info("Json str size: "+jsonStr.length()/1024+"kB");
+        log.info("Json str size: " + jsonStr.length() / 1024 + "kB");
 
         Timer t = new Timer("JSONCompare.compareJSON");
         Assert.assertTrue(JSONCompare.compareJSON(jsonStr, jsonStr, JSONCompareMode.LENIENT).passed());
         long tookMs = t.complete();
-        log.info("JSONCompare consistency check took "+tookMs+"ms");
+        log.info("JSONCompare consistency check took " + tookMs + "ms");
     }
 
 }
