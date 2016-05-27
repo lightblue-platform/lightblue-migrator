@@ -1,19 +1,17 @@
 package com.redhat.lightblue.migrator.monitor;
 
-import java.util.Properties;
-
 import org.apache.commons.cli.HelpFormatter;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
-        Properties p = MonitorConfiguration.processArguments(args);
-        if (p == null) {
+        MonitorConfiguration cfg = MonitorConfiguration.processArguments(args);
+        if (cfg == null) {
             printHelp();
             return;
         }
-        MonitorConfiguration cfg = MonitorConfiguration.getCfg(System.getProperties());
-        cfg.applyProperties(p);
+
+        cfg.applyProperties(System.getProperties());
 
         new Monitor(cfg).runCheck(new NagiosNotifier());
     }
