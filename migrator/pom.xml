@@ -13,7 +13,7 @@
     <apache.commons-io.version>2.4</apache.commons-io.version>
     <log4j.version>1.2.17</log4j.version>
     <junit.version>4.12</junit.version>
-    <rpm.install.basedir>/usr/share/migrator</rpm.install.basedir>
+    <rpm.install.basedir>/usr/share/lightblue-migrator</rpm.install.basedir>
   </properties>
   <dependencies>
     <dependency>
