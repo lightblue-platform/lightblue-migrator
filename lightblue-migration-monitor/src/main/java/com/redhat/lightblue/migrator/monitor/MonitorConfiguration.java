@@ -10,6 +10,9 @@ import org.apache.commons.cli.ParseException;
 
 public class MonitorConfiguration {
 
+    public static final String OPTION_LIGHTBLUE_CLIENT_PROPERTIES = "config";
+    public static final String OPTION_PERIODS = "periods";
+
     public static final Options options;
 
     private String clientConfig;
@@ -23,8 +26,8 @@ public class MonitorConfiguration {
                 .required(true)
                 .hasArg(true)
                 .desc("Path to configuration file for migration")
-                .longOpt("config")
-                .argName("config")
+                .longOpt(OPTION_LIGHTBLUE_CLIENT_PROPERTIES)
+                .argName(OPTION_LIGHTBLUE_CLIENT_PROPERTIES)
                 .build());
 
         options.addOption(Option.builder("p")
@@ -32,8 +35,8 @@ public class MonitorConfiguration {
                 .required(false)
                 .hasArg(true)
                 .desc("Number of periods back to include in search")
-                .longOpt("periods")
-                .argName("periods")
+                .longOpt(OPTION_PERIODS)
+                .argName(OPTION_PERIODS)
                 .build());
     }
 
@@ -53,37 +56,37 @@ public class MonitorConfiguration {
         this.periods = periods;
     }
 
-    public static Properties processArguments(String[] args) {
-        Properties prop = new Properties();
+    public static MonitorConfiguration processArguments(String[] args) {
+        Properties props = new Properties();
         try {
             DefaultParser parser = new DefaultParser();
             CommandLine commandline = parser.parse(options, args);
             Option[] opts = commandline.getOptions();
             for (Option opt : opts) {
-                prop.setProperty(opt.getLongOpt(),
-                        opt.getValue() == null ? "true" : opt.getValue());
+                props.setProperty(opt.getLongOpt(), opt.getValue());
             }
         } catch (ParseException e) {
             return null;
         }
-        return prop;
-    }
 
-    public static MonitorConfiguration getCfg(Properties p) {
+        if (props.isEmpty()) {
+            return null;
+        }
+
         MonitorConfiguration cfg = new MonitorConfiguration();
-        cfg.applyProperties(p);
+        cfg.applyProperties(props);
         return cfg;
     }
 
     public void applyProperties(Properties p) {
-        String s = p.getProperty("config");
+        String s = p.getProperty(OPTION_LIGHTBLUE_CLIENT_PROPERTIES);
         if (s != null) {
             setClientConfig(s);
         }
 
-        Integer periods = Integer.parseInt(p.getProperty("periods"));
+        String periods = p.getProperty(OPTION_PERIODS);
         if(periods != null){
-            setPeriods(periods);
+            setPeriods(Integer.parseInt(periods));
         }
     }
 
