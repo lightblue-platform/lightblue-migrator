@@ -81,7 +81,7 @@ public class MonitorConfiguration {
             setClientConfig(s);
         }
 
-        Integer periods = Integer.getInteger(p.getProperty("periods"));
+        Integer periods = Integer.parseInt(p.getProperty("periods"));
         if(periods != null){
             setPeriods(periods);
         }
