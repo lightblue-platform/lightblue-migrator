@@ -46,7 +46,7 @@ public class MainConfiguration {
                 .longOpt("threadTimeout")
                 .hasArg(true)
                 .desc("Maximum time thread is allowed to run (msecs)")
-                .required(true)
+                .required(false)
                 .build());
     }
 
@@ -102,6 +102,7 @@ public class MainConfiguration {
                 prop.setProperty(opt.getLongOpt(), opt.getValue() == null ? "true" : opt.getValue());
             }
         } catch (ParseException e) {
+            e.printStackTrace();
             return null;
         }
         return prop;
