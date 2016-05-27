@@ -110,6 +110,11 @@
                     <source>
                       <location>target/${project.artifactId}-${project.version}-alldeps.${project.packaging}</location>
                     </source>
+                    <softlinkSource>
+                      <!-- Makes it easier for external applications to execute that application without needing to know the version -->
+                      <location>${project.artifactId}-${project.version}-alldeps.${project.packaging}</location>
+                      <destination>${project.artifactId}-alldeps.${project.packaging}</destination>
+                    </softlinkSource>
                   </sources>
                 </mapping>
               </mappings>
