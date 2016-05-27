@@ -9,7 +9,7 @@
   <artifactId>lightblue-migration-monitor</artifactId>
   
   <properties>
-    <rpm.install.basedir>/usr/share/migrator/monitor</rpm.install.basedir>
+    <rpm.install.basedir>/usr/share/lightblue-migrator/monitor</rpm.install.basedir>
   </properties>
   
   <dependencies>
