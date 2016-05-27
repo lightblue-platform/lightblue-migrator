@@ -134,29 +134,27 @@ public class MigratorController extends AbstractController {
     @Override
     public void run() {
         LOGGER.debug("Starting controller thread");
-        boolean interrupted = false;
         // This thread never stops
         Breakpoint.checkpoint("MigratorController:start");
-        ThreadMonitor monitor = controller.getThreadMonitor();
-        while (!interrupted) {
-            LOGGER.debug("Controller thread for {} is alive", migrationConfiguration.getConfigurationName());
-            interrupted = isInterrupted();
-            if (!interrupted) {
+        ThreadMonitor monitor=controller.getThreadMonitor();
+        while(!stopped) {
+            LOGGER.debug("Controller thread for {} is alive",migrationConfiguration.getConfigurationName());
+            if(!stopped) {
                 // All active threads will notify on migratorThreads when they finish
                 synchronized (migratorThreads) {
                     int k = 0;
                     // Are we already running all the threads we can?
                     // Don't include abandoned threads in this count
-                    int nThreads = monitor.getThreadCount(migratorThreads,
-                            ThreadMonitor.Status.alive,
-                            ThreadMonitor.Status.killed);
-                    LOGGER.debug("There are {} active threads for {}", nThreads, migrationConfiguration.getConfigurationName());
-                    while (!interrupted && nThreads >= migrationConfiguration.getThreadCount()) {
+                    int nThreads=monitor.getThreadCount(migratorThreads,
+                                                        ThreadMonitor.Status.alive,
+                                                        ThreadMonitor.Status.killed);
+                    LOGGER.debug("There are {} active threads for {}",nThreads,migrationConfiguration.getConfigurationName());
+                    while(!stopped&&nThreads>=migrationConfiguration.getThreadCount()) {
                         // Wait until someone terminates (1 sec)
                         try {
                             migratorThreads.wait(1000);
-                        } catch (InterruptedException e) {
-                            interrupted = true;
+                        } catch(InterruptedException e) {
+                            Thread.currentThread().interrupt();
                         }
                         if (k++ % 10 == 0) {
                             // refresh configuration every 10 iteration
@@ -164,8 +162,8 @@ public class MigratorController extends AbstractController {
                                 MigrationConfiguration x = reloadMigrationConfiguration();
                                 if (x == null) {
                                     // Terminate
-                                    LOGGER.debug("Controller {} terminating", migrationConfiguration.getConfigurationName());
-                                    interrupted = true;
+                                    LOGGER.debug("Controller {} terminating",migrationConfiguration.getConfigurationName());
+                                    stopped=true;
                                 } else {
                                     migrationConfiguration = x;
                                 }
@@ -180,8 +178,8 @@ public class MigratorController extends AbstractController {
                     }
                 }
             }
-            if (!interrupted) {
-                LOGGER.debug("Find a migration job to process for {}", migrationConfiguration.getConfigurationName());
+            if(!stopped) {
+                LOGGER.debug("Find a migration job to process for {}",migrationConfiguration.getConfigurationName());
                 try {
                     Breakpoint.checkpoint("MigratorController:findandlock");
                     LockRecord lockedJob = findAndLockMigrationJob();
@@ -197,7 +195,7 @@ public class MigratorController extends AbstractController {
                         Thread.sleep(rnd.nextInt(20000) + 10000);
                     }
                 } catch (InterruptedException ie) {
-                    interrupted = true;
+                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     LOGGER.error("Cannot lock migration job:" + e, e);
                 }

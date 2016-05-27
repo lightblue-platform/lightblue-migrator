@@ -118,7 +118,7 @@ public class ControllerTest extends AbstractMigratorController {
         Assert.assertEquals(1, FakeMigrator.count);
         Breakpoint.resume("MigratorController:unlock");
 
-        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
+        controller.getMigrationProcesses().get("customerMigration_0").mig.setStopped();
         controller.interrupt();
         Thread.sleep(100);
     }

@@ -66,7 +66,7 @@ public class Main implements Daemon {
     @Override
     public void stop() throws Exception {
         LOGGER.info("Stopping main controller");
-        mainController.interrupt();
+        mainController.setStopped();
     }
 
     @Override

@@ -99,7 +99,7 @@ public class FailTest extends AbstractMigratorController {
         Assert.assertNotNull(x.asText());
         System.out.println("Error:" + x.asText());
         Breakpoint.resume("MigratorController:unlock");
-        controller.getMigrationProcesses().get("customerMigration_0").mig.interrupt();
+        controller.getMigrationProcesses().get("customerMigration_0").mig.setStopped();
         controller.interrupt();
         Thread.sleep(100);
     }

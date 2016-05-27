@@ -28,6 +28,7 @@ public class Controller extends Thread {
     private final LightblueClient lightblueClient;
     private final Map<String, MigrationProcess> migrationMap = new HashMap<>();
     private final ThreadMonitor threadMonitor;
+    private boolean stopped=false;
 
     public static class MigrationProcess {
         public MigrationConfiguration cfg;
@@ -55,7 +56,12 @@ public class Controller extends Thread {
         threadMonitor.start();
     }
 
-    public Map<String, MigrationProcess> getMigrationProcesses() {
+    public void setStopped() {
+        this.stopped=true;
+        interrupt();
+    }
+
+    public Map<String,MigrationProcess> getMigrationProcesses() {
         return migrationMap;
     }
 
@@ -205,38 +211,33 @@ public class Controller extends Thread {
 
     @Override
     public void run() {
-        LOGGER.debug("Starting controller");
-        boolean interrupted = false;
+        LOGGER.debug("Starting controller");        
         Breakpoint.checkpoint("Controller:start");
         CleanupThread cleanup = new CleanupThread(this);
         if (cfg.getThreadTimeout() != null) {
             cleanup.setPeriod(cfg.getThreadTimeout() * 4);
         }
         cleanup.start();
-        while (!interrupted) {
-            interrupted = isInterrupted();
-            if (!interrupted) {
-                try {
-                    Breakpoint.checkpoint("Controller:loadconfig");
-                    MigrationConfiguration[] cfg = getMigrationConfigurations();
-                    createControllers(cfg);
-                    Breakpoint.checkpoint("Controller:createconfig");
-                } catch (Exception e) {
-                    LOGGER.error("Error during configuration load:" + e);
-                }
+        while(!stopped) {
+            try {
+                Breakpoint.checkpoint("Controller:loadconfig");
+                MigrationConfiguration[] cfg=getMigrationConfigurations();
+                createControllers(cfg);
+                Breakpoint.checkpoint("Controller:createconfig");
+            } catch (Exception e) {
+                LOGGER.error("Error during configuration load:"+e);
             }
-            if (!interrupted) {
+            if(!stopped) {
                 try {
                     Thread.sleep(30000);
                 } catch (InterruptedException e) {
-                    interrupted = true;
                 }
             }
         }
-        for (MigrationProcess p : migrationMap.values()) {
-            p.mig.interrupt();
-            if (p.ccc != null) {
-                p.ccc.interrupt();
+        for(MigrationProcess p:migrationMap.values()) {
+            p.mig.setStopped();
+            if(p.ccc!=null) {
+                p.ccc.setStopped();
             }
         }
         Breakpoint.checkpoint("Controller:end");

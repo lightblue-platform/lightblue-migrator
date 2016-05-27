@@ -27,16 +27,17 @@ public abstract class AbstractController extends Thread {
     protected final Locking locking;
     protected final Class migratorClass;
     protected final ThreadGroup migratorThreads;
-    protected final HashSet<String> myLocks = new HashSet<>();
+    protected final HashSet<String> myLocks=new HashSet<>();
+    protected boolean stopped=false;
 
-    public AbstractController(Controller controller, MigrationConfiguration migrationConfiguration, String threadGroupName) {
-        this.migrationConfiguration = migrationConfiguration;
-        this.controller = controller;
-        lbClient = controller.getLightblueClient();
-        locking = lbClient.getLocking("migration");
-        if (migrationConfiguration.getMigratorClass() == null) {
-            migratorClass = DefaultMigrator.class;
-        } else {
+    public AbstractController(Controller controller,MigrationConfiguration migrationConfiguration,String threadGroupName) {
+        this.migrationConfiguration=migrationConfiguration;
+        this.controller=controller;
+        lbClient=controller.getLightblueClient();
+        locking=lbClient.getLocking("migration");
+        if(migrationConfiguration.getMigratorClass()==null)
+            migratorClass=DefaultMigrator.class;
+        else {
             try {
                 migratorClass = Class.forName(migrationConfiguration.getMigratorClass());
             } catch (Exception e) {
@@ -45,6 +46,11 @@ public abstract class AbstractController extends Thread {
         }
 
         migratorThreads = new ThreadGroup(threadGroupName);
+    }
+
+    public void setStopped() {
+        stopped=true;
+        interrupt();
     }
 
     public ThreadGroup getMigratorThreads() {
