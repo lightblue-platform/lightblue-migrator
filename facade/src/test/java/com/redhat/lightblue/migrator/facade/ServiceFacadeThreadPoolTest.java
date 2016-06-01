@@ -93,7 +93,9 @@ public class ServiceFacadeThreadPoolTest {
         p.setProperty(ServiceFacade.CONFIG_PREFIX+"CountryDAOFacade.threadPool.size", "2");
         daoFacade = new ServiceFacade<CountryDAOFacadable>(legacyDAO, lightblueDAO, "CountryDAOFacade", p);
 
-        TimeoutConfiguration t = new TimeoutConfiguration(TIMEOUT, CountryDAO.class.getSimpleName(), null);
+        p.setProperty(ServiceFacade.CONFIG_PREFIX+"CountryDAO.interruptOnTimeout", "false");
+
+        TimeoutConfiguration t = new TimeoutConfiguration(TIMEOUT, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
 
         Mockito.verify(legacyDAO).setSharedStore((daoFacade).getSharedStore());
