@@ -43,7 +43,7 @@ public class TimeoutConfiguration {
     private long defaultTimeoutMS;
     private String beanName;
     private Properties properties;
-    private boolean interruptOnTimeout;
+    private boolean interruptOnTimeout = true;
 
     private HashMap<String, Long> methodTimeouts = new HashMap<>();
 
@@ -64,7 +64,8 @@ public class TimeoutConfiguration {
             this.properties = new Properties();
         }
 
-        interruptOnTimeout = Boolean.parseBoolean(properties.getProperty(ServiceFacade.CONFIG_PREFIX+beanName+".interruptOnTimeout", "yes"));
+        if (properties != null)
+            interruptOnTimeout = Boolean.parseBoolean(properties.getProperty(ServiceFacade.CONFIG_PREFIX+beanName+".interruptOnTimeout", "yes"));
 
         log.info("Initialized TimeoutConfiguration for {}, interruptOnTimeout={}", beanName, interruptOnTimeout);
     }
