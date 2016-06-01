@@ -197,11 +197,11 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
      * @throws ExecutionException
      * @throws TimeoutException
      */
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, FacadeOperation facadeOperation, boolean shouldSource, int legacyCallTookMS) throws InterruptedException, ExecutionException, TimeoutException {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, FacadeOperation facadeOperation, boolean shouldSource) throws InterruptedException, ExecutionException, TimeoutException {
         if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName, facadeOperation) <= 0) {
             return listenableFuture.get();
         } else {
-            return listenableFuture.get(Math.max(timeoutConfiguration.getTimeoutMS(methodName, facadeOperation), legacyCallTookMS), TimeUnit.MILLISECONDS);
+            return listenableFuture.get(timeoutConfiguration.getTimeoutMS(methodName, facadeOperation), TimeUnit.MILLISECONDS);
         }
     }
 
@@ -298,7 +298,6 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             }
         }
 
-        int legacyCallTookMS = 0;
         if (shouldSource(facadeOperation)) {
             // perform operation in oracle, synchronously
             log.debug("Calling legacy {}.{}", implementationName, methodName);
@@ -309,7 +308,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             } catch (InvocationTargetException e) {
                 throw e.getCause();
             } finally {
-                legacyCallTookMS = (int) source.complete();
+                source.complete();
             }
         }
 
@@ -323,7 +322,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                         log.debug("Lightblue was not called because thread pool is full");
                         return legacyEntity;
                     }
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation), legacyCallTookMS);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
@@ -332,7 +331,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                         log.debug("Lightblue was not called because thread pool is full");
                         return legacyEntity;
                     }
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation), legacyCallTookMS);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
                 if (shouldSource(facadeOperation)) {
