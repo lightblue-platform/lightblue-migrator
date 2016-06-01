@@ -25,6 +25,8 @@ public class MethodCallStringifierTest {
         public void foo2(List<Long> l, int x, String y);
 
         public void foo(String login, @Secret String password);
+
+        public void foo();
     }
 
     private Method getMethod(String name, Class<?>... types) {
@@ -81,6 +83,15 @@ public class MethodCallStringifierTest {
     public void testSecret() {
         Assert.assertEquals("foo(login, ****)",
                 LazyMethodCallStringifier.stringifyMethodCall(getMethod("foo", String.class, String.class), new Object[]{"login", "password"}));
+    }
+
+    @Test
+    public void testNoArguments() {
+        Assert.assertEquals("foo()",
+                LazyMethodCallStringifier.stringifyMethodCall(getMethod("foo"), new Object[]{}));
+
+        Assert.assertEquals("foo()",
+                LazyMethodCallStringifier.stringifyMethodCall(getMethod("foo"), null));
     }
 
 }

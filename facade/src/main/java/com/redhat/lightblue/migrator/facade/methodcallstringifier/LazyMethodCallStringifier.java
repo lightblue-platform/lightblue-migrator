@@ -24,7 +24,7 @@ public class LazyMethodCallStringifier implements MethodCallStringifier {
 
     public LazyMethodCallStringifier(Method method, Object[] values) {
         this.method = method;
-        this.values = values;
+        this.values = values != null ? values : new Object[] {};
         this.stringifiedMethodCall = null;
     }
 
