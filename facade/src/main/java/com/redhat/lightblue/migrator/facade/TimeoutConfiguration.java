@@ -65,7 +65,7 @@ public class TimeoutConfiguration {
         }
 
         if (properties != null)
-            interruptOnTimeout = Boolean.parseBoolean(properties.getProperty(ServiceFacade.CONFIG_PREFIX+beanName+".interruptOnTimeout", "yes"));
+            interruptOnTimeout = Boolean.parseBoolean(properties.getProperty(ServiceFacade.CONFIG_PREFIX+beanName+".interruptOnTimeout", "true"));
 
         log.info("Initialized TimeoutConfiguration for {}, interruptOnTimeout={}", beanName, interruptOnTimeout);
     }
