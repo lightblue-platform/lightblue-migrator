@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.monitor;
+package com.redhat.lightblue.migrator.monitor.newMigrationPeriods;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -18,6 +18,7 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.response.LightblueDataResponse;
 import com.redhat.lightblue.migrator.MigrationConfiguration;
 import com.redhat.lightblue.migrator.MigrationJob;
+import com.redhat.lightblue.migrator.monitor.MonitorConfiguration;
 
 public class Monitor {
 

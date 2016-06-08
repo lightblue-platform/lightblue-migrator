@@ -2,6 +2,9 @@ package com.redhat.lightblue.migrator.monitor;
 
 import org.apache.commons.cli.HelpFormatter;
 
+import com.redhat.lightblue.migrator.monitor.newMigrationPeriods.Monitor;
+import com.redhat.lightblue.migrator.monitor.newMigrationPeriods.NagiosNotifier;
+
 public class Main {
 
     public static void main(String[] args) throws Exception {

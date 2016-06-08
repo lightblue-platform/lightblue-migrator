@@ -1,4 +1,4 @@
-package com.redhat.lightblue.migrator.monitor;
+package com.redhat.lightblue.migrator.monitor.newMigrationPeriods;
 
 import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
 import static org.junit.Assert.assertEquals;
@@ -20,6 +20,9 @@ import com.redhat.lightblue.client.integration.test.LightblueExternalResource.Li
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
 import com.redhat.lightblue.migrator.MigrationConfiguration;
 import com.redhat.lightblue.migrator.MigrationJob;
+import com.redhat.lightblue.migrator.monitor.MonitorConfiguration;
+import com.redhat.lightblue.migrator.monitor.newMigrationPeriods.Monitor;
+import com.redhat.lightblue.migrator.monitor.newMigrationPeriods.Notifier;
 
 public class TestMonitor {
 
