@@ -1,39 +1,35 @@
-package com.redhat.lightblue.migrator.monitor.newMigrationPeriods;
+package com.redhat.lightblue.migrator.monitor.NMP;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
 import org.joda.time.Period;
 import org.joda.time.format.PeriodFormat;
 import org.joda.time.format.PeriodFormatter;
 
-import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueException;
 import com.redhat.lightblue.client.Literal;
 import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.Query;
-import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 import com.redhat.lightblue.client.response.LightblueDataResponse;
 import com.redhat.lightblue.migrator.MigrationConfiguration;
 import com.redhat.lightblue.migrator.MigrationJob;
+import com.redhat.lightblue.migrator.monitor.JobType;
+import com.redhat.lightblue.migrator.monitor.Monitor;
 import com.redhat.lightblue.migrator.monitor.MonitorConfiguration;
+import com.redhat.lightblue.migrator.monitor.Notifier;
 
-public class Monitor {
+/** Monitor implementation for {@link JobType#NEW_MIGRATION_PERIODS} */
+public class NMPMonitor extends Monitor {
 
-    private final MonitorConfiguration monitorCfg;
-    private final LightblueClient lightblueClient;
-
-    public Monitor(MonitorConfiguration monitorCfg) {
-        this.monitorCfg = monitorCfg;
-        if (monitorCfg.getClientConfig() != null) {
-            lightblueClient = new LightblueHttpClient(monitorCfg.getClientConfig());
-        } else {
-            lightblueClient = new LightblueHttpClient();
-        }
+    public NMPMonitor(MonitorConfiguration monitorCfg) {
+        super(monitorCfg);
     }
 
+    @Override
     public void runCheck(final Notifier... notifiers) throws LightblueException {
         int periods = (monitorCfg.getPeriods() == null) ? 1 : monitorCfg.getPeriods();
 
@@ -54,8 +50,9 @@ public class Monitor {
                 n.sendSuccess();
             }
         } else {
+            String message = "Jobs not being created: " + StringUtils.join(configurationsMissingJobs, ",");
             for (Notifier n : notifiers) {
-                n.sendFailure(configurationsMissingJobs);
+                n.sendFailure(message);
             }
         }
     }
