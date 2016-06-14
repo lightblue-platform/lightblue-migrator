@@ -18,7 +18,8 @@ public class TestMonitorConfiguration {
         String clientPropPath = "/some/path/lightblue-client.properties";
 
         MonitorConfiguration cfg = MonitorConfiguration.processArguments(
-                new String[]{"-c", clientPropPath});
+                new String[]{"-c", clientPropPath, 
+                        "-j", JobType.NEW_MIGRATION_PERIODS.toString()});
 
         assertEquals(clientPropPath, cfg.getClientConfig());
     }
@@ -28,7 +29,9 @@ public class TestMonitorConfiguration {
         Integer periods = 2;
 
         MonitorConfiguration cfg = MonitorConfiguration.processArguments(
-                new String[]{"-c", "/some/path/lightblue-client.properties", "-p", periods.toString()});
+                new String[]{"-c", "/some/path/lightblue-client.properties", 
+                        "-j", JobType.NEW_MIGRATION_PERIODS.toString(), 
+                        "-p", periods.toString()});
 
         assertEquals(periods, cfg.getPeriods());
     }

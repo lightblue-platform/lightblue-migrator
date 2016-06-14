@@ -11,12 +11,18 @@ import org.apache.commons.cli.ParseException;
 public class MonitorConfiguration {
 
     public static final String OPTION_LIGHTBLUE_CLIENT_PROPERTIES = "config";
+    public static final String OPTION_JOB = "job";
     public static final String OPTION_PERIODS = "periods";
+    public static final String OPTION_CONFIGURATION_NAME = "configurationName";
+    public static final String OPTION_THRESHOLD = "threshold";
 
     public static final Options options;
 
     private String clientConfig;
+    private JobType type;
     private Integer periods;
+    private String configurationName;
+    private Integer threshold;
 
     static {
         options = new Options();
@@ -30,6 +36,16 @@ public class MonitorConfiguration {
                 .argName(OPTION_LIGHTBLUE_CLIENT_PROPERTIES)
                 .build());
 
+        options.addOption(Option.builder("j")
+                .type(JobType.class)
+                .required(true)
+                .hasArg(true)
+                .desc("Job that should be executed")
+                .longOpt(OPTION_JOB)
+                .argName(OPTION_JOB)
+                .build());
+
+        //New migration period options
         options.addOption(Option.builder("p")
                 .type(Integer.class)
                 .required(false)
@@ -37,6 +53,25 @@ public class MonitorConfiguration {
                 .desc("Number of periods back to include in search")
                 .longOpt(OPTION_PERIODS)
                 .argName(OPTION_PERIODS)
+                .build());
+
+        //High inconsistency rate options
+        options.addOption(Option.builder("cn")
+                .type(String.class)
+                .required(false)
+                .hasArg(true)
+                .desc("configurationName to interogate")
+                .longOpt(OPTION_CONFIGURATION_NAME)
+                .argName(OPTION_CONFIGURATION_NAME)
+                .build());
+
+        options.addOption(Option.builder("t")
+                .type(Integer.class)
+                .required(false)
+                .hasArg(true)
+                .desc("Inclusive threshold to use in determining if an alert needs to be generated")
+                .longOpt(OPTION_THRESHOLD)
+                .argName(OPTION_THRESHOLD)
                 .build());
     }
 
@@ -48,12 +83,36 @@ public class MonitorConfiguration {
         this.clientConfig = clientConfig;
     }
 
+    public JobType getType() {
+        return type;
+    }
+
+    public void setType(JobType type) {
+        this.type = type;
+    }
+
     public Integer getPeriods(){
         return periods;
     }
 
     public void setPeriods(Integer periods){
         this.periods = periods;
+    }
+
+    public String getConfigurationName() {
+        return configurationName;
+    }
+
+    public void setConfigurationName(String configurationName) {
+        this.configurationName = configurationName;
+    }
+
+    public Integer getThreshold() {
+        return threshold;
+    }
+
+    public void setThreshold(Integer threshold) {
+        this.threshold = threshold;
     }
 
     public static MonitorConfiguration processArguments(String[] args) {
@@ -84,9 +143,24 @@ public class MonitorConfiguration {
             setClientConfig(s);
         }
 
+        String type = p.getProperty(OPTION_JOB);
+        if (type != null) {
+            setType(JobType.valueOf(type));
+        }
+
         String periods = p.getProperty(OPTION_PERIODS);
         if(periods != null){
             setPeriods(Integer.parseInt(periods));
+        }
+
+        String configurationName = p.getProperty(OPTION_CONFIGURATION_NAME);
+        if (configurationName != null) {
+            setConfigurationName(configurationName);
+        }
+
+        String threshold = p.getProperty(OPTION_THRESHOLD);
+        if (threshold != null) {
+            setThreshold(Integer.parseInt(threshold));
         }
     }
 

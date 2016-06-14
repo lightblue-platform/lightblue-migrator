@@ -1,62 +1,32 @@
-package com.redhat.lightblue.migrator.monitor;
+package com.redhat.lightblue.migrator.monitor.NMP;
 
-import static com.redhat.lightblue.util.test.AbstractJsonNodeTest.loadJsonNode;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.List;
 
-import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.redhat.lightblue.client.Projection;
-import com.redhat.lightblue.client.integration.test.LightblueExternalResource;
-import com.redhat.lightblue.client.integration.test.LightblueExternalResource.LightblueTestMethods;
 import com.redhat.lightblue.client.request.data.DataInsertRequest;
 import com.redhat.lightblue.migrator.MigrationConfiguration;
 import com.redhat.lightblue.migrator.MigrationJob;
+import com.redhat.lightblue.migrator.monitor.AbstractMonitorTest;
+import com.redhat.lightblue.migrator.monitor.MonitorConfiguration;
+import com.redhat.lightblue.migrator.monitor.Notifier;
 
-public class TestMonitor {
+public class TestNMPMonitor extends AbstractMonitorTest {
 
-    @ClassRule
-    public static LightblueExternalResource lightblue = new LightblueExternalResource(new LightblueTestMethods() {
-
-        @Override
-        public JsonNode[] getMetadataJsonNodes() throws Exception {
-            return new JsonNode[]{
-                    loadJsonNode("migrationConfiguration.json"),
-                    loadJsonNode("migrationJob.json")
-                };
-        }
-    });
-
-    @After
-    public void after() throws Exception {
-        lightblue.cleanupMongoCollections(
-                "migrationConfig",
-                MigrationJob.ENTITY_NAME);
-    }
-
-    private MigrationConfiguration generateMigrationConfiguration(String period) {
-        MigrationConfiguration config = new MigrationConfiguration();
-        config.setConsistencyCheckerName("test");
-        config.setConfigurationName("fake");
-        config.setSourceEntityName("fakeSourceEntity");
-        config.setSourceEntityVersion("1.0.0");
-        config.setDestinationEntityName("fakeDestinationEntity");
-        config.setDestinationEntityVersion("1.0.0");
-        config.setDestinationIdentityFields(Arrays.asList("_id"));
+    @Override
+    protected MigrationConfiguration generateMigrationConfiguration(String period) {
+        MigrationConfiguration config = super.generateMigrationConfiguration("fake");
         config.setPeriod(period);
 
         return config;
     }
 
-    private MigrationJob generateMigrationJob(Date scheduledDate) {
+    protected MigrationJob generateMigrationJob(Date scheduledDate) {
         MigrationJob job = new MigrationJob();
         job.setConfigurationName("fake");
         job.setStatus("ready");
@@ -67,9 +37,7 @@ public class TestMonitor {
 
     @Test
     public void testRunCheck_NoConfigurations() throws Exception {
-        lightblue.getLightblueClient(); //Needed to perform behind the scenes setup
-
-        Monitor monitor = new Monitor(new MonitorConfiguration());
+        NMPMonitor monitor = new NMPMonitor(new MonitorConfiguration());
         monitor.runCheck(new Notifier() {
 
             @Override
@@ -78,7 +46,7 @@ public class TestMonitor {
             }
 
             @Override
-            public void sendFailure(List<String> configurationsMissingJobs) {
+            public void sendFailure(String message) {
                 fail("Should not be a failure");
             }
         });
@@ -91,7 +59,7 @@ public class TestMonitor {
         insert.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insert);
 
-        Monitor monitor = new Monitor(new MonitorConfiguration());
+        NMPMonitor monitor = new NMPMonitor(new MonitorConfiguration());
         monitor.runCheck(new Notifier() {
 
             @Override
@@ -100,9 +68,8 @@ public class TestMonitor {
             }
 
             @Override
-            public void sendFailure(List<String> configurationsMissingJobs) {
-                assertEquals(1, configurationsMissingJobs.size());
-                assertEquals("fake", configurationsMissingJobs.get(0));
+            public void sendFailure(String message) {
+                assertTrue(message.contains("fake"));
             }
         });
     }
@@ -119,7 +86,7 @@ public class TestMonitor {
         insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertJobRequest);
 
-        Monitor monitor = new Monitor(new MonitorConfiguration());
+        NMPMonitor monitor = new NMPMonitor(new MonitorConfiguration());
         monitor.runCheck(new Notifier() {
 
             @Override
@@ -128,7 +95,7 @@ public class TestMonitor {
             }
 
             @Override
-            public void sendFailure(List<String> configurationsMissingJobs) {
+            public void sendFailure(String message) {
                 fail("Should not be a failure");
             }
         });
@@ -150,7 +117,7 @@ public class TestMonitor {
 
         MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.setPeriods(2);
-        Monitor monitor = new Monitor(cfg);
+        NMPMonitor monitor = new NMPMonitor(cfg);
         monitor.runCheck(new Notifier() {
 
             @Override
@@ -159,7 +126,7 @@ public class TestMonitor {
             }
 
             @Override
-            public void sendFailure(List<String> configurationsMissingJobs) {
+            public void sendFailure(String message) {
                 fail("Should not be a failure");
             }
         });
@@ -181,7 +148,7 @@ public class TestMonitor {
 
         MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.setPeriods(1);
-        Monitor monitor = new Monitor(cfg);
+        NMPMonitor monitor = new NMPMonitor(cfg);
         monitor.runCheck(new Notifier() {
 
             @Override
@@ -190,7 +157,7 @@ public class TestMonitor {
             }
 
             @Override
-            public void sendFailure(List<String> configurationsMissingJobs) {
+            public void sendFailure(String message) {
                 //Do nothing
             }
         });

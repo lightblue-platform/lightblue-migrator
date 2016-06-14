@@ -2,6 +2,9 @@ package com.redhat.lightblue.migrator.monitor;
 
 import org.apache.commons.cli.HelpFormatter;
 
+import com.redhat.lightblue.migrator.monitor.HIR.HIRMonitor;
+import com.redhat.lightblue.migrator.monitor.NMP.NMPMonitor;
+
 public class Main {
 
     public static void main(String[] args) throws Exception {
@@ -13,7 +16,15 @@ public class Main {
 
         cfg.applyProperties(System.getProperties());
 
-        new Monitor(cfg).runCheck(new NagiosNotifier());
+        switch (cfg.getType()) {
+            case NEW_MIGRATION_PERIODS:
+                new NMPMonitor(cfg).runCheck(new NagiosNotifier());
+                break;
+            case HIGH_INCONSISTENCY_RATE:
+                new HIRMonitor(cfg).runCheck(new NagiosNotifier());
+                break;
+        }
+
     }
 
     private static void printHelp() {

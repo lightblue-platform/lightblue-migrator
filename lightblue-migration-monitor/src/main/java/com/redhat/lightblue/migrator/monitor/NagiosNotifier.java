@@ -1,14 +1,10 @@
 package com.redhat.lightblue.migrator.monitor;
 
-import java.util.List;
-
-import org.apache.commons.lang.StringUtils;
-
 public class NagiosNotifier implements Notifier {
 
     @Override
-    public void sendFailure(List<String> configurationsMissingJobs) {
-        System.out.print("Jobs not being created: " + StringUtils.join(configurationsMissingJobs, ","));
+    public void sendFailure(String message) {
+        System.out.print(message);
         System.exit(2);
     }
 
