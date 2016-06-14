@@ -28,7 +28,7 @@ public class Controller extends Thread {
     private final LightblueClient lightblueClient;
     private final Map<String, MigrationProcess> migrationMap = new HashMap<>();
     private final ThreadMonitor threadMonitor;
-    private boolean stopped=false;
+    private volatile boolean stopped=false;
 
     public static class MigrationProcess {
         public MigrationConfiguration cfg;
@@ -224,14 +224,9 @@ public class Controller extends Thread {
                 MigrationConfiguration[] cfg=getMigrationConfigurations();
                 createControllers(cfg);
                 Breakpoint.checkpoint("Controller:createconfig");
-            } catch (Exception e) {
+                Thread.sleep(30000);
+            } catch (Throwable e) {
                 LOGGER.error("Error during configuration load:"+e);
-            }
-            if(!stopped) {
-                try {
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                }
             }
         }
         for(MigrationProcess p:migrationMap.values()) {
