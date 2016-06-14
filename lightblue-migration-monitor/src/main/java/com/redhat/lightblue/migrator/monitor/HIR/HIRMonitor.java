@@ -22,10 +22,10 @@ public class HIRMonitor extends Monitor {
 
     @Override
     public void runCheck(final Notifier... notifiers) throws LightblueException {
-        int inconsistencyRate = calculateInconsistencyRate(monitorCfg.getConfigurationName(), 1);
+        double inconsistencyRate = calculateInconsistencyRate(monitorCfg.getConfigurationName(), 1);
 
         if (inconsistencyRate >= monitorCfg.getThreshold()) {
-            String message = "Migration " + monitorCfg.getConfigurationName() 
+            String message = "Migration " + monitorCfg.getConfigurationName()
                 + " has a high inconsistency rate of " + inconsistencyRate + "%";
             for (Notifier n : notifiers) {
                 n.sendFailure(message);
@@ -37,7 +37,7 @@ public class HIRMonitor extends Monitor {
         }
     }
 
-    private int calculateInconsistencyRate(String configurationName, int days) throws LightblueException {
+    private double calculateInconsistencyRate(String configurationName, int days) throws LightblueException {
         DataFindRequest findJobs = new DataFindRequest(MigrationJob.ENTITY_NAME);
         findJobs.where(
             Query.and(
@@ -54,8 +54,8 @@ public class HIRMonitor extends Monitor {
 
         MigrationJob[] jobs = lightblueClient.data(findJobs, MigrationJob[].class);
 
-        int processedDocumentCount = 0;
-        int overwrittenDocumentCount = 0;
+        double processedDocumentCount = 0;
+        double overwrittenDocumentCount = 0;
         for (MigrationJob job : jobs) {
             JobExecution execution = job.getJobExecutions().get(0);
 
@@ -63,7 +63,7 @@ public class HIRMonitor extends Monitor {
             overwrittenDocumentCount += execution.getOverwrittenDocumentCount();
         }
 
-        int percent = 0;
+        double percent = 0;
         if(processedDocumentCount != 0){
             percent = 100 * (overwrittenDocumentCount / processedDocumentCount);
         }

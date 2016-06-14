@@ -1,5 +1,6 @@
 package com.redhat.lightblue.migrator.monitor.HIR;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
@@ -66,7 +67,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
     @Test
     public void testRunCheck_ThresholdExceeded() throws LightblueException {
         DataInsertRequest insertJobRequest = new DataInsertRequest(MigrationJob.ENTITY_NAME);
-        insertJobRequest.create(generateMigrationJob(new Date(), 5, 5));
+        insertJobRequest.create(generateMigrationJob(new Date(), 52, 4));
         insertJobRequest.returns(Projection.excludeFieldRecursively("*"));
         lightblue.getLightblueClient().data(insertJobRequest);
 
@@ -78,7 +79,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
 
             @Override
             public void sendFailure(String message) {
-                //Do nothing
+                assertTrue(message, message.contains("100%"));
             }
 
             @Override
