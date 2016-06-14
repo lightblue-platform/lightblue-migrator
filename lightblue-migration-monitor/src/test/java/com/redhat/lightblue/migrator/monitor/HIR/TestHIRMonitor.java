@@ -79,7 +79,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
 
             @Override
             public void sendFailure(String message) {
-                assertTrue(message, message.contains("100%"));
+                assertTrue(message, message.contains("7.69"));
             }
 
             @Override
