@@ -53,8 +53,6 @@ public class ServiceFacadeTest {
     public void verifyNoMoreInteractions() {
         Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verifyNoMoreInteractions(legacyDAO);
-
-        daoFacade.shutdown();
     }
 
     @Test
@@ -650,8 +648,8 @@ public class ServiceFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Success_FromProperties_Method() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
 
@@ -682,8 +680,8 @@ public class ServiceFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout_FromProperties_Bean() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
 
@@ -696,7 +694,7 @@ public class ServiceFacadeTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(5000);
+                Thread.sleep(1500);
                 return pl;
             }
 
@@ -921,5 +919,4 @@ public class ServiceFacadeTest {
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(ca);
     }
-
 }
