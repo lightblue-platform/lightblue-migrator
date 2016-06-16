@@ -40,10 +40,11 @@ public class TimeoutConfiguration {
         timeout, slowwarning;
     }
 
+    public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
+
     private long defaultTimeoutMS;
     private String beanName;
     private Properties properties;
-    private boolean interruptOnTimeout = true;
 
     private HashMap<String, Long> methodTimeouts = new HashMap<>();
 
@@ -64,10 +65,7 @@ public class TimeoutConfiguration {
             this.properties = new Properties();
         }
 
-        if (properties != null)
-            interruptOnTimeout = Boolean.parseBoolean(properties.getProperty(ServiceFacade.CONFIG_PREFIX+beanName+".interruptOnTimeout", "true"));
-
-        log.info("Initialized TimeoutConfiguration for {}, interruptOnTimeout={}", beanName, interruptOnTimeout);
+        log.info("Initialized TimeoutConfiguration for {}", beanName);
     }
 
     /**
@@ -88,7 +86,7 @@ public class TimeoutConfiguration {
             return methodTimeouts.get(cacheKey);
         }
 
-        String configurationKeyPrefix = ServiceFacade.CONFIG_PREFIX + type + "." + beanName;
+        String configurationKeyPrefix = CONFIG_PREFIX+type+"."+beanName;
 
         String timeoutPropValue = properties.getProperty(configurationKeyPrefix + "." + methodName);
 
@@ -150,14 +148,6 @@ public class TimeoutConfiguration {
      */
     public long getSlowWarningMS(String methodName, FacadeOperation op) {
         return getMS(methodName, op, Type.slowwarning);
-    }
-
-    public boolean isInterruptOnTimeout() {
-        return interruptOnTimeout;
-    }
-
-    public void setInterruptOnTimeout(boolean interruptOnTimeout) {
-        this.interruptOnTimeout = interruptOnTimeout;
     }
 
 }
