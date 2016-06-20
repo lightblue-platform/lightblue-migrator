@@ -224,14 +224,9 @@ public class Controller extends Thread {
                 MigrationConfiguration[] cfg=getMigrationConfigurations();
                 createControllers(cfg);
                 Breakpoint.checkpoint("Controller:createconfig");
-            } catch (Exception e) {
+                Thread.sleep(30000);
+            } catch (Throwable e) {
                 LOGGER.error("Error during configuration load:"+e);
-            }
-            if(!stopped) {
-                try {
-                    Thread.sleep(30000);
-                } catch (InterruptedException e) {
-                }
             }
         }
         for(MigrationProcess p:migrationMap.values()) {
