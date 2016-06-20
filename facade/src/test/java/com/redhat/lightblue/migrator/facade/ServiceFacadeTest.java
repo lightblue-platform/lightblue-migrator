@@ -53,8 +53,6 @@ public class ServiceFacadeTest {
     public void verifyNoMoreInteractions() {
         Mockito.verifyNoMoreInteractions(lightblueDAO);
         Mockito.verifyNoMoreInteractions(legacyDAO);
-
-        daoFacade.shutdown();
     }
 
     @Test
@@ -648,86 +646,10 @@ public class ServiceFacadeTest {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnParallelRead_NoTimoutBecauseSourceEvenSlower() throws CountryException {
-        TimeoutConfiguration t = new TimeoutConfiguration(200, CountryDAO.class.getSimpleName(), null);
-        daoFacade.setTimeoutConfiguration(t);
-
-        LightblueMigrationPhase.dualReadPhase(togglzRule);
-
-        final Country pl = new Country(101l, "PL");
-
-        Mockito.when(legacyDAO.getCountry("PL")).thenAnswer(new Answer<Country>() {
-
-            @Override
-            public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(400);
-                return pl;
-            }
-
-        });
-        Mockito.when(lightblueDAO.getCountry("PL")).thenAnswer(new Answer<Country>() {
-
-            @Override
-            public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(300);
-                return pl;
-            }
-
-        });
-
-        Country returnedCountry = countryDAOProxy.getCountry("PL");
-
-        Mockito.verify(lightblueDAO).getCountry("PL");
-        Mockito.verify(legacyDAO).getCountry("PL");
-        // consistency check is there because both services returned
-        Mockito.verify(consistencyChecker, Mockito.times(1)).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
-
-        Assert.assertEquals(pl, returnedCountry);
-    }
-
-    @Test
-    public void lightblueTakesLongToRespondOnSerialWrite_NoTimoutBecauseSourceEvenSlower() throws CountryException {
-        TimeoutConfiguration t = new TimeoutConfiguration(200, CountryDAO.class.getSimpleName(), null);
-        daoFacade.setTimeoutConfiguration(t);
-
-        LightblueMigrationPhase.dualReadPhase(togglzRule);
-
-        final Country pl = new Country(101l, "PL");
-
-        Mockito.when(legacyDAO.createCountry(pl)).thenAnswer(new Answer<Country>() {
-
-            @Override
-            public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(400);
-                return pl;
-            }
-
-        });
-        Mockito.when(lightblueDAO.createCountry(pl)).thenAnswer(new Answer<Country>() {
-
-            @Override
-            public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(300);
-                return pl;
-            }
-
-        });
-
-        Country returnedCountry = countryDAOProxy.createCountry(pl);
-
-        Mockito.verify(lightblueDAO).createCountry(pl);
-        Mockito.verify(legacyDAO).createCountry(pl);
-        // consistency check is there because both services returned
-        Mockito.verify(consistencyChecker, Mockito.times(1)).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
-
-        Assert.assertEquals(pl, returnedCountry);
-    }
-
-    @Test
     public void lightblueTakesLongToRespondOnRead_Success_FromProperties_Method() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
 
@@ -758,8 +680,8 @@ public class ServiceFacadeTest {
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout_FromProperties_Bean() throws CountryException {
         Properties p = new Properties();
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO", "1000");
-        p.setProperty(ServiceFacade.CONFIG_PREFIX + "timeout.CountryDAO.getCountry", "2000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO", "1000");
+        p.setProperty(TimeoutConfiguration.CONFIG_PREFIX+"timeout.CountryDAO.getCountry", "2000");
         TimeoutConfiguration t = new TimeoutConfiguration(500, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
 
@@ -772,7 +694,7 @@ public class ServiceFacadeTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(5000);
+                Thread.sleep(1500);
                 return pl;
             }
 
@@ -997,5 +919,4 @@ public class ServiceFacadeTest {
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(ca);
     }
-
 }

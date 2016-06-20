@@ -33,13 +33,6 @@ com.redhat.lightblue.migrator.facade.timeout.CountryDAO=2000
 means that facade will wait up to 2s for getCountry method on destination (Lightblue) service to finish execution and 2s for any other method. Timeouts make sense only when
 source service is being called in addition to the destination service, so that source service response can be returned when destination takes too long to respond.
 
-### Thread pool configuration
-
-Each call to lightblue is made in a separate thread. Those threads are managed using a singleton ThreadPoolExecutor instance (used by all facades using the same class loader). The pool is bounded to protect client's resources. By default it's 50 threads, but you can change it:
-```
-com.redhat.lightblue.migrator.facade.CountryDAO.threadPool.size=100
-```
-
 ## [How to configure togglz for migration to lightblue?](TOGGLZ.md)
 
 ## Examples
