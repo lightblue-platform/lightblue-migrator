@@ -28,7 +28,7 @@ public class Controller extends Thread {
     private final LightblueClient lightblueClient;
     private final Map<String, MigrationProcess> migrationMap = new HashMap<>();
     private final ThreadMonitor threadMonitor;
-    private volatile boolean stopped=false;
+    private boolean stopped=false;
 
     public static class MigrationProcess {
         public MigrationConfiguration cfg;
