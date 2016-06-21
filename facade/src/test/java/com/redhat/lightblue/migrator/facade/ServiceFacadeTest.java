@@ -559,8 +559,9 @@ public class ServiceFacadeTest {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_Timeout() throws CountryException {
+    public void lightblueTakesLongToRespondOnCreate_Timeout_NoInterrupt() throws CountryException {
         TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        t.setInterruptOnTimeout(false);
         daoFacade.setTimeoutConfiguration(t);
 
         LightblueMigrationPhase.dualReadPhase(togglzRule);
@@ -568,11 +569,20 @@ public class ServiceFacadeTest {
         final Country pl = new Country(101l, "PL");
 
         Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+
+        // an array trick to change value of a final boolean
+        final boolean[] wasInterrupted = {false};
+
         Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(1500);
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                    wasInterrupted[0] = true;
+                    throw e;
+                }
                 return pl;
             }
 
@@ -585,6 +595,46 @@ public class ServiceFacadeTest {
         Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
 
         Assert.assertEquals(pl, returnedCountry);
+        Assert.assertFalse("Lightblue call was interrupted on timeout", wasInterrupted[0]);
+    }
+
+    @Test
+    public void lightblueTakesLongToRespondOnCreate_Timeout_Interrupt() throws CountryException {
+        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        daoFacade.setTimeoutConfiguration(t);
+
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
+        final Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+
+        // an array trick to change value of a final boolean
+        final boolean[] wasInterrupted = {false};
+
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                try {
+                    Thread.sleep(1500);
+                } catch (InterruptedException e) {
+                    wasInterrupted[0] = true;
+                    throw e;
+                }
+                return pl;
+            }
+
+        });
+
+        Country returnedCountry = countryDAOProxy.createCountry(pl);
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+
+        Assert.assertEquals(pl, returnedCountry);
+        Assert.assertTrue("Lightblue call was not interrupted on timeout", wasInterrupted[0]);
     }
 
     @Test
@@ -919,4 +969,6 @@ public class ServiceFacadeTest {
         Mockito.verify(lightblueDAO).createCountry(pl);
         Mockito.verify(lightblueDAO).createCountry(ca);
     }
+
+
 }

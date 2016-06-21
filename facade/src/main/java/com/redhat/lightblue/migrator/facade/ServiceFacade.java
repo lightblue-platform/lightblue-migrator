@@ -294,6 +294,16 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                     lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation));
                 }
             } catch (TimeoutException te) {
+
+                if (timeoutConfiguration.isInterruptOnTimeout()) {
+                    // try to interrupt the thread
+                    try {
+                        listenableFuture.cancel(true);
+                    } catch (Exception e) {
+                        log.error("Failed to cancel lightblue call", e);
+                    }
+                }
+
                 if (shouldSource(facadeOperation)) {
                     log.warn("Lightblue call " + implementationName + "." + callStringifier + " is taking too long (longer than " + timeoutConfiguration.getTimeoutMS(methodName, facadeOperation) + "s). Returning data from legacy.");
                     return legacyEntity;
