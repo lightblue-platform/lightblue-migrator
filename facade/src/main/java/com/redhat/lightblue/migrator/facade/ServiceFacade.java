@@ -295,7 +295,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 }
             } catch (TimeoutException te) {
 
-                if (timeoutConfiguration.isInterruptOnTimeout()) {
+                if (timeoutConfiguration.isInterruptOnTimeout() && facadeOperation == FacadeOperation.READ) {
                     // try to interrupt the thread
                     try {
                         listenableFuture.cancel(true);
