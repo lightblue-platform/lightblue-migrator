@@ -44,7 +44,7 @@
     <sonar.host.url>http://127.0.0.1:8080</sonar.host.url>
     <sonar.projectName>lightblue-migrator</sonar.projectName>
 
-    <lightblue.client.version>5.1.0</lightblue.client.version>
+    <lightblue.client.version>5.2.0-SNAPSHOT</lightblue.client.version>
   </properties>
   <dependencyManagement>
     <dependencies>
