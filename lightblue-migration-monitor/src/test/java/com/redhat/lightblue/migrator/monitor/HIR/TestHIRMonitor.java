@@ -48,7 +48,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
 
         MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.setConfigurationName("fake");
-        cfg.setThreshold(1);
+        cfg.setWarnThreshold(1);
         HIRMonitor monitor = new HIRMonitor(cfg);
         monitor.runCheck(new Notifier() {
 
@@ -78,7 +78,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
 
         MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.setConfigurationName("fake");
-        cfg.setThreshold(1);
+        cfg.setWarnThreshold(1);
         HIRMonitor monitor = new HIRMonitor(cfg);
         monitor.runCheck(new Notifier() {
 

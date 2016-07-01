@@ -48,11 +48,18 @@ public abstract class Monitor {
         }
     }
 
+    protected void onError(final String message, final Notifier... notifiers) {
+        LOGGER.error("Check Errored: " + message);
+        for (Notifier n : notifiers) {
+            n.sendFailure(message);
+        }
+    }
+
     protected void onError(final Throwable throwable, final Notifier... notifiers) {
         onError(throwable, throwable.getMessage(), notifiers);
     }
 
-    protected void onError(final Throwable throwable, String message, final Notifier... notifiers) {
+    protected void onError(final Throwable throwable, final String message, final Notifier... notifiers) {
         LOGGER.error("Check Errored: " + message, throwable);
         for (Notifier n : notifiers) {
             n.sendError(message);

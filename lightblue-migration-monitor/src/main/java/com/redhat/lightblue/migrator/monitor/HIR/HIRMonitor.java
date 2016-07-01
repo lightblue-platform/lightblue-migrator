@@ -24,9 +24,13 @@ public class HIRMonitor extends Monitor {
     protected void doRunCheck(final Notifier... notifiers) throws LightblueException {
         double inconsistencyRate = calculateInconsistencyRate(monitorCfg.getConfigurationName(), 1);
 
-        if (inconsistencyRate >= monitorCfg.getThreshold()) {
-            String message = "Migration " + monitorCfg.getConfigurationName() 
+        String message = "Migration " + monitorCfg.getConfigurationName()
                 + " has a high inconsistency rate of " + inconsistencyRate + "%";
+
+        if((monitorCfg.getCriticalThreshold() != null) && (inconsistencyRate >= monitorCfg.getCriticalThreshold())){
+            onError(message, notifiers);
+        }
+        else if ((monitorCfg.getWarnThreshold() != null) && (inconsistencyRate >= monitorCfg.getWarnThreshold())) {
             onFailure(message, notifiers);
         } else {
             onSuccess(notifiers);
