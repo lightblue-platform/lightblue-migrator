@@ -61,6 +61,11 @@ public class TestHIRMonitor extends AbstractMonitorTest {
             public void sendSuccess() {
                 //Do nothing
             }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
+            }
         });
     }
 
@@ -85,6 +90,11 @@ public class TestHIRMonitor extends AbstractMonitorTest {
             @Override
             public void sendSuccess() {
                 fail("Should be a failure");
+            }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
             }
         });
     }

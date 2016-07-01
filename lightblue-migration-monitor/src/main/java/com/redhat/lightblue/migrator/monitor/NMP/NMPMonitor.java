@@ -30,7 +30,7 @@ public class NMPMonitor extends Monitor {
     }
 
     @Override
-    public void runCheck(final Notifier... notifiers) throws LightblueException {
+    protected void doRunCheck(final Notifier... notifiers) throws LightblueException {
         int periods = (monitorCfg.getPeriods() == null) ? 1 : monitorCfg.getPeriods();
 
         List<String> configurationsMissingJobs = new ArrayList<>();
@@ -46,14 +46,10 @@ public class NMPMonitor extends Monitor {
         }
 
         if (configurationsMissingJobs.isEmpty()) {
-            for (Notifier n : notifiers) {
-                n.sendSuccess();
-            }
+            onSuccess(notifiers);
         } else {
             String message = "Jobs not being created: " + StringUtils.join(configurationsMissingJobs, ",");
-            for (Notifier n : notifiers) {
-                n.sendFailure(message);
-            }
+            onFailure(message, notifiers);
         }
     }
 
