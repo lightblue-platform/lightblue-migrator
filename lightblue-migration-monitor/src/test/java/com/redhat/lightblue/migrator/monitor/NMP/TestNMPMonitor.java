@@ -49,6 +49,11 @@ public class TestNMPMonitor extends AbstractMonitorTest {
             public void sendFailure(String message) {
                 fail("Should not be a failure");
             }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
+            }
         });
     }
 
@@ -70,6 +75,11 @@ public class TestNMPMonitor extends AbstractMonitorTest {
             @Override
             public void sendFailure(String message) {
                 assertTrue(message.contains("fake"));
+            }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
             }
         });
     }
@@ -97,6 +107,11 @@ public class TestNMPMonitor extends AbstractMonitorTest {
             @Override
             public void sendFailure(String message) {
                 fail("Should not be a failure");
+            }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
             }
         });
     }
@@ -129,6 +144,11 @@ public class TestNMPMonitor extends AbstractMonitorTest {
             public void sendFailure(String message) {
                 fail("Should not be a failure");
             }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
+            }
         });
     }
 
@@ -159,6 +179,11 @@ public class TestNMPMonitor extends AbstractMonitorTest {
             @Override
             public void sendFailure(String message) {
                 //Do nothing
+            }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
             }
         });
     }

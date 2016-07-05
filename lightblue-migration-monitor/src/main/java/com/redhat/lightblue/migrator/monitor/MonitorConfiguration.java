@@ -14,7 +14,8 @@ public class MonitorConfiguration {
     public static final String OPTION_JOB = "job";
     public static final String OPTION_PERIODS = "periods";
     public static final String OPTION_CONFIGURATION_NAME = "configurationName";
-    public static final String OPTION_THRESHOLD = "threshold";
+    public static final String OPTION_WARN_THRESHOLD = "warn";
+    public static final String OPTION_CRITICAL_THRESHOLD = "critical";
 
     public static final Options options;
 
@@ -22,12 +23,13 @@ public class MonitorConfiguration {
     private JobType type;
     private Integer periods;
     private String configurationName;
-    private Integer threshold;
+    private Integer warnThreshold;
+    private Integer criticalThreshold;
 
     static {
         options = new Options();
 
-        options.addOption(Option.builder("c")
+        options.addOption(Option.builder("conf")
                 .type(String.class)
                 .required(true)
                 .hasArg(true)
@@ -65,13 +67,22 @@ public class MonitorConfiguration {
                 .argName(OPTION_CONFIGURATION_NAME)
                 .build());
 
-        options.addOption(Option.builder("t")
+        options.addOption(Option.builder("w")
                 .type(Integer.class)
                 .required(false)
                 .hasArg(true)
                 .desc("Inclusive threshold to use in determining if an alert needs to be generated")
-                .longOpt(OPTION_THRESHOLD)
-                .argName(OPTION_THRESHOLD)
+                .longOpt(OPTION_WARN_THRESHOLD)
+                .argName(OPTION_WARN_THRESHOLD)
+                .build());
+
+        options.addOption(Option.builder("c")
+                .type(Integer.class)
+                .required(false)
+                .hasArg(true)
+                .desc("Inclusive threshold to use in determining if an alert needs to be generated")
+                .longOpt(OPTION_CRITICAL_THRESHOLD)
+                .argName(OPTION_CRITICAL_THRESHOLD)
                 .build());
     }
 
@@ -107,12 +118,20 @@ public class MonitorConfiguration {
         this.configurationName = configurationName;
     }
 
-    public Integer getThreshold() {
-        return threshold;
+    public Integer getWarnThreshold() {
+        return warnThreshold;
     }
 
-    public void setThreshold(Integer threshold) {
-        this.threshold = threshold;
+    public void setWarnThreshold(Integer threshold) {
+        warnThreshold = threshold;
+    }
+
+    public Integer getCriticalThreshold() {
+        return criticalThreshold;
+    }
+
+    public void setCriticalThreshold(Integer criticalThreshold) {
+        this.criticalThreshold = criticalThreshold;
     }
 
     public static MonitorConfiguration processArguments(String[] args) {
@@ -158,9 +177,14 @@ public class MonitorConfiguration {
             setConfigurationName(configurationName);
         }
 
-        String threshold = p.getProperty(OPTION_THRESHOLD);
-        if (threshold != null) {
-            setThreshold(Integer.parseInt(threshold));
+        String warnThreshold = p.getProperty(OPTION_WARN_THRESHOLD);
+        if (warnThreshold != null) {
+            setWarnThreshold(Integer.parseInt(warnThreshold));
+        }
+
+        String criticalThreshold = p.getProperty(OPTION_CRITICAL_THRESHOLD);
+        if (criticalThreshold != null) {
+            setCriticalThreshold(Integer.parseInt(criticalThreshold));
         }
     }
 

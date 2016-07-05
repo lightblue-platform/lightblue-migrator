@@ -48,7 +48,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
 
         MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.setConfigurationName("fake");
-        cfg.setThreshold(1);
+        cfg.setWarnThreshold(1);
         HIRMonitor monitor = new HIRMonitor(cfg);
         monitor.runCheck(new Notifier() {
 
@@ -60,6 +60,11 @@ public class TestHIRMonitor extends AbstractMonitorTest {
             @Override
             public void sendSuccess() {
                 //Do nothing
+            }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
             }
         });
     }
@@ -73,7 +78,7 @@ public class TestHIRMonitor extends AbstractMonitorTest {
 
         MonitorConfiguration cfg = new MonitorConfiguration();
         cfg.setConfigurationName("fake");
-        cfg.setThreshold(1);
+        cfg.setWarnThreshold(1);
         HIRMonitor monitor = new HIRMonitor(cfg);
         monitor.runCheck(new Notifier() {
 
@@ -85,6 +90,11 @@ public class TestHIRMonitor extends AbstractMonitorTest {
             @Override
             public void sendSuccess() {
                 fail("Should be a failure");
+            }
+
+            @Override
+            public void sendError(String message) {
+                fail("Should not be a error");
             }
         });
     }
