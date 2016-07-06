@@ -560,7 +560,7 @@ public class ServiceFacadeTest {
 
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout_NoInterrupt() throws CountryException {
-        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        TimeoutConfiguration t = new TimeoutConfiguration(200, CountryDAO.class.getSimpleName(), null);
         t.setInterruptOnTimeout(false);
         daoFacade.setTimeoutConfiguration(t);
 
@@ -578,12 +578,13 @@ public class ServiceFacadeTest {
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
                 try {
-                    Thread.sleep(1500);
+                    Thread.sleep(90000);
+                    Assert.fail("Call did not timeout");
+                    return pl;
                 } catch (InterruptedException e) {
                     wasInterrupted[0] = true;
                     throw e;
                 }
-                return pl;
             }
 
         });
@@ -595,12 +596,12 @@ public class ServiceFacadeTest {
         Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
 
         Assert.assertEquals(pl, returnedCountry);
-        Assert.assertFalse("Lightblue call was interrupted on timeout", wasInterrupted[0]);
+        Assert.assertFalse("Lightblue call was interrupted on timeout", waitOnInterrupt(wasInterrupted, 3000));
     }
 
     @Test
     public void lightblueTakesLongToRespondOnRead_Timeout_Interrupt() throws CountryException {
-        TimeoutConfiguration t = new TimeoutConfiguration(1000, CountryDAO.class.getSimpleName(), null);
+        TimeoutConfiguration t = new TimeoutConfiguration(200, CountryDAO.class.getSimpleName(), null);
         t.setInterruptOnTimeout(true);
         daoFacade.setTimeoutConfiguration(t);
 
@@ -618,12 +619,16 @@ public class ServiceFacadeTest {
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
                 try {
-                    Thread.sleep(1500);
+                    Thread.sleep(90000);
+                    Assert.fail("Call did not timeout");
+                    return pl;
                 } catch (InterruptedException e) {
                     wasInterrupted[0] = true;
                     throw e;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    throw e;
                 }
-                return pl;
             }
 
         });
@@ -635,7 +640,22 @@ public class ServiceFacadeTest {
         Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
 
         Assert.assertEquals(pl, returnedCountry);
-        Assert.assertTrue("Lightblue call was not interrupted on timeout", wasInterrupted[0]);
+        Assert.assertTrue("Lightblue call was not interrupted on timeout", waitOnInterrupt(wasInterrupted, 10000));
+    }
+
+    private boolean waitOnInterrupt(boolean wasInterrupted[], int timeout) {
+        try {
+            int i=0;
+            while (!wasInterrupted[0]) {
+                Thread.sleep(100);
+                if (++i * 100 >= timeout) {
+                    return false;
+                }
+            }
+            return true;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -658,12 +678,13 @@ public class ServiceFacadeTest {
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
                 try {
-                    Thread.sleep(400);
+                    Thread.sleep(90000);
+                    Assert.fail("Call did not timeout");
+                    return pl;
                 } catch (InterruptedException e) {
                     wasInterrupted[0] = true;
                     throw e;
                 }
-                return pl;
             }
 
         });
@@ -675,7 +696,7 @@ public class ServiceFacadeTest {
         Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
 
         Assert.assertEquals(pl, returnedCountry);
-        Assert.assertFalse("Lightblue call was interrupted on timeout, even though this is a write operation", wasInterrupted[0]);
+        Assert.assertFalse("Lightblue call was interrupted on timeout, even though this is a write operation", waitOnInterrupt(wasInterrupted, 3000));
     }
 
     @Test
@@ -940,7 +961,7 @@ public class ServiceFacadeTest {
         Mockito.when(legacyDAO.getCountry("PL")).then(new Answer() {
             @Override
             public Object answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(100);
+                Thread.sleep(300);
                 throw new CountryException();
             }
         });
@@ -968,7 +989,7 @@ public class ServiceFacadeTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(100);
+                Thread.sleep(300);
                 throw new CountryException();
             }
 
@@ -997,7 +1018,7 @@ public class ServiceFacadeTest {
 
             @Override
             public Country answer(InvocationOnMock invocation) throws Throwable {
-                Thread.sleep(100);
+                Thread.sleep(300);
                 throw new CountryException();
             }
 
