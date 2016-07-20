@@ -313,7 +313,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 }
             } catch (Throwable e) {
                 if (shouldSource(facadeOperation)) {
-                    log.warn("Error when calling lightblue DAO. Returning data from legacy.", e);
+                    log.warn("Lightblue call " + implementationName + "." + callStringifier + " threw an exception. Returning data from legacy.", e);
                     return legacyEntity;
                 } else {
                     throw extractUnderlyingException(e);
