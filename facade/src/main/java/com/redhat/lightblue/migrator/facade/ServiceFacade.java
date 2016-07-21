@@ -322,8 +322,10 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         }
 
         if (shouldCheckConsistencyConsistency(facadeOperation) && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
+            // dual phase, consistency check enabled
             // make sure that response from lightblue and oracle are the same
-            log.debug("." + methodName + " checking returned entity's consistency");
+            if (log.isDebugEnabled())
+                log.debug("." + methodName + " checking returned entity's consistency");
 
             // check if entities match
             if (getConsistencyChecker().checkConsistency(legacyEntity, lightblueEntity, methodName, callStringifier)) {
@@ -333,9 +335,19 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 // return oracle data if they aren't and log data inconsistency
                 return legacyEntity;
             }
+        } else if (!shouldCheckConsistencyConsistency(facadeOperation) && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
+            if (log.isDebugEnabled())
+                log.debug("dual phase, no consistency check (disabled), returning data from Lightblue");
+            return lightblueEntity;
+        } else if (!shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
+            if (log.isDebugEnabled())
+                log.debug("proxy phase, returning data from Lightblue");
+            return lightblueEntity;
+        } else {
+            if (log.isDebugEnabled())
+                log.debug("initial phase, returning data from legacy");
+            return legacyEntity;
         }
-
-        return lightblueEntity != null ? lightblueEntity : legacyEntity;
     }
 
     private SharedStoreException extractSharedStoreExceptionIfExists(ExecutionException ee) {

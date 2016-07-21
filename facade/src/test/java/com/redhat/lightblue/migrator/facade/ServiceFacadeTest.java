@@ -196,6 +196,42 @@ public class ServiceFacadeTest {
         Mockito.verify(lightblueDAO).getCountry("PL");
     }
 
+    @Test
+    public void dualReadPhase_NoConsistencyCheck() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+        LightblueMigrationPhase.enableConsistencyChecks(false, togglzRule);
+
+        Mockito.when(legacyDAO.getCountry("ca")).thenReturn(new Country("ca"));
+        Mockito.when(lightblueDAO.getCountry("ca")).thenReturn(new Country("pl"));
+
+        Country returnedCountry = countryDAOProxy.getCountry("ca");
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).getCountry("ca");
+        Mockito.verify(lightblueDAO).getCountry("ca");
+
+        // no consistency check, return data from Lightblue
+        Assert.assertEquals("pl", returnedCountry.getIso2Code());
+    }
+
+    @Test
+    public void dualReadPhase_NoConsistencyCheck_Null() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+        LightblueMigrationPhase.enableConsistencyChecks(false, togglzRule);
+
+        Mockito.when(legacyDAO.getCountry("ca")).thenReturn(new Country("ca"));
+        Mockito.when(lightblueDAO.getCountry("ca")).thenReturn(null);
+
+        Country returnedCountry = countryDAOProxy.getCountry("ca");
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).getCountry("ca");
+        Mockito.verify(lightblueDAO).getCountry("ca");
+
+        // no consistency check, return data from Lightblue
+        Assert.assertEquals(null, returnedCountry);
+    }
+
     /* update tests */
     @Test
     public void initialPhaseUpdate() throws CountryException {
