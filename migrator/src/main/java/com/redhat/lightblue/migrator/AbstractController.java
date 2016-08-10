@@ -1,23 +1,22 @@
 package com.redhat.lightblue.migrator;
 
-import java.io.IOException;
-
-import java.util.UUID;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.Locking;
-import com.redhat.lightblue.client.Query;
-import com.redhat.lightblue.client.Projection;
-import com.redhat.lightblue.client.request.data.DataInsertRequest;
-import com.redhat.lightblue.client.request.data.DataDeleteRequest;
-import com.redhat.lightblue.client.response.LightblueResponse;
 
 public abstract class AbstractController extends Thread {
+
+    public enum JobType {
+        GENERATED, NONGENERATED, ANY;
+    }
+
+    public static final Random random = new Random(new Date().getTime());
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractController.class);
 

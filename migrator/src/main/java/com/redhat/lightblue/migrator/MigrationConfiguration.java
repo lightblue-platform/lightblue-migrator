@@ -1,7 +1,7 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.List;
 import java.util.Date;
+import java.util.List;
 
 public class MigrationConfiguration {
 
@@ -11,6 +11,8 @@ public class MigrationConfiguration {
     private String configurationName;
     private String consistencyCheckerName;
     private int threadCount;
+    private double consistencyCheckerWeight = 1f;
+    private double migratorWeight = 1f;
     private String migratorClass;
     private String consistencyCheckerControllerClass;
     private boolean overwriteDestinationDocuments = false;
@@ -421,5 +423,21 @@ public class MigrationConfiguration {
         sb.append("sourceEntityVersion=").append(sourceEntityVersion);
 
         return sb.toString();
+    }
+
+    public double getConsistencyCheckerWeight() {
+        return consistencyCheckerWeight;
+    }
+
+    public void setConsistencyCheckerWeight(double consistencyCheckerWeight) {
+        this.consistencyCheckerWeight = consistencyCheckerWeight;
+    }
+
+    public double getMigratorWeight() {
+        return migratorWeight;
+    }
+
+    public void setMigratorWeight(double migratorWeight) {
+        this.migratorWeight = migratorWeight;
     }
 }

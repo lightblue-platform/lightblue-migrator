@@ -227,73 +227,68 @@ public class ConsistencyCheckerController extends AbstractController {
                 migrationConfiguration=newCfg;
                 // Lets recalculate period, just in case it changed
                 period=parsePeriod(migrationConfiguration.getPeriod());
-                
-                if(migrationJobsExist()) {
-                    LOGGER.info("There are migration jobs for {}, not running consistency checker this time",
-                                migrationConfiguration.getConfigurationName());
-                } else {
                     
-                    // We abuse the migration job locking mechanism
-                    // here to make sure only one consistency checker
-                    // controller is up at any given time This process
-                    // only creates migration jobs for the new
-                    // periods, so this is not a high-load process,
-                    // and we don't need many instances of it
-                    // running. But since the migrator can run on
-                    // multiple hosts, there is no way to prevent
-                    // it. At least, we make sure only one of the
-                    // consistencyy checker controllers wakes up at
-                    // any given time.
-                    
-                    // We create a lock using a custom id:
-                    String lockId=migrationConfiguration.getConfigurationName()+":ConsistencyCheckerController";
-                    ActiveExecution ae;
+                // We abuse the migration job locking mechanism
+                // here to make sure only one consistency checker
+                // controller is up at any given time This process
+                // only creates migration jobs for the new
+                // periods, so this is not a high-load process,
+                // and we don't need many instances of it
+                // running. But since the migrator can run on
+                // multiple hosts, there is no way to prevent
+                // it. At least, we make sure only one of the
+                // consistencyy checker controllers wakes up at
+                // any given time.
+
+                // We create a lock using a custom id:
+                String lockId=migrationConfiguration.getConfigurationName()+":ConsistencyCheckerController";
+                ActiveExecution ae;
+                try {
+                    ae=lock(lockId);
+                } catch (Exception e) {
+                    LOGGER.error("Exception during lock attempt {}:{}",lockId,e);
+                    ae=null;
+                }
+                if(ae!=null) {
+                    Breakpoint.checkpoint("CCC:locked");
+                    LOGGER.debug("This is the only running consistency checker instance for {}",migrationConfiguration.getConfigurationName());
                     try {
-                        ae=lock(lockId);
-                    } catch (Exception e) {
-                        LOGGER.error("Exception during lock attempt {}:{}",lockId,e);
-                        ae=null;
-                    }
-                    if(ae!=null) {
-                        Breakpoint.checkpoint("CCC:locked");
-                        LOGGER.debug("This is the only running consistency checker instance for {}",migrationConfiguration.getConfigurationName());
-                        try {
-                            Date endDate=null;
-                            Date startDate= migrationConfiguration.getTimestampInitialValue();
-                            if(startDate!=null) {
-                                endDate=getEndDate(startDate,period);
-                                if(endDate==null) {
-                                    LOGGER.debug("{} will wait for next period",migrationConfiguration.getConfigurationName());
-                                } else {
-                                    Breakpoint.checkpoint("CCC:beforeCreateJobs");
-                                    List<MigrationJob> mjList=new ArrayList<>();
-                                    do {
-                                        LOGGER.debug("{} will create a job for period {}-{}",migrationConfiguration.getConfigurationName(),startDate,endDate);
-                                        mjList.addAll(createJobs(startDate,endDate,ae));
-                                        migrationConfiguration.setTimestampInitialValue(endDate);
-                                        startDate=endDate;
-                                        endDate=getEndDate(startDate,period);
-                                    } while(endDate!=null&&!stopped);
-                                    if(!mjList.isEmpty()&&!stopped) {
-                                        try {
-                                            update(mjList);
-                                        } catch (Exception e) {
-                                            LOGGER.error("Cannot create jobs:{}",e,e);
-                                        }
+                        Date endDate=null;
+                        Date startDate= migrationConfiguration.getTimestampInitialValue();
+                        if(startDate!=null) {
+                            endDate=getEndDate(startDate,period);
+                            if(endDate==null) {
+                                LOGGER.debug("{} will wait for next period",migrationConfiguration.getConfigurationName());
+                            } else {
+                                Breakpoint.checkpoint("CCC:beforeCreateJobs");
+                                List<MigrationJob> mjList=new ArrayList<>();
+                                do {
+                                    LOGGER.debug("{} will create a job for period {}-{}",migrationConfiguration.getConfigurationName(),startDate,endDate);
+                                    mjList.addAll(createJobs(startDate,endDate,ae));
+                                    migrationConfiguration.setTimestampInitialValue(endDate);
+                                    startDate=endDate;
+                                    endDate=getEndDate(startDate,period);
+                                } while(endDate!=null&&!stopped);
+                                if(!mjList.isEmpty()&&!stopped) {
+                                    try {
+                                        update(mjList);
+                                    } catch (Exception e) {
+                                        LOGGER.error("Cannot create jobs:{}",e,e);
                                     }
-                                    LOGGER.debug("Created all the jobs");
-                                    Breakpoint.checkpoint("CCC:afterCreateJobs");
                                 }
-                            } else
-                                LOGGER.error("Invalid timestamp initial value for {}, skipping this run",migrationConfiguration.getConfigurationName());
-                        } catch(Exception e) {
-                            LOGGER.error("Error during job creation:{}",e,e);
-                        } finally {
-                            LOGGER.debug("Unlocking consistency checker {}",migrationConfiguration.getConfigurationName());
-                            unlock(lockId);
-                        }
+                                LOGGER.debug("Created all the jobs");
+                                Breakpoint.checkpoint("CCC:afterCreateJobs");
+                            }
+                        } else
+                            LOGGER.error("Invalid timestamp initial value for {}, skipping this run",migrationConfiguration.getConfigurationName());
+                    } catch(Exception e) {
+                        LOGGER.error("Error during job creation:{}",e,e);
+                    } finally {
+                        LOGGER.debug("Unlocking consistency checker {}",migrationConfiguration.getConfigurationName());
+                        unlock(lockId);
                     }
                 }
+
             }
             if(!stopped) {
                 try {
