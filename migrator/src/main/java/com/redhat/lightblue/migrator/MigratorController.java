@@ -207,9 +207,11 @@ public class MigratorController extends AbstractController {
                         m.registerThreadMonitor(monitor);
                         m.start();
                     } else {
-                        // No jobs are available, wait a bit (10sec-30sec), and retry
-                        LOGGER.debug("Waiting for {}", migrationConfiguration.getConfigurationName());
-                        Thread.sleep(rnd.nextInt(20000) + 10000);
+                        if (migrationConfiguration.isSleepIfNoJobs()) {
+                            // No jobs are available, wait a bit (10sec-30sec), and retry
+                            LOGGER.debug("Waiting for {}", migrationConfiguration.getConfigurationName());
+                            Thread.sleep(rnd.nextInt(20000) + 10000);
+                        }
                     }
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();

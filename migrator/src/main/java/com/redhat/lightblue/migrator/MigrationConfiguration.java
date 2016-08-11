@@ -3,6 +3,8 @@ package com.redhat.lightblue.migrator;
 import java.util.Date;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 public class MigrationConfiguration {
 
     public static final String ENTITY_NAME = "migrationConfiguration";
@@ -41,6 +43,8 @@ public class MigrationConfiguration {
      * </pre>
      */
     private String period;
+
+    private boolean sleepIfNoJobs = true;
 
     /**
      * Gets the value of _id
@@ -439,5 +443,15 @@ public class MigrationConfiguration {
 
     public void setMigratorWeight(double migratorWeight) {
         this.migratorWeight = migratorWeight;
+    }
+
+    @JsonIgnore
+    public boolean isSleepIfNoJobs() {
+        return sleepIfNoJobs;
+    }
+
+    @JsonIgnore
+    public void setSleepIfNoJobs(boolean sleepIfNoJobs) {
+        this.sleepIfNoJobs = sleepIfNoJobs;
     }
 }
