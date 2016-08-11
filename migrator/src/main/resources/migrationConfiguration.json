@@ -2,7 +2,7 @@
     "entityInfo": {
         "datastore": {
             "backend": "mongo",
-            "collection": "migrationConfig",
+            "collection": "migrationConfiguration",
             "datasource": "mongodata"
         },
         "defaultVersion" : "2.0.2",
