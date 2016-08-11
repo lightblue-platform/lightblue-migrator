@@ -36,7 +36,7 @@ public abstract class AbstractMonitorTest {
     @After
     public void after() throws Exception {
         lightblue.cleanupMongoCollections(
-                "migrationConfig",
+                MigrationConfiguration.ENTITY_NAME,
                 MigrationJob.ENTITY_NAME);
     }
 
