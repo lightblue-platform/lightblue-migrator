@@ -34,7 +34,7 @@
     <module>facade</module>
     <!--module>bean-consistency-checker</module-->
     <module>jiff</module>
-    <module>lightblue-migration-monitor</module>
+    <!--module>lightblue-migration-monitor</module-->
   </modules>
   <properties>
     <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
