@@ -22,7 +22,7 @@ import com.redhat.lightblue.client.request.data.DataFindRequest;
 @RunWith(MockitoJUnitRunner.class)
 public class WeightsTest {
 
-    double acceptableThreshold = 0.02;
+    double acceptableThreshold = 0.03;
 
     @Mock LightblueHttpClient lightblueClient;
 
