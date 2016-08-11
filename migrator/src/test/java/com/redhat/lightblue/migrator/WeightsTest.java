@@ -76,7 +76,14 @@ public class WeightsTest {
 
         controller.start();
 
-        Thread.sleep(2500);
+        int loops = 0;
+        while(any[0] < 5000) {
+            Thread.sleep(100);
+
+            if (loops++ > 10000) {
+                throw new RuntimeException("Something's wrong, it shouldn't take that long");
+            }
+        }
 
         controller.setStopped();
 
@@ -88,7 +95,6 @@ public class WeightsTest {
         System.out.println("nongenerated="+nongenerated[0]);
         System.out.println("any="+any[0]);
 
-        Assert.assertTrue("Need at least 5000 samples", any[0] >= 5000);
         Assert.assertTrue("Generated + nongenerated query count should be equal or so to any query count", Math.abs(generated[0]+nongenerated[0]-any[0]) < acceptableThreshold*any[0]);
         Assert.assertTrue("Generated - nongenerated query count should be zero or so", Math.abs(generated[0]-nongenerated[0]) < acceptableThreshold*any[0]);
     }
