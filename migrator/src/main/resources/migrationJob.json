@@ -30,6 +30,10 @@
                     {
                         "dir": "$asc",
                         "field": "scheduledDate"
+                    },
+                    {
+                        "dir": "$asc",
+                        "field": "generated"
                     }
                 ],
                 "name": "MigrationJobsToExecute",

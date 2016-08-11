@@ -1,6 +1,8 @@
 package com.redhat.lightblue.migrator;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -51,22 +53,31 @@ public class MigratorController extends AbstractController {
      * Retrieves jobs that are available, and their scheduled time has passed.
      * Returns at most batchSize jobs starting at startIndex
      */
-    public MigrationJob[] retrieveJobs(int batchSize, int startIndex)
+    public MigrationJob[] retrieveJobs(int batchSize, int startIndex, JobType jobType)
             throws IOException, LightblueException {
         LOGGER.debug("Retrieving jobs: batchSize={}, startIndex={}", batchSize, startIndex);
 
         DataFindRequest findRequest = new DataFindRequest("migrationJob", null);
 
-        findRequest.where(
-                Query.and(
-                        // get jobs for this configuration
-                        Query.withValue("configurationName", Query.eq, migrationConfiguration.getConfigurationName()),
-                        // get jobs whose state ara available
-                        Query.withValue("status", Query.eq, "available"),
-                        // only get jobs that are
-                        Query.withValue("scheduledDate", Query.lte, new Date())
-                )
-        );
+        List<Query> conditions = new ArrayList<>(Arrays.asList(new Query[] {
+                // get jobs for this configuration
+                Query.withValue("configurationName", Query.eq, migrationConfiguration.getConfigurationName()),
+                // get jobs whose state ara available
+                Query.withValue("status", Query.eq, "available"),
+                // only get jobs that are
+                Query.withValue("scheduledDate", Query.lte, new Date())
+        }));
+
+        if (jobType == JobType.GENERATED) {
+            LOGGER.debug("Looking for generated job");
+            conditions.add(Query.withValue("generated", Query.eq, true));
+        } else if (jobType == JobType.NONGENERATED) {
+            LOGGER.debug("Looking for non generated job");
+            conditions.add(Query.withValue("generated", Query.eq, false));
+        }
+
+        findRequest.where(Query.and(conditions));
+
         findRequest.select(Projection.includeField("*"));
 
         findRequest.range(startIndex, startIndex + batchSize - 1);
@@ -93,7 +104,13 @@ public class MigratorController extends AbstractController {
         try {
             do {
                 more = true;
-                MigrationJob[] jobs = retrieveJobs(JOB_FETCH_BATCH_SIZE, startIndex);
+                MigrationJob[] jobs = retrieveJobs(JOB_FETCH_BATCH_SIZE, startIndex, getJobTypeToProcess());
+
+                if (jobs == null || jobs.length == 0) {
+                    // didn't find the job kind we were looking for, so fetch any
+                    jobs = retrieveJobs(JOB_FETCH_BATCH_SIZE, startIndex, JobType.ANY);
+                }
+
                 if (jobs != null && jobs.length > 0) {
                     if (jobs.length < JOB_FETCH_BATCH_SIZE) {
                         more = false;
@@ -190,9 +207,11 @@ public class MigratorController extends AbstractController {
                         m.registerThreadMonitor(monitor);
                         m.start();
                     } else {
-                        // No jobs are available, wait a bit (10sec-30sec), and retry
-                        LOGGER.debug("Waiting for {}", migrationConfiguration.getConfigurationName());
-                        Thread.sleep(rnd.nextInt(20000) + 10000);
+                        if (migrationConfiguration.isSleepIfNoJobs()) {
+                            // No jobs are available, wait a bit (10sec-30sec), and retry
+                            LOGGER.debug("Waiting for {}", migrationConfiguration.getConfigurationName());
+                            Thread.sleep(rnd.nextInt(20000) + 10000);
+                        }
                     }
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
@@ -204,5 +223,22 @@ public class MigratorController extends AbstractController {
         migratorThreads.interrupt();
         Breakpoint.checkpoint("MigratorController:end");
         LOGGER.debug("Ending controller thread for {}", migrationConfiguration.getConfigurationName());
+    }
+
+    /**
+     * Draws JobType basing on weights defined in configuration. This is to ensure that generated (consistency checker) and
+     * non generated (migrator) jobs run in requested proportions.
+     *
+     * @param cfg
+     * @return
+     */
+    private JobType getJobTypeToProcess() {
+        double denominator = migrationConfiguration.getConsistencyCheckerWeight() + migrationConfiguration.getMigratorWeight();
+
+        if (random.nextDouble() <= migrationConfiguration.getConsistencyCheckerWeight() / denominator) {
+            return JobType.GENERATED;
+        } else {
+            return JobType.NONGENERATED;
+        }
     }
 }

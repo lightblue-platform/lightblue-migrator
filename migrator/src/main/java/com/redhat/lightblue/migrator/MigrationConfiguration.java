@@ -1,7 +1,9 @@
 package com.redhat.lightblue.migrator;
 
-import java.util.List;
 import java.util.Date;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class MigrationConfiguration {
 
@@ -11,6 +13,8 @@ public class MigrationConfiguration {
     private String configurationName;
     private String consistencyCheckerName;
     private int threadCount;
+    private double consistencyCheckerWeight = 1f;
+    private double migratorWeight = 1f;
     private String migratorClass;
     private String consistencyCheckerControllerClass;
     private boolean overwriteDestinationDocuments = false;
@@ -39,6 +43,8 @@ public class MigrationConfiguration {
      * </pre>
      */
     private String period;
+
+    private boolean sleepIfNoJobs = true;
 
     /**
      * Gets the value of _id
@@ -421,5 +427,31 @@ public class MigrationConfiguration {
         sb.append("sourceEntityVersion=").append(sourceEntityVersion);
 
         return sb.toString();
+    }
+
+    public double getConsistencyCheckerWeight() {
+        return consistencyCheckerWeight;
+    }
+
+    public void setConsistencyCheckerWeight(double consistencyCheckerWeight) {
+        this.consistencyCheckerWeight = consistencyCheckerWeight;
+    }
+
+    public double getMigratorWeight() {
+        return migratorWeight;
+    }
+
+    public void setMigratorWeight(double migratorWeight) {
+        this.migratorWeight = migratorWeight;
+    }
+
+    @JsonIgnore
+    public boolean isSleepIfNoJobs() {
+        return sleepIfNoJobs;
+    }
+
+    @JsonIgnore
+    public void setSleepIfNoJobs(boolean sleepIfNoJobs) {
+        this.sleepIfNoJobs = sleepIfNoJobs;
     }
 }

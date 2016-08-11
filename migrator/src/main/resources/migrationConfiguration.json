@@ -5,7 +5,7 @@
             "collection": "migrationConfig",
             "datasource": "mongodata"
         },
-        "defaultVersion" : "2.0.1",
+        "defaultVersion" : "2.0.2",
         "indexes": [
             {
                 "fields": [
@@ -74,6 +74,14 @@
                     "required": true
                 },
                 "description": "Name of the configuration.  Referenced by jobs."
+            },
+            "consistencyCheckerWeight": {
+                "type": "double",
+                "description": "How often select generated jobs for processing."
+            },
+            "migratorWeight": {
+                "type": "double",
+                "description": "How often select non generated jobs for processing."
             },
             "consistencyCheckerName": {
                 "type": "string",
@@ -185,8 +193,8 @@
             "value": "active"
         },
         "version": {
-            "changelog": "Consistency checker changes",
-            "value": "2.0.1"
+            "changelog": "Weights for migrator and consistency checker",
+            "value": "2.0.2"
         }
     }
 }

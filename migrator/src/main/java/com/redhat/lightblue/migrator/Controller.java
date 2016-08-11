@@ -11,7 +11,6 @@ import com.redhat.lightblue.client.LightblueClient;
 import com.redhat.lightblue.client.LightblueException;
 import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.Query;
-import com.redhat.lightblue.client.http.LightblueHttpClient;
 import com.redhat.lightblue.client.request.data.DataFindRequest;
 
 /**
@@ -115,13 +114,8 @@ public class Controller extends Thread {
     }
 
     public LightblueClient getLightblueClient() {
-        LightblueHttpClient httpClient;
         LOGGER.debug("Getting client, config={}", cfg.getClientConfig());
-        if (cfg.getClientConfig() != null) {
-            return new LightblueHttpClient(cfg.getClientConfig());
-        } else {
-            return new LightblueHttpClient();
-        }
+        return cfg.getLightblueClient();
     }
 
     private boolean shouldHaveConsistencyChecker(MigrationConfiguration cfg) {

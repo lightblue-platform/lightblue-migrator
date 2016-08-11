@@ -8,6 +8,9 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import com.redhat.lightblue.client.LightblueClient;
+import com.redhat.lightblue.client.http.LightblueHttpClient;
+
 public class MainConfiguration {
 
     public static final Options options;
@@ -68,6 +71,14 @@ public class MainConfiguration {
 
     public String getClientConfig() {
         return clientConfig;
+    }
+
+    public LightblueClient getLightblueClient() {
+        if (getClientConfig() != null) {
+            return new LightblueHttpClient(getClientConfig());
+        } else {
+            return new LightblueHttpClient();
+        }
     }
 
     public void setClientConfig(String s) {
