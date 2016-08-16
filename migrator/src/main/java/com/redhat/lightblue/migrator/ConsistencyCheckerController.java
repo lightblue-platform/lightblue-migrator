@@ -13,6 +13,7 @@ import org.joda.time.Period;
 
 import com.redhat.lightblue.client.Query;
 import com.redhat.lightblue.client.Update;
+import com.redhat.lightblue.client.LightblueException;
 import com.redhat.lightblue.client.Literal;
 import com.redhat.lightblue.client.Projection;
 import com.redhat.lightblue.client.util.ClientConstants;
@@ -146,7 +147,7 @@ public class ConsistencyCheckerController extends AbstractController {
         }
     }
 
-    private void batchCreate(List<MigrationJob> mjList) {
+    private void batchCreate(List<MigrationJob> mjList) throws LightblueException {
         final int batchSize = 100;
         List<MigrationJob> batch = new ArrayList<>(batchSize);
         for (MigrationJob mj : mjList) {
@@ -156,11 +157,7 @@ public class ConsistencyCheckerController extends AbstractController {
                 if (!batch.isEmpty()) {
                     DataInsertRequest req = new DataInsertRequest("migrationJob", null);
                     req.create(batch);
-                    try {
-                        lbClient.data(req);
-                    } catch (Exception e) {
-                        LOGGER.error("Exception insering a batch of jobs", e);
-                    }
+                    lbClient.data(req);
                 }
                 batch.clear();
             }
@@ -170,11 +167,7 @@ public class ConsistencyCheckerController extends AbstractController {
             if (!batch.isEmpty()) {
                 DataInsertRequest req = new DataInsertRequest("migrationJob", null);
                 req.create(batch);
-                try {
-                    lbClient.data(req);
-                } catch (Exception e) {
-                    LOGGER.error("Exception insering a batch of jobs", e);
-                }
+                lbClient.data(req);
             }
         }
     }
