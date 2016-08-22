@@ -76,10 +76,10 @@ public class TimeoutConfigurationTest {
 
         t = new TimeoutConfiguration(2000, "BarService", p);
 
-        Assert.assertEquals(2000, t.getSlowWarningMS("foo", FacadeOperation.READ));
-        Assert.assertEquals(2000, t.getSlowWarningMS("bar", FacadeOperation.WRITE));
-        Assert.assertEquals(2000, t.getSlowWarningMS("fooBar", FacadeOperation.WRITE));
-        Assert.assertEquals(2000, t.getSlowWarningMS("fooBar", FacadeOperation.READ));
+        Assert.assertEquals(4000, t.getSlowWarningMS("foo", FacadeOperation.READ));
+        Assert.assertEquals(4000, t.getSlowWarningMS("bar", FacadeOperation.WRITE));
+        Assert.assertEquals(4000, t.getSlowWarningMS("fooBar", FacadeOperation.WRITE));
+        Assert.assertEquals(4000, t.getSlowWarningMS("fooBar", FacadeOperation.READ));
         Assert.assertEquals(2000, t.getTimeoutMS("fooBar", FacadeOperation.READ));
     }
 

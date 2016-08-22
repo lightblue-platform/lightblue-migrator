@@ -136,11 +136,10 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                     return (T) method.invoke(lightblueSvc, values);
                 } finally {
                     long callTook = dest.complete();
-                    long timeout = timeoutConfiguration.getTimeoutMS(method.getName(), op);
                     long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
 
-                    if (callTook >= slowWarning && callTook < timeout) {
-                        // call is slow but not slow enough to trigger timeout
+                    if (callTook >= slowWarning) {
+                        // call is slow; this will log even if source fails to respond
                         log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
                     }
                 }

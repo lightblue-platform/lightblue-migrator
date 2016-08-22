@@ -118,7 +118,17 @@ public class TimeoutConfiguration {
                 log.debug("{} config not found for bean {} using global timeout", type, beanName);
             }
 
-            timeout = defaultTimeoutMS;
+            switch (type) {
+                case timeout: {
+                    timeout = defaultTimeoutMS; break;
+                }
+                case slowwarning: {
+                    timeout = 2 * defaultTimeoutMS; break;
+                }
+                default:
+                    throw new IllegalArgumentException("Type " + type + " not known!");
+            }
+
         } else {
             timeout = Long.parseLong(timeoutPropValue);
         }
