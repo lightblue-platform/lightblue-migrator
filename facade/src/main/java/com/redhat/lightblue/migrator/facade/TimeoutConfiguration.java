@@ -42,8 +42,7 @@ public class TimeoutConfiguration {
 
     public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
 
-    private long defaultTimeoutMS;
-    private long defaultSlowwarnMS;
+    private final long defaultTimeoutMS, defaultSlowwarnMS;
     private String beanName;
     private Properties properties;
     private boolean interruptOnTimeout = true;
@@ -81,13 +80,14 @@ public class TimeoutConfiguration {
     /**
     *
     * @param defaultTimeoutMS Use this timeout if nothing matches in the
-    * properties. For defaultSlowwarnMS, it will use 2x defaultTimeoutMS.
+    * properties. For defaultSlowwarnMS, it will use defaultTimeoutMS.
+    * (so it doesn't log both timeout and slowwarn unless source is slow)
     * @param beanName bean name to use, e.g. CountryDAO
     * @param properties properties read from a file with timeout settings. Can
     * be null.
     */
     public TimeoutConfiguration(long defaultTimeoutMS, String beanName, Properties properties) {
-        this(defaultTimeoutMS, 2*defaultTimeoutMS, beanName, properties);
+        this(defaultTimeoutMS, defaultTimeoutMS, beanName, properties);
     }
 
     /**
