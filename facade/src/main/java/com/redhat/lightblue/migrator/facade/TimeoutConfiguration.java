@@ -42,7 +42,7 @@ public class TimeoutConfiguration {
 
     public static final String CONFIG_PREFIX = "com.redhat.lightblue.migrator.facade.";
 
-    private long defaultTimeoutMS;
+    private final long defaultTimeoutMS, defaultSlowwarnMS;
     private String beanName;
     private Properties properties;
     private boolean interruptOnTimeout = true;
@@ -53,12 +53,15 @@ public class TimeoutConfiguration {
      *
      * @param defaultTimeoutMS Use this timeout if nothing matches in the
      * properties
+     * @param defaultSlowwarnMS Use this slow warn time if nothing matches in
+     * the properties
      * @param beanName bean name to use, e.g. CountryDAO
      * @param properties properties read from a file with timeout settings. Can
      * be null.
      */
-    public TimeoutConfiguration(long defaultTimeoutMS, String beanName, Properties properties) {
+    public TimeoutConfiguration(long defaultTimeoutMS, long defaultSlowwarnMS, String beanName, Properties properties) {
         this.defaultTimeoutMS = defaultTimeoutMS;
+        this.defaultSlowwarnMS = defaultSlowwarnMS;
         this.beanName = beanName;
         if (properties != null) {
             this.properties = properties;
@@ -72,6 +75,19 @@ public class TimeoutConfiguration {
         }
 
         log.info("Initialized TimeoutConfiguration for {}, interruptOnTimeout={}", beanName, interruptOnTimeout);
+    }
+
+    /**
+    *
+    * @param defaultTimeoutMS Use this timeout if nothing matches in the
+    * properties. For defaultSlowwarnMS, it will use defaultTimeoutMS.
+    * (so it doesn't log both timeout and slowwarn unless source is slow)
+    * @param beanName bean name to use, e.g. CountryDAO
+    * @param properties properties read from a file with timeout settings. Can
+    * be null.
+    */
+    public TimeoutConfiguration(long defaultTimeoutMS, String beanName, Properties properties) {
+        this(defaultTimeoutMS, defaultTimeoutMS, beanName, properties);
     }
 
     /**
@@ -118,7 +134,17 @@ public class TimeoutConfiguration {
                 log.debug("{} config not found for bean {} using global timeout", type, beanName);
             }
 
-            timeout = defaultTimeoutMS;
+            switch (type) {
+                case timeout: {
+                    timeout = defaultTimeoutMS; break;
+                }
+                case slowwarning: {
+                    timeout = defaultSlowwarnMS; break;
+                }
+                default:
+                    throw new IllegalArgumentException("Type " + type + " not known!");
+            }
+
         } else {
             timeout = Long.parseLong(timeoutPropValue);
         }
