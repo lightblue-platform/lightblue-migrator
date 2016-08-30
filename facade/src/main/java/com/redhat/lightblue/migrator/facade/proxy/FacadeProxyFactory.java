@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import com.redhat.lightblue.migrator.facade.ServiceFacade;
 import com.redhat.lightblue.migrator.facade.ServiceFacade.FacadeOperation;
 import com.redhat.lightblue.migrator.facade.sharedstore.SharedStoreSetter;
+import com.redhat.lightblue.migrator.features.LightblueMigration;
 
 /**
  * Creates a dynamic proxy implementing given interface. The calls to the
@@ -100,12 +101,12 @@ public class FacadeProxyFactory {
 
                 switch (t) {
                     case LEGACY: {
-                        log.debug("Not a facade operation, proxy passing to legacy");
+                        log.debug("Method \"{}\" is explicitly annotated to call legacy", method);
                         Method legacyMethod = svcFacade.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
                         return legacyMethod.invoke(svcFacade.getLegacySvc(), args);
                     }
                     case LIGHTBLUE: {
-                        log.debug("Not a facade operation, proxy passing to lightblue");
+                        log.debug("Method \"{}\" is explicitly annotated to call lightblue", method);
                         Method destinationMethod = svcFacade.getLightblueSvc().getClass().getMethod(method.getName(), method.getParameterTypes());
                         return destinationMethod.invoke(svcFacade.getLightblueSvc(), args);
                     }
@@ -124,10 +125,16 @@ public class FacadeProxyFactory {
                 return svcFacade.callSvcMethod(FacadeOperation.WRITE, wo.parallel(), method, args);
             }
 
-            log.debug("Not a facade operation, proxy passing to legacy");
+            if (!LightblueMigration.shouldReadSourceEntity() && !LightblueMigration.shouldWriteSourceEntity()) {
+                // this method is not annotated and legacy/source is no more
+                throw new IllegalStateException("Method \""+method+"\" is not annotated for facade and legacy source is disabled!");
+            } else {
+                // this can cause problems when entering proxy phase
+                log.warn("Method \"{}\" is not annotated for facade. Proxy passing to legacy.", method);
 
-            Method legacyMethod = svcFacade.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
-            return legacyMethod.invoke(svcFacade.getLegacySvc(), args);
+                Method legacyMethod = svcFacade.getLegacySvc().getClass().getMethod(method.getName(), method.getParameterTypes());
+                return legacyMethod.invoke(svcFacade.getLegacySvc(), args);
+            }
         }
 
     }
