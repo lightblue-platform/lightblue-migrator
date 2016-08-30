@@ -56,14 +56,22 @@ public class ServiceFacadeTest {
     }
 
     @Test
-    public void testGetCountryFromLegacy_Implicit() throws CountryException {
-        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+    public void testGetCountryFromLegacy_DualRead_Implicit() throws CountryException {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
 
         countryDAOProxy.getCountryFromLegacy(1l);
 
         Mockito.verify(legacyDAO).getCountryFromLegacy(1l);
-        // even though this is a proxy phase, never call lightblue. It's not a facade operation.
+        // even though this is a dual read phase, never call lightblue. It's not a facade operation.
         Mockito.verifyZeroInteractions(lightblueDAO);
+    }
+
+    @Test(expected=IllegalStateException.class)
+    public void testGetCountryFromLegacy_ProxyPhase_Implicit() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        // throws exception because this method is facade and legacy/source is no more
+        countryDAOProxy.getCountryFromLegacy(1l);
     }
 
     @Test
@@ -73,7 +81,8 @@ public class ServiceFacadeTest {
         countryDAOProxy.getCountryFromLegacy2(1l);
 
         Mockito.verify(legacyDAO).getCountryFromLegacy2(1l);
-        // even though this is a proxy phase, never call lightblue. It's not a facade operation.
+        // even though this is a proxy phase, never call lightblue,
+        // since this operation is explicitly annotated as source
         Mockito.verifyZeroInteractions(lightblueDAO);
     }
 
@@ -100,6 +109,8 @@ public class ServiceFacadeTest {
      */
     @Test
     public void testGetCountryFromLegacy_UsingSubinterfaceToCreateProxy() throws Exception {
+        LightblueMigrationPhase.dualReadPhase(togglzRule);
+
         // countryDAO is daoFacade using CountryDAO interface to invoke methods
         countryDAOProxy = FacadeProxyFactory.createFacadeProxy(daoFacade, CountryDAOSubinterface.class);
 
