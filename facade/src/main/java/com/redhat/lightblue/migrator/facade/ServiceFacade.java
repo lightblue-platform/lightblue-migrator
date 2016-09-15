@@ -219,6 +219,16 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         }
     }
 
+    private void cancel(ListenableFuture listenableFuture) {
+        if (listenableFuture != null) {
+            try {
+                listenableFuture.cancel(true);
+            } catch (Exception e) {
+                log.error("Failed to cancel lightblue call", e);
+            }
+        }
+    }
+
     /**
      * Call service method according to settings specified in togglz.
      *
@@ -280,6 +290,9 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                     // swallow the exception from legacy
                     log.warn("Legacy call " + implementationName + "." + callStringifier + " threw an exception. Returning data from Lightblue.", e.getCause());
                 } else {
+                    if (timeoutConfiguration.isInterruptOnTimeout() && facadeOperation == FacadeOperation.READ) {
+                        cancel(listenableFuture);
+                    }
                     throw e.getCause();
                 }
             } finally {
@@ -306,11 +319,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
                 if (timeoutConfiguration.isInterruptOnTimeout() && facadeOperation == FacadeOperation.READ) {
                     // try to interrupt the thread
-                    try {
-                        listenableFuture.cancel(true);
-                    } catch (Exception e) {
-                        log.error("Failed to cancel lightblue call", e);
-                    }
+                    cancel(listenableFuture);
                 }
 
                 if (shouldSource(facadeOperation)) {
