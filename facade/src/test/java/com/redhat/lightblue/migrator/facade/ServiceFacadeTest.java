@@ -197,20 +197,8 @@ public class ServiceFacadeTest {
     }
 
     @Test
-    public void lightblueProxyTest() throws CountryException {
-        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
-
-        countryDAOProxy.getCountry("PL");
-
-        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
-        Mockito.verifyZeroInteractions(legacyDAO);
-        Mockito.verify(lightblueDAO).getCountry("PL");
-    }
-
-    @Test
-    public void dualReadPhase_NoConsistencyCheck() throws CountryException {
-        LightblueMigrationPhase.dualReadPhase(togglzRule);
-        LightblueMigrationPhase.enableConsistencyChecks(false, togglzRule);
+    public void kindaProxyPhaseRead() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
 
         Mockito.when(legacyDAO.getCountry("ca")).thenReturn(new Country("ca"));
         Mockito.when(lightblueDAO.getCountry("ca")).thenReturn(new Country("pl"));
@@ -226,9 +214,8 @@ public class ServiceFacadeTest {
     }
 
     @Test
-    public void dualReadPhase_NoConsistencyCheck_Null() throws CountryException {
-        LightblueMigrationPhase.dualReadPhase(togglzRule);
-        LightblueMigrationPhase.enableConsistencyChecks(false, togglzRule);
+    public void kindaProxyPhaseRead_Null() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
 
         Mockito.when(legacyDAO.getCountry("ca")).thenReturn(new Country("ca"));
         Mockito.when(lightblueDAO.getCountry("ca")).thenReturn(null);
@@ -241,6 +228,17 @@ public class ServiceFacadeTest {
 
         // no consistency check, return data from Lightblue
         Assert.assertEquals(null, returnedCountry);
+    }
+
+    @Test
+    public void lightblueProxyTest() throws CountryException {
+        LightblueMigrationPhase.lightblueProxyPhase(togglzRule);
+
+        countryDAOProxy.getCountry("PL");
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verifyZeroInteractions(legacyDAO);
+        Mockito.verify(lightblueDAO).getCountry("PL");
     }
 
     /* update tests */
@@ -544,6 +542,61 @@ public class ServiceFacadeTest {
         Mockito.verify(legacyDAO).createCountry(pl);
 
         Assert.assertEquals(null, returnedCountry);
+    }
+
+    @Test
+    public void ligtblueFailureDuringRead_KindaProxyPhase() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
+
+        Mockito.when(legacyDAO.getCountry("ca")).thenReturn(new Country("ca"));
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).getCountry("ca");
+
+        try {
+            countryDAOProxy.getCountry("ca");
+            Assert.fail("Expected "+CountryException.class);
+        } catch (CountryException e) {
+            Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+            Mockito.verify(legacyDAO).getCountry("ca");
+            Mockito.verify(lightblueDAO).getCountry("ca");
+        }
+    }
+
+    @Test
+    public void lightblueFailureDuringUpdate_KindaProxyPhase() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
+
+        Country ca = new Country("ca");
+
+        Mockito.when(legacyDAO.updateCountry(ca)).thenReturn(ca);
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).updateCountry(ca);
+
+        try {
+            countryDAOProxy.updateCountry(ca);
+            Assert.fail("Expected "+CountryException.class);
+        } catch (CountryException e) {
+            Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+            Mockito.verify(legacyDAO).updateCountry(ca);
+            Mockito.verify(lightblueDAO).updateCountry(ca);
+        }
+    }
+
+    @Test
+    public void lightblueFailureDuringCreate_KindaProxyPhase() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
+
+        Country ca = new Country("ca");
+
+        Mockito.when(legacyDAO.createCountry(ca)).thenReturn(ca);
+        Mockito.doThrow(new CountryException()).when(lightblueDAO).createCountry(ca);
+
+        try {
+            countryDAOProxy.createCountry(ca);
+            Assert.fail("Expected "+CountryException.class);
+        } catch (CountryException e) {
+            Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+            Mockito.verify(legacyDAO).createCountry(ca);
+            Mockito.verify(lightblueDAO).createCountry(ca);
+        }
     }
 
     /* lightblue timeout tests */
@@ -1005,9 +1058,9 @@ public class ServiceFacadeTest {
     public void legacyFailureDuringParallelReadTest() throws CountryException {
         LightblueMigrationPhase.dualReadPhase(togglzRule);
 
-        Mockito.when(legacyDAO.getCountry("PL")).then(new Answer() {
+        Mockito.when(legacyDAO.getCountry("PL")).then(new Answer<Country>() {
             @Override
-            public Object answer(InvocationOnMock invocation) throws Throwable {
+            public Country answer(InvocationOnMock invocation) throws Throwable {
                 Thread.sleep(300);
                 throw new CountryException();
             }
@@ -1082,6 +1135,63 @@ public class ServiceFacadeTest {
 
         Mockito.verify(legacyDAO).createCountry(pl);
     }
+
+    @Test
+    public void legacyFailureDuringRead_KindaProxyPhase() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
+
+        Mockito.doThrow(new CountryException()).when(legacyDAO).getCountry("ca");
+        Mockito.when(lightblueDAO.getCountry("ca")).thenReturn(new Country("ca"));
+
+        Country country = countryDAOProxy.getCountry("ca");
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).getCountry("ca");
+        Mockito.verify(lightblueDAO).getCountry("ca");
+
+        // consistency check disabled, legacy exception was swallowed and response from Lightblue returned
+        Assert.assertEquals(new Country("ca"), country);
+    }
+
+    @Test
+    public void legacyFailureDuringUpdate_KindaProxyPhase() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
+
+        Country ca = new Country("ca");
+
+        Mockito.doThrow(new CountryException()).when(legacyDAO).updateCountry(ca);
+        Mockito.when(lightblueDAO.updateCountry(ca)).thenReturn(ca);
+
+        Country country = countryDAOProxy.updateCountry(ca);
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).updateCountry(ca);
+        Mockito.verify(lightblueDAO).updateCountry(ca);
+
+        // consistency check disabled, legacy exception was swallowed and response from Lightblue returned
+        Assert.assertEquals(ca, country);
+    }
+
+    @Test
+    public void legacyFailureDuringCreate_KindaProxyPhase() throws CountryException {
+        LightblueMigrationPhase.lightblueKindaProxyPhase(togglzRule);
+
+        Country ca = new Country("ca");
+
+        Mockito.doThrow(new CountryException()).when(legacyDAO).createCountry(ca);
+        Mockito.when(lightblueDAO.createCountry(ca)).thenReturn(ca);
+
+        Country country = countryDAOProxy.createCountry(ca);
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).createCountry(ca);
+        Mockito.verify(lightblueDAO).createCountry(ca);
+
+        // consistency check disabled, legacy exception was swallowed and response from Lightblue returned
+        Assert.assertEquals(ca, country);
+    }
+
+    /** shared store tests **/
 
     /**
      * This test ensures that shared data is cleared for current thread at the

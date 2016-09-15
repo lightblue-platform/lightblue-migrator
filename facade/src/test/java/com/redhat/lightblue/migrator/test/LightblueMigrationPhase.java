@@ -56,6 +56,18 @@ public abstract class LightblueMigrationPhase {
     }
 
     /**
+     * Kinda proxy phase is dual read phase with consistency checks disabled.
+     *
+     */
+    public static void lightblueKindaProxyPhase(TogglzRule togglzRule) {
+        togglzRule.enable(LightblueMigrationFeatures.READ_SOURCE_ENTITY);
+        togglzRule.enable(LightblueMigrationFeatures.READ_DESTINATION_ENTITY);
+        togglzRule.enable(LightblueMigrationFeatures.WRITE_SOURCE_ENTITY);
+        togglzRule.enable(LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY);
+        enableConsistencyChecks(false, togglzRule);
+    }
+
+    /**
      *
      * @param togglzRule with all features disabled
      */
