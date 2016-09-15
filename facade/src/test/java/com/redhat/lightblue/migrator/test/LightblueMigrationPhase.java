@@ -56,6 +56,25 @@ public abstract class LightblueMigrationPhase {
     }
 
     /**
+     * Kinda proxy phase means:
+     * 1) writes go to both legacy and Lightblue services
+     * 1) reads go only to Lightblue service
+     * 3) consistency checks are disabled
+     *
+     * For write operations, legacy is still going to be called first to ensure all generated data
+     * (ids, timestamps, etc.) can be passed to shared store. Legacy is still the source of this shared information.
+     *
+     * All Lightblue timeouts have to be disabled for kinda proxy phase.
+     *
+     */
+    public static void lightblueKindaProxyPhase(TogglzRule togglzRule) {
+        togglzRule.enable(LightblueMigrationFeatures.WRITE_SOURCE_ENTITY);
+        togglzRule.enable(LightblueMigrationFeatures.WRITE_DESTINATION_ENTITY);
+        togglzRule.enable(LightblueMigrationFeatures.READ_DESTINATION_ENTITY);
+        enableConsistencyChecks(false, togglzRule);
+    }
+
+    /**
      *
      * @param togglzRule with all features disabled
      */

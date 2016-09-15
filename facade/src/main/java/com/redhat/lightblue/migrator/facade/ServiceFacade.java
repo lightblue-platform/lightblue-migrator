@@ -208,7 +208,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         }
     }
 
-    private boolean shouldCheckConsistencyConsistency(FacadeOperation facadeOperation) {
+    private boolean shouldCheckConsistency(FacadeOperation facadeOperation) {
         switch (facadeOperation) {
             case READ:
                 return LightblueMigration.shouldCheckReadConsistency();
@@ -275,7 +275,13 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             try {
                 legacyEntity = (T) method.invoke(legacySvc, values);
             } catch (InvocationTargetException e) {
-                throw e.getCause();
+                if (shouldDestination(facadeOperation) && !shouldCheckConsistency(facadeOperation)) {
+                    // Lightblue is going to be called and consistency checker is disabled
+                    // swallow the exception from legacy
+                    log.warn("Legacy call " + implementationName + "." + callStringifier + " threw an exception. Returning data from Lightblue.", e.getCause());
+                } else {
+                    throw e.getCause();
+                }
             } finally {
                 legacyCallTookMS = (int) source.complete();
             }
@@ -314,16 +320,18 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                     throw te;
                 }
             } catch (Throwable e) {
-                if (shouldSource(facadeOperation)) {
+                if (shouldSource(facadeOperation) && shouldCheckConsistency(facadeOperation)) {
+                    // swallow lightblue exception if legacy was called and consistency checker is on
                     log.warn("Lightblue call " + implementationName + "." + callStringifier + " threw an exception. Returning data from legacy.", e);
                     return legacyEntity;
                 } else {
+                    // throw lightblue exception if legacy was not called or consistency checker is disabled
                     throw extractUnderlyingException(e);
                 }
             }
         }
 
-        if (shouldCheckConsistencyConsistency(facadeOperation) && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
+        if (shouldCheckConsistency(facadeOperation) && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
             // dual phase, consistency check enabled
             // make sure that response from lightblue and oracle are the same
             if (log.isDebugEnabled())
@@ -337,7 +345,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 // return oracle data if they aren't and log data inconsistency
                 return legacyEntity;
             }
-        } else if (!shouldCheckConsistencyConsistency(facadeOperation) && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
+        } else if (!shouldCheckConsistency(facadeOperation) && shouldSource(facadeOperation) && shouldDestination(facadeOperation)) {
             if (log.isDebugEnabled())
                 log.debug("dual phase, no consistency check (disabled), returning data from Lightblue");
             return lightblueEntity;
