@@ -155,7 +155,7 @@ public class ServiceFacadePhaseProxyTest extends ServiceFacadeTestBase {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnCreate_ProxyPhase() throws CountryException {
+    public void lightblueTakesLongToRespondOnCreate_TimeoutIgnored() throws CountryException {
         Properties p = new Properties();
         TimeoutConfiguration t = new TimeoutConfiguration(100, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
@@ -181,7 +181,7 @@ public class ServiceFacadePhaseProxyTest extends ServiceFacadeTestBase {
     }
 
     @Test
-    public void lightblueTakesLongToRespondOnRead_ProxyPhase() throws CountryException {
+    public void lightblueTakesLongToRespondOnRead_TimeoutIgnored() throws CountryException {
         Properties p = new Properties();
         TimeoutConfiguration t = new TimeoutConfiguration(100, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
