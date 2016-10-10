@@ -239,12 +239,6 @@
         </build>
     </profile>
     <profile>
-      <id>wildfly</id>
-      <properties>
-        <rpm.install.basedir>/usr/share/wildfly/standalone/deployments</rpm.install.basedir>
-      </properties>
-    </profile>
-    <profile>
       <id>release</id>
       <build>
         <plugins>
