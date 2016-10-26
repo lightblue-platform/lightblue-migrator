@@ -94,9 +94,37 @@ public class ServiceFacadePhaseKindaProxyTest extends ServiceFacadeTestBase {
     }
 
     @Test
-    public void kindaProxyPhaseCreateTimeoutTest() throws CountryException {
+    public void kindaProxyPhaseCreateTimeoutDisabledTest() throws CountryException {
         Properties p = new Properties();
         TimeoutConfiguration t = new TimeoutConfiguration(-1, CountryDAO.class.getSimpleName(), p); // timeout disabled
+        daoFacade.setTimeoutConfiguration(t);
+
+        final Country pl = new Country("PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(new Country("ca"));
+        Mockito.when(lightblueDAO.createCountry(pl)).thenAnswer(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(300);
+                return pl;
+            }
+        });
+
+        Country returnedCountry = countryDAOProxy.createCountry(pl);
+
+        Mockito.verify(consistencyChecker, Mockito.never()).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).createCountry(pl);
+        Mockito.verify(lightblueDAO).createCountry(pl);
+
+        // no consistency check, no timeout, return data from Lightblue
+        Assert.assertEquals("PL", returnedCountry.getIso2Code());
+    }
+
+    @Test
+    public void kindaProxyPhaseCreateTimeoutIgnoredTest() throws CountryException {
+        Properties p = new Properties();
+        TimeoutConfiguration t = new TimeoutConfiguration(100, CountryDAO.class.getSimpleName(), p);
         daoFacade.setTimeoutConfiguration(t);
 
         final Country pl = new Country("PL");

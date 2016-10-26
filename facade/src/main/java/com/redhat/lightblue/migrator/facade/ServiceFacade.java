@@ -152,21 +152,22 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
     /**
      * Call destination (lightblue) using a timeout in dual read/write phases.
-     * Do not use facade timeout during lightblue proxy phase.
+     * Do not use facade timeout during lightblue proxy and kinda proxy phases (when
+     * reading from source is disabled).
      *
      * @param listenableFuture
      * @param methodName method name is used to read method specific timeout
      * configuration
-     * @param shouldSource true if source operation is supposed to be performed
-     * for this call (i.e. this is a dual phase)
      * @param destinationCallTimeout Set future timeout to this amount
      * @return
      * @throws InterruptedException
      * @throws ExecutionException
      * @throws TimeoutException
      */
-    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, FacadeOperation facadeOperation, boolean shouldSource, int destinationCallTimeout) throws InterruptedException, ExecutionException, TimeoutException {
-        if (!shouldSource || timeoutConfiguration.getTimeoutMS(methodName, facadeOperation) <= 0) {
+    private <T> T getWithTimeout(ListenableFuture<T> listenableFuture, String methodName, FacadeOperation facadeOperation, int destinationCallTimeout) throws InterruptedException, ExecutionException, TimeoutException {
+        // not reading from source/legacy means this is either proxy or kinda proxy phase
+        // in that case, ignore timeout settings for Lightblue call
+        if (!shouldSource(FacadeOperation.READ) || timeoutConfiguration.getTimeoutMS(methodName, facadeOperation) <= 0) {
             return listenableFuture.get();
         } else {
             return listenableFuture.get(destinationCallTimeout, TimeUnit.MILLISECONDS);
@@ -308,12 +309,12 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
             try {
                 if (callInParallel) {
                     // lightblue was called before source/legacy, now just getting results
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation), destinationCallTimeout);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, destinationCallTimeout);
                 } else {
                     // call lightblue after source/legacy finished
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
                     listenableFuture = callLightblueSvc(method, values, facadeOperation, callStringifier);
-                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, shouldSource(facadeOperation), destinationCallTimeout);
+                    lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, destinationCallTimeout);
                 }
             } catch (TimeoutException te) {
 
