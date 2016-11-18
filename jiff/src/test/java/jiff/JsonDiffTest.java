@@ -226,4 +226,16 @@ public class JsonDiffTest {
                 esc("{'b':'x','a':1,'c':[2,3,1],'d':[ {'b':2}, {'a':1,'c':3} ] }"));
         Assert.assertEquals(0, list.size());
     }
+
+    @Test
+    public void cmpArraysOfObjectsOutput() throws Exception {
+        JsonDiff diff = new JsonDiff();
+        diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
+        diff.setOption(JsonDiff.Option.RETURN_LEAVES_ONLY);
+        List<JsonDelta> list = diff.computeDiff(esc("{'array': [{'a': 1, 'b': {'c': 1}}]}'"),
+                esc("{'array': [{'a': 1, 'b': {'c': 2}}]}'"));
+        Assert.assertEquals(2,  list.size());
+        Assert.assertEquals("array.0({\"a\":1,\"b\":{\"c\":1}} != null)", list.get(0).toString());
+        Assert.assertEquals("array.0(null != {\"a\":1,\"b\":{\"c\":2}})", list.get(1).toString());
+    }
 }
