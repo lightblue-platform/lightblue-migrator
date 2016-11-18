@@ -43,10 +43,6 @@ public class JsonDelta {
     private String describe(JsonNode node) {
         if (node == null) {
             return "null";
-        } else if (node instanceof ObjectNode) {
-            return "ObjectNode";
-        } else if (node instanceof ArrayNode) {
-            return "ArrayNode";
         } else {
             return node.toString();
         }
