@@ -31,6 +31,7 @@ public abstract class ServiceFacadeTestBase {
     @Before
     public void setup() throws InstantiationException, IllegalAccessException {
         daoFacade.setConsistencyChecker(consistencyChecker);
+        daoFacade.registerExceptionSwallowedListener(null);
 
         // countryDAOProxy is daoFacade using CountryDAO interface to invoke methods
         countryDAOProxy = FacadeProxyFactory.createFacadeProxy(daoFacade, CountryDAOFacadable.class);

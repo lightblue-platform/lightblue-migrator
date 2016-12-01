@@ -58,6 +58,15 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
     // used to associate inconsistencies with the service in the logs
     private final String implementationName;
 
+    private ExceptionSwallowedListener exceptionSwallowedListener = null;
+
+    /**
+     * Facade swallows Lightblue implementation failures and returns from legacy implementation.
+     */
+    public static interface ExceptionSwallowedListener {
+        public void onLightblueSvcExceptionSwallowed(Throwable t, String implementationName);
+    }
+
     public SharedStore getSharedStore() {
         return sharedStore;
     }
@@ -333,6 +342,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 if (shouldSource(facadeOperation) && shouldCheckConsistency(facadeOperation)) {
                     // swallow lightblue exception if legacy was called and consistency checker is on
                     log.warn("Lightblue call " + implementationName + "." + callStringifier + " threw an exception. Returning data from legacy.", e);
+                    onExceptionSwallowed(e);
                     return legacyEntity;
                 } else {
                     // throw lightblue exception if legacy was not called or consistency checker is disabled
@@ -404,5 +414,18 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
     public void setTimeoutConfiguration(TimeoutConfiguration timeoutConfiguration) {
         this.timeoutConfiguration = timeoutConfiguration;
+    }
+
+    public ExceptionSwallowedListener getExceptionSwallowedListener() {
+        return exceptionSwallowedListener;
+    }
+
+    public void registerExceptionSwallowedListener(ExceptionSwallowedListener exceptionSwallowedEvent) {
+        this.exceptionSwallowedListener = exceptionSwallowedEvent;
+    }
+
+    private void onExceptionSwallowed(Throwable t) {
+        if (exceptionSwallowedListener != null)
+            exceptionSwallowedListener.onLightblueSvcExceptionSwallowed(t, implementationName);
     }
 }
