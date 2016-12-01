@@ -12,6 +12,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
+import com.redhat.lightblue.migrator.facade.ServiceFacade.ExceptionSwallowedListener;
 import com.redhat.lightblue.migrator.facade.methodcallstringifier.MethodCallStringifier;
 import com.redhat.lightblue.migrator.facade.model.Country;
 import com.redhat.lightblue.migrator.facade.proxy.FacadeProxyFactory;
@@ -70,6 +71,18 @@ public class ServiceFacadePhaseDualReadTest extends ServiceFacadeTestBase {
 
     @Test
     public void dualReadPhaseReadConsistentTest() throws CountryException {
+
+        final boolean[] exceptionEventFired = new boolean[1];
+        exceptionEventFired[0] = false;
+
+        daoFacade.registerExceptionSwallowedListener(new ExceptionSwallowedListener() {
+
+            @Override
+            public void onLightblueSvcExceptionSwallowed(Throwable t, String implementationName) {
+                exceptionEventFired[0] = true;
+            }
+        });
+
         Country country = new Country();
 
         Mockito.when(legacyDAO.getCountry("PL")).thenReturn(country);
@@ -80,6 +93,8 @@ public class ServiceFacadePhaseDualReadTest extends ServiceFacadeTestBase {
         Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
         Mockito.verify(legacyDAO).getCountry("PL");
         Mockito.verify(lightblueDAO).getCountry("PL");
+
+        Assert.assertFalse(exceptionEventFired[0]);
     }
 
     @Test
@@ -168,6 +183,18 @@ public class ServiceFacadePhaseDualReadTest extends ServiceFacadeTestBase {
 
     @Test
     public void lightblueFailureDuringCreateTest() throws CountryException {
+
+        final boolean[] exceptionEventFired = new boolean[1];
+        exceptionEventFired[0] = false;
+
+        daoFacade.registerExceptionSwallowedListener(new ExceptionSwallowedListener() {
+
+            @Override
+            public void onLightblueSvcExceptionSwallowed(Throwable t, String implementationName) {
+                exceptionEventFired[0] = true;
+            }
+        });
+
         Country pl = new Country(101l, "PL");
 
         Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
@@ -179,6 +206,7 @@ public class ServiceFacadePhaseDualReadTest extends ServiceFacadeTestBase {
         Mockito.verify(legacyDAO).createCountry(pl);
 
         Assert.assertEquals(pl, returnedCountry);
+        Assert.assertTrue(exceptionEventFired[0]);
     }
 
     @Test
