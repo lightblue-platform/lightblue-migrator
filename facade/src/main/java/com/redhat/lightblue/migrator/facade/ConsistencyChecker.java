@@ -167,51 +167,55 @@ public class ConsistencyChecker {
             callToLogInCaseOfInconsistency = new LazyMethodCallStringifier();
         }
 
-        Timer p2j = new Timer("ConsistencyChecker's pojo2json conversion");
-        final JsonNode legacyJson = objectMapper.valueToTree(legacyEntity);
-        final JsonNode lightblueJson = objectMapper.valueToTree(lightblueEntity);
-        p2j.complete();
-
         try {
-            Timer t = new Timer("checkConsistency (jiff)");
+            Timer p2j = new Timer("ConsistencyChecker's pojo2json conversion");
+            final JsonNode legacyJson = objectMapper.valueToTree(legacyEntity);
+            final JsonNode lightblueJson = objectMapper.valueToTree(lightblueEntity);
+            p2j.complete();
 
-            boolean consistent = jiff.computeDiff(legacyJson, lightblueJson).isEmpty();
+            try {
+                Timer t = new Timer("checkConsistency (jiff)");
 
-            long jiffConsistencyCheckTook = t.complete();
+                boolean consistent = jiff.computeDiff(legacyJson, lightblueJson).isEmpty();
 
-            if (inconsistencyLog.isDebugEnabled()) {
-                inconsistencyLog.debug("Jiff consistency check took: " + jiffConsistencyCheckTook + " ms");
-                inconsistencyLog.debug("Jiff consistency check passed: true");
+                long jiffConsistencyCheckTook = t.complete();
+
+                if (inconsistencyLog.isDebugEnabled()) {
+                    inconsistencyLog.debug("Jiff consistency check took: " + jiffConsistencyCheckTook + " ms");
+                    inconsistencyLog.debug("Jiff consistency check passed: true");
+                }
+
+                if (consistent) {
+                    return true;
+                }
+
+                // objects are inconsistent, use org.skyscreamer.jsonassert.JSONCompare to produce inconsistency warning
+                // it's slow, but produces nice diffs
+                String legacyJsonStr = objectMapper.writeValueAsString(legacyEntity);
+                String lightblueJsonStr = objectMapper.writeValueAsString(lightblueEntity);
+
+                // JSONCompare fails when comparing booleans, convert them to strings
+                if ("true".equals(legacyJsonStr) || "false".equals(legacyJsonStr)) {
+                    legacyJsonStr = "\"" + legacyJsonStr + "\"";
+                }
+                if ("true".equals(lightblueJsonStr) || "false".equals(lightblueJsonStr)) {
+                    lightblueJsonStr = "\"" + lightblueJsonStr + "\"";
+                }
+
+                if ("null".equals(legacyJsonStr) || "null".equals(lightblueJsonStr)) {
+                    logInconsistency(Thread.currentThread().getName(), callToLogInCaseOfInconsistency.toString(), legacyJsonStr, lightblueJsonStr, "One object is null and the other isn't");
+                } else {
+                    logInconsistencyUsingJSONCompare(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
+                }
+
+                // inconsistent
+                return false;
+
+            } catch (IOException e) {
+                inconsistencyLog.error("Consistency check failed in " + implementationName + "." + callToLogInCaseOfInconsistency + "! Invalid JSON: legacyJson=" + legacyJson + ", lightblueJson=" + lightblueJson, e);
             }
-
-            if (consistent) {
-                return true;
-            }
-
-            // objects are inconsistent, use org.skyscreamer.jsonassert.JSONCompare to produce inconsistency warning
-            // it's slow, but produces nice diffs
-            String legacyJsonStr = objectMapper.writeValueAsString(legacyEntity);
-            String lightblueJsonStr = objectMapper.writeValueAsString(lightblueEntity);
-
-            // JSONCompare fails when comparing booleans, convert them to strings
-            if ("true".equals(legacyJsonStr) || "false".equals(legacyJsonStr)) {
-                legacyJsonStr = "\"" + legacyJsonStr + "\"";
-            }
-            if ("true".equals(lightblueJsonStr) || "false".equals(lightblueJsonStr)) {
-                lightblueJsonStr = "\"" + lightblueJsonStr + "\"";
-            }
-
-            if ("null".equals(legacyJsonStr) || "null".equals(lightblueJsonStr)) {
-                logInconsistency(Thread.currentThread().getName(), callToLogInCaseOfInconsistency.toString(), legacyJsonStr, lightblueJsonStr, "One object is null and the other isn't");
-            } else {
-                logInconsistencyUsingJSONCompare(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
-            }
-
-            // inconsistent
-            return false;
-
-        } catch (IOException e) {
-            inconsistencyLog.error("Consistency check failed in " + implementationName + "." + callToLogInCaseOfInconsistency + "! Invalid JSON: legacyJson=" + legacyJson + ", lightblueJson=" + lightblueJson, e);
+        } catch (Exception e) {
+            inconsistencyLog.error("Consistency check failed in " + implementationName + "." + callToLogInCaseOfInconsistency + "! legacyEntity=" + legacyEntity + ", lightblueEntity=" + lightblueEntity, e);
         }
         return false;
     }
