@@ -747,6 +747,22 @@ public class ServiceFacadePhaseDualReadTest extends ServiceFacadeTestBase {
         Mockito.verify(lightblueDAO).createCountry(ca);
     }
 
+    @Test
+    public void dualReadPhaseRead_CircularDependencyTest() throws CountryException {
+        Country pl = new Country("PL");
+        Country de = new Country("DE");
+        // create circular dependency
+        pl.setNeighbour(de);
+        de.setNeighbour(pl);
 
+        Mockito.when(legacyDAO.getCountry("PL")).thenReturn(pl);
+        Mockito.when(lightblueDAO.getCountry("PL")).thenReturn(de);
+
+        Assert.assertEquals(pl, countryDAOProxy.getCountry("PL"));
+
+        Mockito.verify(consistencyChecker).checkConsistency(Mockito.any(), Mockito.any(), Mockito.anyString(), Mockito.any(MethodCallStringifier.class));
+        Mockito.verify(legacyDAO).getCountry("PL");
+        Mockito.verify(lightblueDAO).getCountry("PL");
+    }
 
 }

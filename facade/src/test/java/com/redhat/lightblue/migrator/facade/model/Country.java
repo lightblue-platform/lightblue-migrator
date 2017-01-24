@@ -7,6 +7,7 @@ public class Country {
     private String name;
     private String iso2Code, iso3Code;
     private Long id;
+    private Country neighbour;
 
     public Long getId() {
         return id;
@@ -68,6 +69,14 @@ public class Country {
         }
 
         return false;
+    }
+
+    public Country getNeighbour() {
+        return neighbour;
+    }
+
+    public void setNeighbour(Country neighbour) {
+        this.neighbour = neighbour;
     }
 
 }
