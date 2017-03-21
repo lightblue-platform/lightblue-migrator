@@ -1,5 +1,7 @@
 package com.redhat.lightblue.migrator.facade.model;
 
+import java.util.List;
+
 import com.google.common.base.Objects;
 
 public class Country {
@@ -8,6 +10,7 @@ public class Country {
     private String iso2Code, iso3Code;
     private Long id;
     private Country neighbour;
+    private List<Country> allies;
 
     public Long getId() {
         return id;
@@ -77,6 +80,14 @@ public class Country {
 
     public void setNeighbour(Country neighbour) {
         this.neighbour = neighbour;
+    }
+
+    public List<Country> getAllies() {
+        return allies;
+    }
+
+    public void setAllies(List<Country> allies) {
+        this.allies = allies;
     }
 
 }

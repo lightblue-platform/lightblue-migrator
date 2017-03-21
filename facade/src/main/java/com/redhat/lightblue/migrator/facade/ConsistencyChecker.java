@@ -2,6 +2,7 @@ package com.redhat.lightblue.migrator.facade;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -17,6 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.redhat.lightblue.migrator.facade.methodcallstringifier.LazyMethodCallStringifier;
 import com.redhat.lightblue.migrator.facade.methodcallstringifier.MethodCallStringifier;
 
+import jiff.JsonDelta;
 import jiff.JsonDiff;
 
 /**
@@ -33,17 +35,30 @@ public class ConsistencyChecker {
 
     private final String implementationName;
     protected int maxInconsistencyLogLength = 65536; // 64KB
+    protected int maxJsonStrLengthForJsonCompare = 65536; // 64kB
     protected boolean logResponseDataEnabled = true;
     private Map<Class<?>, ModelMixIn> modelMixIns;
     private ObjectMapper objectMapper = null;
 
     private JsonDiff jiff = new JsonDiff();
 
-    public ConsistencyChecker(String implementationName) {
+    public ConsistencyChecker(String implementationName, Integer maxInconsistencyLogLength, Integer maxJsonStrLengthForJsonCompare) {
         this.implementationName = implementationName;
+        if (maxInconsistencyLogLength != null) {
+            this.maxInconsistencyLogLength = maxInconsistencyLogLength;
+        }
+        if (maxJsonStrLengthForJsonCompare != null) {
+            this.maxJsonStrLengthForJsonCompare = maxJsonStrLengthForJsonCompare;
+        }
         jiff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
 
         this.objectMapper = createObjectMapper();
+
+        inconsistencyLog.info("Initializing "+this.toString());
+    }
+
+    public ConsistencyChecker(String implementationName) {
+        this(implementationName, null, null);
     }
 
     private Map<Class<?>, ModelMixIn> findModelMixInMappings() {
@@ -143,6 +158,33 @@ public class ConsistencyChecker {
         }
     }
 
+    private void logInconsistencyUsingJiff(final String parentThreadName, final String legacyJson, final String lightblueJson, List<JsonDelta> jiffDeltas, final MethodCallStringifier callToLogInCaseOfInconsistency) {
+
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < jiffDeltas.size(); i++) {
+            String suffix = i< jiffDeltas.size() - 1 ? ", ": "";
+            sb.append(jiffDeltas.get(i).toString()+suffix);
+        }
+
+        logInconsistency(parentThreadName, callToLogInCaseOfInconsistency.toString(), legacyJson, lightblueJson, sb.toString());
+    }
+
+    private void logInconsistencyUsingJiff(final String parentThreadName, final String legacyJson, final String lightblueJson, final List<JsonDelta> jiffDeltas, final MethodCallStringifier callToLogInCaseOfInconsistency, boolean blocking) {
+        if (blocking) {
+            inconsistencyLog.debug("Running logInconsistencyUsingJSONCompare in a blocking manner");
+            logInconsistencyUsingJiff(parentThreadName, legacyJson, lightblueJson, jiffDeltas, callToLogInCaseOfInconsistency);
+        } else {
+            inconsistencyLog.debug("Running logInconsistencyUsingJSONCompare in a NON blocking manner");
+            new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    logInconsistencyUsingJiff(parentThreadName, legacyJson, lightblueJson, jiffDeltas, callToLogInCaseOfInconsistency);
+                }
+            }).start();
+        }
+    }
+
     // convenience method for unit testing
     protected boolean checkConsistency(Object o1, Object o2) {
         return checkConsistency(o1, o2, null, null);
@@ -176,7 +218,8 @@ public class ConsistencyChecker {
             try {
                 Timer t = new Timer("checkConsistency (jiff)");
 
-                boolean consistent = jiff.computeDiff(legacyJson, lightblueJson).isEmpty();
+                List<JsonDelta> deltas = jiff.computeDiff(legacyJson, lightblueJson);
+                boolean consistent = deltas.isEmpty();
 
                 long jiffConsistencyCheckTook = t.complete();
 
@@ -189,8 +232,7 @@ public class ConsistencyChecker {
                     return true;
                 }
 
-                // objects are inconsistent, use org.skyscreamer.jsonassert.JSONCompare to produce inconsistency warning
-                // it's slow, but produces nice diffs
+                // TODO: this can be memory intensive too, but how else to check the size of responses?
                 String legacyJsonStr = objectMapper.writeValueAsString(legacyEntity);
                 String lightblueJsonStr = objectMapper.writeValueAsString(lightblueEntity);
 
@@ -205,7 +247,15 @@ public class ConsistencyChecker {
                 if ("null".equals(legacyJsonStr) || "null".equals(lightblueJsonStr)) {
                     logInconsistency(Thread.currentThread().getName(), callToLogInCaseOfInconsistency.toString(), legacyJsonStr, lightblueJsonStr, "One object is null and the other isn't");
                 } else {
-                    logInconsistencyUsingJSONCompare(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
+                    if (legacyJsonStr.length() >= maxJsonStrLengthForJsonCompare || lightblueJsonStr.length() >= maxJsonStrLengthForJsonCompare) {
+                        inconsistencyLog.debug("Using jiff to produce inconsistency warning");
+                        // it is not very detailed (will show only first inconsistency; will tell you which array element is inconsistent, but not how), but it's easy on resources
+                        logInconsistencyUsingJiff(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, deltas, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
+                    } else {
+                        inconsistencyLog.debug("Using org.skyscreamer.jsonassert.JSONCompare to produce inconsistency warning");
+                        // it's slow and can consume lots of memory, but produces nice diffs
+                        logInconsistencyUsingJSONCompare(Thread.currentThread().getName(), legacyJsonStr, lightblueJsonStr, callToLogInCaseOfInconsistency, Boolean.valueOf(System.getProperty("lightblue.facade.consistencyChecker.blocking", "false")));
+                    }
                 }
 
                 // inconsistent
@@ -230,5 +280,20 @@ public class ConsistencyChecker {
 
     void setInconsistencyLog(Logger inconsistencyLog) {
         this.inconsistencyLog = inconsistencyLog;
+    }
+
+    public int getMaxJsonStrLengthForJsonCompare() {
+        return maxJsonStrLengthForJsonCompare;
+    }
+
+    public void setMaxJsonStrLengthForJsonCompare(int maxJsonStrLengthForJsonCompare) {
+        this.maxJsonStrLengthForJsonCompare = maxJsonStrLengthForJsonCompare;
+    }
+
+    @Override
+    public String toString() {
+        return "ConsistencyChecker [implementationName="
+                + implementationName + ", maxInconsistencyLogLength=" + maxInconsistencyLogLength + ", maxJsonStrLengthForJsonCompare="
+                + maxJsonStrLengthForJsonCompare + ", logResponseDataEnabled=" + logResponseDataEnabled + "]";
     }
 }

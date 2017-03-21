@@ -80,7 +80,8 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
 
     public ConsistencyChecker getConsistencyChecker() {
         if (consistencyChecker == null) {
-            consistencyChecker = new ConsistencyChecker(implementationName);
+
+            consistencyChecker = new ConsistencyChecker(implementationName, null, getMaxJsonStrLengthForJsonCompare());
         }
         return consistencyChecker;
     }
@@ -115,6 +116,15 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         }
 
         return Long.parseLong(timeout);
+    }
+
+    private Integer getMaxJsonStrLengthForJsonCompare() {
+        String value = properties.getProperty("com.redhat.lightblue.migrator.facade.timeout." + implementationName + ".maxJsonStrLengthForJsonCompare");
+        if (value == null) {
+            return null;
+        }
+
+        return Integer.parseInt(value);
     }
 
     private ListeningExecutorService createExecutor() {
