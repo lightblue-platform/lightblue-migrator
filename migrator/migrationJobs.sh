@@ -56,3 +56,5 @@ echo      \"recursive\": false
 echo    }
 echo  ]
 echo  }
+
+echo $i > /tmp/last_job_id
