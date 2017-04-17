@@ -63,16 +63,16 @@
     "schema": {
         "access": {
             "delete": [
-                "anyone"
+                "lb-migrationjob-delete"
             ],
             "find": [
-                "anyone"
+                "lb-migrationjob-find"
             ],
             "insert": [
-                "anyone"
+                "lb-migrationjob-insert"
             ],
             "update": [
-                "anyone"
+                "lb-migrationjob-update"
             ]
         },
         "fields": {

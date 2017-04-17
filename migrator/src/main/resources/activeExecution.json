@@ -33,16 +33,16 @@
     "schema": {
         "access": {
             "delete": [
-                "anyone"
+                "lb-migrationactiveexecution-delete"
             ],
             "find": [
-                "anyone"
+                "lb-migrationactiveexecution-find"
             ],
             "insert": [
-                "anyone"
+                "lb-migrationactiveexecution-insert"
             ],
             "update": [
-                "anyone"
+                "lb-migrationactiveexecution-update"
             ]
         },
         "fields": {
