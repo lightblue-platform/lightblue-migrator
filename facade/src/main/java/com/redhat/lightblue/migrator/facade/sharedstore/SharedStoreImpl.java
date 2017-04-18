@@ -150,4 +150,11 @@ public class SharedStoreImpl implements SharedStore {
         cache.remove("isDualMigrationPhase-" + threadId);
     }
 
+    @Override
+    public boolean isEmpty() {
+        long threadId = Thread.currentThread().getId();
+
+        return (cache.get(threadId) == null);
+    }
+
 }

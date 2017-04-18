@@ -46,4 +46,9 @@ public interface SharedStore {
      */
     public void clear();
 
+    /**
+     * @return true if a value is currently cached, otherwise false.
+     */
+    public boolean isEmpty();
+
 }

@@ -134,6 +134,19 @@ public class SharedStoreTest {
         } catch (SharedStoreException e) {
         }
     }
+    
+    @Test
+    public void testIsEmpty_True(){
+        Assert.assertTrue(new SharedStoreImpl("test").isEmpty());
+    }
+    
+    @Test
+    public void testIsEmpty_False(){
+        SharedStoreImpl store = new SharedStoreImpl("implementation name");
+        store.push(101l);
+        
+        Assert.assertFalse(store.isEmpty());
+    }
 
     class TestThread extends Thread {
 
