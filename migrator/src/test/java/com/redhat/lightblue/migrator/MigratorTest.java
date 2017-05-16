@@ -90,7 +90,7 @@ public class MigratorTest extends AbstractMigratorController {
                 getMigrationProcesses().
                 get("customerMigration_0").mig.getMigratorThreads().enumerate(threads));
 
-        Migrator m = (Migrator) threads[0];
+        TestMigrator m = (TestMigrator) threads[0];
         Assert.assertEquals(5, m.getSourceDocs().size());
 
         Breakpoint.stop("Migrator:complete");
@@ -117,6 +117,12 @@ public class MigratorTest extends AbstractMigratorController {
         controller.setStopped();
         System.out.println("Test ends");
         Thread.sleep(1000);
+
+        Assert.assertEquals(5, m.sourceDocs.size());
+        Assert.assertEquals(0, m.destDocs.size());
+        Assert.assertEquals(5, m.insertDocs.size());
+        Assert.assertEquals(0, m.rewriteDocs.size());
+        Assert.assertEquals(5, m.saveDocsList.size());
     }
 
     @Test
