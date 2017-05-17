@@ -104,6 +104,21 @@ public abstract class Migrator extends AbstractMonitoredThread {
         return getMigrationConfiguration().getDestinationIdentityFields();
     }
 
+    /**
+     * Execute this method before docs are saved to destination (Lightblue). Modifying saveDocsList
+     * will affect what gets actually saved. Implementation of this method is responsible for exception handling.
+     *
+     * @param sourceDocs docs read from source
+     * @param destDocs corresponding docs read from destination
+     * @param insertDocs docs which exist in source but not in destination
+     * @param rewriteDocs docs which existing in both source and destination, but are different
+     * @param saveDocsList list of docs to save
+     */
+    protected void beforeSaveToDestination(Map<Identity, JsonNode> sourceDocs, Map<Identity, JsonNode> destDocs, Set<Identity> insertDocs, Set<Identity> rewriteDocs, List<JsonNode> saveDocsList) {
+        // do nothing by default
+        // override this in child classes to get access to docs before they are saved
+    }
+
     public void migrate(MigrationJobExecution execution) {
         try {
             ping("Starting migrate()");
@@ -176,6 +191,7 @@ public abstract class Migrator extends AbstractMonitoredThread {
             execution.setProcessedDocumentCount(sourceDocs.size());
 
             LOGGER.debug("There are {} docs to save: {}", saveDocsList.size(), migrationJob.getConfigurationName());
+            beforeSaveToDestination(sourceDocs, destDocs, insertDocs, rewriteDocs, saveDocsList);
             try {
                 List<LightblueResponse> responses = save(saveDocsList);
                 ping("Saved documents");
