@@ -203,7 +203,7 @@ public abstract class Migrator extends AbstractMonitoredThread {
             Breakpoint.checkpoint("Migrator:complete");
 
         } catch (Exception e) {
-            LOGGER.error("Error during migration of {}:{}", migrationJob.getConfigurationName(), e);
+            LOGGER.error("Error during migration of "+migrationJob.getConfigurationName(), e);
             StringWriter strw = new StringWriter();
             e.printStackTrace(new PrintWriter(strw));
             execution.setErrorMsg(strw.toString());
@@ -239,10 +239,14 @@ public abstract class Migrator extends AbstractMonitoredThread {
 
     public abstract String createRangeQuery(Date startDate, Date endDate);
 
-    @Override
-    public final void monitoredRun() {
+    protected void initLoggers() {
         LOGGER = LoggerFactory.getLogger(Migrator.class.getName() + "." + getMigrationConfiguration().getConfigurationName());
         INCONSISTENCY_LOGGER = LoggerFactory.getLogger("inconsistency." + getMigrationConfiguration().getConfigurationName());
+    }
+
+    @Override
+    public final void monitoredRun() {
+        initLoggers();
 
         // First update the migration job, mark its status as being
         // processed, so it doesn't show up in other controllers'
