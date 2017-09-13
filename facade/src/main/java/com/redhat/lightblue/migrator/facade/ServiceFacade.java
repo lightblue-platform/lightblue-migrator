@@ -142,28 +142,39 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
     private <T> ListenableFuture<T> callLightblueSvc(final Method method, final Object[] values, final FacadeOperation op, final MethodCallStringifier callStringifier) {
         ListeningExecutorService executor = createExecutor();
         try {
-        // fetch from lightblue using future (asynchronously)
-        final long parentThreadId = Thread.currentThread().getId();
-        return executor.submit(new Callable<T>(){
-            @Override
-            public T call() throws Exception {
-                Timer dest = new Timer("destination."+method.getName());
-                if (sharedStore != null) {
-                    sharedStore.copyFromThread(parentThreadId);
-                }
-                try {
-                    return (T) method.invoke(lightblueSvc, values);
-                } finally {
-                    long callTook = dest.complete();
-                    long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
+            // fetch from lightblue using future (asynchronously)
+            final long parentThreadId = Thread.currentThread().getId();
+            return executor.submit(new Callable<T>(){
+                @Override
+                public T call() throws Exception {
+                    Timer dest = new Timer("destination."+method.getName());
+                    if (sharedStore != null) {
+                        sharedStore.copyFromThread(parentThreadId);
+                    }
+                    try {
+                        return (T) method.invoke(lightblueSvc, values);
+                    } catch (Throwable t) {
+                        if (shouldSource(op) && shouldCheckConsistency(op)) {
+                            // swallow lightblue exception if legacy was called and consistency checker is on
+                            log.warn("Lightblue call " + implementationName + "." + callStringifier + " threw an exception. Returning data from legacy.", t);
+                            onExceptionSwallowed(t);
+                            throw new SwallowableException(t, true);
+                        } else {
+                            // throw lightblue exception if legacy was not called or consistency checker is disabled
+                            throw new SwallowableException(t, false);
+                        }
+                    } finally {
+                        long callTook = dest.complete();
+                        long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
 
-                    if (callTook >= slowWarning) {
-                        // call is slow; this will log even if source fails to respond
-                        log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
+                        if (callTook >= slowWarning) {
+                            // call is slow; this will log even if source fails to respond
+                            log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
+                        }
                     }
                 }
-            }
-        });
+            });
+
         } finally {
             executor.shutdown();
         }
@@ -348,15 +359,19 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 } else {
                     throw te;
                 }
-            } catch (Throwable e) {
-                if (shouldSource(facadeOperation) && shouldCheckConsistency(facadeOperation)) {
-                    // swallow lightblue exception if legacy was called and consistency checker is on
-                    log.warn("Lightblue call " + implementationName + "." + callStringifier + " threw an exception. Returning data from legacy.", e);
-                    onExceptionSwallowed(e);
-                    return legacyEntity;
+            } catch (ExecutionException ee) {
+
+                if (ee.getCause() != null && ee.getCause() instanceof SwallowableException) {
+                    SwallowableException se = (SwallowableException) ee.getCause();
+
+                    if (se.swallow) {
+                        return legacyEntity;
+                    } else {
+                        throw extractUnderlyingException(se.getCause());
+                    }
                 } else {
-                    // throw lightblue exception if legacy was not called or consistency checker is disabled
-                    throw extractUnderlyingException(e);
+                    // should never happen
+                    throw ee;
                 }
             }
         }
