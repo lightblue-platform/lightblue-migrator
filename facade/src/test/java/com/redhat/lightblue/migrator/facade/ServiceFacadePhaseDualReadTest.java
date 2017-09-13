@@ -210,6 +210,45 @@ public class ServiceFacadePhaseDualReadTest extends ServiceFacadeTestBase {
     }
 
     @Test
+    public void lightblueFailureDuringCreateAfterTimeoutTest() throws Exception {
+        TimeoutConfiguration t = new TimeoutConfiguration(10, CountryDAO.class.getSimpleName(), null);
+        daoFacade.setTimeoutConfiguration(t);
+
+        final boolean[] exceptionEventFired = new boolean[1];
+        exceptionEventFired[0] = false;
+
+        daoFacade.registerExceptionSwallowedListener(new ExceptionSwallowedListener() {
+
+            @Override
+            public void onLightblueSvcExceptionSwallowed(Throwable t, String implementationName) {
+                exceptionEventFired[0] = true;
+            }
+        });
+
+        Country pl = new Country(101l, "PL");
+
+        Mockito.when(legacyDAO.createCountry(pl)).thenReturn(pl);
+        Mockito.when(lightblueDAO.createCountry(Mockito.any(Country.class))).then(new Answer<Country>() {
+
+            @Override
+            public Country answer(InvocationOnMock invocation) throws Throwable {
+                Thread.sleep(20);
+
+                throw new RuntimeException("Lightblue failure!");
+            }
+        });
+
+        Country returnedCountry = countryDAOProxy.createCountry(pl);
+
+        Assert.assertTrue(waitOnInterrupt(exceptionEventFired, 2000));
+
+        Mockito.verify(lightblueDAO).createCountry(pl);
+        Mockito.verify(legacyDAO).createCountry(pl);
+
+        Assert.assertEquals(pl, returnedCountry);
+    }
+
+    @Test
     public void lightblueNullReturnedAfterCreateTest() throws CountryException {
         Country pl = new Country(101l, "PL");
 
