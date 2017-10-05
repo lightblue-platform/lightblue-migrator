@@ -148,7 +148,9 @@ public abstract class Migrator extends AbstractMonitoredThread {
             for (Map.Entry<Identity, JsonNode> sourceEntry : sourceDocs.entrySet()) {
                 JsonNode destDoc = destDocs.get(sourceEntry.getKey());
                 if (destDoc != null) {
-                    List<Inconsistency> inconsistencies = Utils.compareDocs(sourceEntry.getValue(), destDoc, getMigrationConfiguration().getComparisonExclusionPaths());
+                    List<Inconsistency> inconsistencies = Utils.compareDocs(sourceEntry.getValue(), destDoc,
+                            getMigrationConfiguration().getComparisonExclusionPaths(),
+                            getMigrationConfiguration().isIgnoreTimestampMSDiffs());
                     if (inconsistencies != null && !inconsistencies.isEmpty()) {
                         rewriteDocs.add(sourceEntry.getKey());
                         // log as key=value to make parsing easy

@@ -5,7 +5,7 @@
             "collection": "migrationConfiguration",
             "datasource": "mongodata"
         },
-        "defaultVersion" : "2.0.2",
+        "defaultVersion" : "2.0.3",
         "indexes": [
             {
                 "fields": [
@@ -154,6 +154,10 @@
                 },
                 "description": "identity fields in the destination entity."
             },
+            "ignoreTimestampMSDiffs": {
+                "type": "boolean",
+                "description": "If true, 20071203T10:15:30.000-0400 == 20071203T10:15:30.123-0400"
+            },
             "sourceConfigPath": {
                 "type":"string"
             },
@@ -193,8 +197,8 @@
             "value": "active"
         },
         "version": {
-            "changelog": "Weights for migrator and consistency checker",
-            "value": "2.0.2"
+            "changelog": "Adding ignoreTimestampMSDiffs",
+            "value": "2.0.3"
         }
     }
 }

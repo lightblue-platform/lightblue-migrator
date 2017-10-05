@@ -28,6 +28,7 @@ public class MigrationConfiguration {
     private String sourceServiceURI;
     private String sourceEntityName;
     private String sourceEntityVersion;
+    private boolean ignoreTimestampMSDiffs = false;
 
     private String timestampFieldName;
     private Date timestampInitialValue;
@@ -453,5 +454,13 @@ public class MigrationConfiguration {
     @JsonIgnore
     public void setSleepIfNoJobs(boolean sleepIfNoJobs) {
         this.sleepIfNoJobs = sleepIfNoJobs;
+    }
+
+    public boolean isIgnoreTimestampMSDiffs() {
+        return ignoreTimestampMSDiffs;
+    }
+
+    public void setIgnoreTimestampMSDiffs(boolean ignoreTimestampMSDiffs) {
+        this.ignoreTimestampMSDiffs = ignoreTimestampMSDiffs;
     }
 }
