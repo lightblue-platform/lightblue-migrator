@@ -51,7 +51,7 @@ public class Utils {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode node1 = mapper.readTree(new File(args[0]));
         JsonNode node2 = mapper.readTree(new File(args[1]));
-        List<Inconsistency> list = compareDocs(node1, node2, new ArrayList<String>());
+        List<Inconsistency> list = compareDocs(node1, node2, new ArrayList<String>(), false);
         System.out.println(list);
     }
 
@@ -92,9 +92,9 @@ public class Utils {
      * @param destinationDocument
      * @return list of inconsistent paths
      */
-    public static List<Inconsistency> compareDocs(JsonNode sourceDocument, JsonNode destinationDocument, List<String> exclusionPaths) {
+    public static List<Inconsistency> compareDocs(JsonNode sourceDocument, JsonNode destinationDocument, List<String> exclusionPaths, boolean ignoreMSWhenComparingDates) {
         List<Inconsistency> ret = new ArrayList<>();
-        if (fastCompareDocs(sourceDocument, destinationDocument, exclusionPaths)) {
+        if (fastCompareDocs(sourceDocument, destinationDocument, exclusionPaths, ignoreMSWhenComparingDates)) {
             JsonCompare cmp = new JsonCompare();
             try {
                 DocCompare.Difference<JsonNode> diff = cmp.compareNodes(sourceDocument, destinationDocument);
@@ -109,7 +109,7 @@ public class Utils {
                             } else {
                                 JsonNode n1 = ((DocCompare.Modification<JsonNode>) delta).getUnmodifiedNode();
                                 JsonNode n2 = ((DocCompare.Modification<JsonNode>) delta).getModifiedNode();
-                                if (reallyDifferent(n1, n2)) {
+                                if (reallyDifferent(n1, n2, ignoreMSWhenComparingDates)) {
                                     ret.add(new Inconsistency(delta.getField(), n1.toString(), n2.toString()));
                                 }
                             }
@@ -129,7 +129,7 @@ public class Utils {
      *
      * @return true if documents are different
      */
-    public static boolean fastCompareDocs(JsonNode sourceDocument, JsonNode destinationDocument, List<String> exclusionPaths) {
+    public static boolean fastCompareDocs(JsonNode sourceDocument, JsonNode destinationDocument, List<String> exclusionPaths, boolean ignoreTimestampMSDiffs) {
         try {
             JsonDiff diff = new JsonDiff();
             diff.setOption(JsonDiff.Option.ARRAY_ORDER_INSIGNIFICANT);
@@ -143,7 +143,7 @@ public class Utils {
             for (JsonDelta x : list) {
                 String field = x.getField();
                 if (!isExcluded(exclusionPaths, field)) {
-                    if (reallyDifferent(x.getNode1(), x.getNode2())) {
+                    if (reallyDifferent(x.getNode1(), x.getNode2(), ignoreTimestampMSDiffs)) {
                         return true;
                     }
                 }
@@ -162,7 +162,7 @@ public class Utils {
      * are *really* different, meaning: for anything but dates, check string
      * equivalence. For dates, normalize by TZ and check.
      */
-    private static boolean reallyDifferent(JsonNode source, JsonNode dest) {
+    public static boolean reallyDifferent(JsonNode source, JsonNode dest, boolean ignoreTimestampMSDiffs) {
         if (source == null || source instanceof NullNode) {
             if (dest == null || dest instanceof NullNode) {
                 return false;
@@ -193,7 +193,15 @@ public class Utils {
             } catch (Exception e) {
                 return true;
             }
-            return d1.getTime() != d2.getTime();
+
+            if (ignoreTimestampMSDiffs) {
+                long d1ms = 1000 * (d1.getTime() / 1000);
+                long d2ms = 1000 * (d2.getTime() / 1000);
+
+                return d1ms != d2ms;
+            } else {
+                return d1.getTime() != d2.getTime();
+            }
         }
     }
 
