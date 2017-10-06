@@ -28,7 +28,7 @@ public class MigrationConfiguration {
     private String sourceServiceURI;
     private String sourceEntityName;
     private String sourceEntityVersion;
-    private boolean ignoreTimestampMSDiffs = false;
+    private boolean ignoreTimestampMSDiffs = true;
 
     private String timestampFieldName;
     private Date timestampInitialValue;
