@@ -165,11 +165,12 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                         }
                     } finally {
                         long callTook = dest.complete();
+                        log.info(" Lightblue call time: {}.{} took {}ms to complete", implementationName, callStringifier.toString(), callTook);
                         long slowWarning = timeoutConfiguration.getSlowWarningMS(method.getName(), op);
 
                         if (callTook >= slowWarning) {
                             // call is slow; this will log even if source fails to respond
-                            log.warn("Slow call warning: {}.{} took {}ms",implementationName, callStringifier.toString(), callTook);
+                            log.warn("Slow call warning: {}.{} took {}ms and slowwarningTimeout is {}ms",implementationName, callStringifier.toString(), callTook, slowWarning);
                         }
                     }
                 }
@@ -319,7 +320,8 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 if (shouldDestination(facadeOperation) && !shouldCheckConsistency(facadeOperation)) {
                     // Lightblue is going to be called and consistency checker is disabled
                     // swallow the exception from legacy
-                    log.warn("Legacy call " + implementationName + "." + callStringifier + " threw an exception. Returning data from Lightblue.", e.getCause());
+                    log.warn("Legacy call " + implementationName + "." + callStringifier
+                            + " threw an exception. Returning data from Lightblue.", e.getCause());
                 } else {
                     if (timeoutConfiguration.isInterruptOnTimeout() && facadeOperation == FacadeOperation.READ) {
                         cancel(listenableFuture);
@@ -328,6 +330,8 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 }
             } finally {
                 legacyCallTookMS = (int) source.complete();
+                log.info("legacy call for {}.{} took: {} to complete ", implementationName, methodName,
+                        legacyCallTookMS);
             }
         }
 
@@ -345,6 +349,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                     Method method = lightblueSvc.getClass().getMethod(methodName, types);
                     listenableFuture = callLightblueSvc(method, values, facadeOperation, callStringifier);
                     lightblueEntity = getWithTimeout(listenableFuture, methodName, facadeOperation, destinationCallTimeout);
+                    
                 }
             } catch (TimeoutException te) {
 
