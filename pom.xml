@@ -39,7 +39,7 @@
   <properties>
     <sonar.projectName>lightblue-platform: ${project.artifactId}</sonar.projectName>
     <sonar.exclusions>**/*Test.java,**/*Exception.java</sonar.exclusions>
-    <lightblue.client.version>5.15.0</lightblue.client.version>
+    <lightblue.client.version>5.16.0-SNAPSHOT</lightblue.client.version>
   </properties>
   <dependencyManagement>
     <dependencies>
