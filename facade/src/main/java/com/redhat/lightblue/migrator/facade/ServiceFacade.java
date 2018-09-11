@@ -311,7 +311,7 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
         int legacyCallTookMS = 0;
         if (shouldSource(facadeOperation)) {
             // perform operation in oracle, synchronously
-            log.debug("Calling legacy {}.{}", implementationName, methodName);
+            log.info("Calling legacy {}.{}", implementationName, methodName);
             Method method = legacySvc.getClass().getMethod(methodName, types);
             Timer source = new Timer("source." + methodName);
             try {
@@ -330,13 +330,13 @@ public class ServiceFacade<D extends SharedStoreSetter> implements SharedStoreSe
                 }
             } finally {
                 legacyCallTookMS = (int) source.complete();
-                log.info("legacy call for {}.{} took: {} to complete ", implementationName, methodName,
+                log.info("Legacy call time: {}.{} took: {}ms to complete ", implementationName, callStringifier,
                         legacyCallTookMS);
             }
         }
 
         if (shouldDestination(facadeOperation)) {
-            log.debug("Calling lightblue {}.{}", implementationName, methodName);
+            log.info("Calling lightblue {}.{}", implementationName, methodName);
 
             int destinationCallTimeout = (int) Math.max(timeoutConfiguration.getTimeoutMS(methodName, facadeOperation), legacyCallTookMS);
 
